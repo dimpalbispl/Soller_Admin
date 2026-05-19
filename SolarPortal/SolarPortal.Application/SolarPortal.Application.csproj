@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SolarPortal.Domain\SolarPortal.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="FluentValidation" Version="11.9.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.0" />
+  </ItemGroup>
+
+  <!--
+    Suppress NU1903 (NuGet audit) for the AutoMapper DoS-via-deep-recursion advisory.
+    Per the AutoMapper maintainer (https://github.com/LuckyPennySoftware/AutoMapper/discussions/4624)
+    no patch will be issued for free OSS v13; patched releases (15.1.1+ / 16.1.1+) are commercial.
+    Our mapping profiles only handle internal entities — no user-controlled object graph reaches
+    AutoMapper that could trigger the unbounded recursion described in the advisory.
+  -->
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-rvv3-g6hj-g44x" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Interfaces\Repositories\" />
+    <Folder Include="Mappings\" />
+    <Folder Include="Validators\" />
+  </ItemGroup>
+
+</Project>

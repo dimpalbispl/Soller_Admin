@@ -1,0 +1,339 @@
+@model IEnumerable<SolarPortal.Domain.Entities.Payment>
+@{
+    ViewData["Title"] = "Payment Verification";
+    var filter = ViewBag.Filter as string ?? "all";
+    var requests = ViewBag.Requests as Dictionary<int, SolarPortal.Domain.Entities.SolarRequest>
+                   ?? new Dictionary<int, SolarPortal.Domain.Entities.SolarRequest>();
+    var paidMap = (Dictionary<int, decimal>)(ViewBag.PaidMap ?? new Dictionary<int, decimal>());
+}
+
+<div class="page-header" style="padding:16px">
+    <h2>Payment Verification</h2>
+    <p class="text-muted">Verify user-submitted payments. ₹20,000 cumulative minimum required to advance.</p>
+</div>
+
+<div class="container-fluid">
+    <div class="mb-3" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+            <a class="btn @(filter == "all" ? "btn-primary" : "btn-outline-primary")" asp-route-filter="all">All</a>
+            <a class="btn @(filter == "pending" ? "btn-warning" : "btn-outline-warning")" asp-route-filter="pending">Pending</a>
+            <a class="btn @(filter == "verified" ? "btn-success" : "btn-outline-success")" asp-route-filter="verified">Verified</a>
+        </div>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPaymentModal">
+            ➕ Add Payment (Admin Entry)
+        </button>
+    </div>
+
+    <!-- Admin Add-Payment Modal -->
+    <div class="modal fade" id="addPaymentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form id="adminAddPaymentForm" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add Payment on User's Behalf</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info" style="font-size:13px">
+                            <strong>Admin entry</strong> — bypasses the ₹20,000 minimum and the project-total cap.
+                            Payment is auto-verified.
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Solar Request <span class="text-danger">*</span></label>
+                                <select class="form-select" name="solarRequestId" id="adminPaySelectReq" required>
+                                    <option value="">-- pick a request --</option>
+                                    @foreach (var kv in requests)
+                                    {
+                                        var paid = paidMap.TryGetValue(kv.Key, out var pv) ? pv : 0m;
+                                        var due  = System.Math.Max(0, kv.Value.PlanAmount - paid);
+                                        <option value="@kv.Key"
+                                                data-total="@kv.Value.PlanAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                data-paid="@paid.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                data-due="@due.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                                data-applicant="@kv.Value.ApplicantName"
+                                                data-reqno="@kv.Value.RequestNumber">
+                                            @kv.Value.RequestNumber — @kv.Value.ApplicantName (₹@kv.Value.PlanAmount.ToString("N0"))
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Amount (₹) <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="1" class="form-control" name="amount" id="adminPayAmount" required />
+                                <small id="adminPayAmountHint" class="form-text text-muted">Pick a request to see paid / due info.</small>
+                            </div>
+
+                            <!-- Live summary panel: appears once a request is picked -->
+                            <div class="col-12" id="adminPayReqSummary" style="display:none">
+                                <div class="card" style="background:#f0fdf4;border-left:4px solid #16a34a;padding:14px;margin:0">
+                                    <div class="row g-2" style="font-size:13px">
+                                        <div class="col-md-3">
+                                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Request</div>
+                                            <div style="font-weight:700" id="apSumReq">—</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Project Amount</div>
+                                            <div style="font-weight:700;color:#0d9488" id="apSumTotal">₹0</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Already Paid</div>
+                                            <div style="font-weight:700;color:#16a34a" id="apSumPaid">₹0</div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase;letter-spacing:.04em">Remaining Due</div>
+                                            <div style="font-weight:700;color:#dc2626" id="apSumDue">₹0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">UTR / Transaction No. <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="utrNumber" required maxlength="50" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Reference Number</label>
+                                <input type="text" class="form-control" name="referenceNumber" maxlength="50" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Payment Date</label>
+                                <input type="date" class="form-control" name="paymentDate"
+                                       value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Receipt (Image / PDF)</label>
+                                <input type="file" class="form-control" name="receiptImage" accept="image/*,.pdf" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-control" name="notes" rows="2" placeholder="Optional remarks"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Save Payment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @{
+        // Distinct requests visible in this filtered list
+        var distinctReqs = Model.Select(m => m.SolarRequestId).Distinct().ToList();
+        decimal sumProjectAmt = 0m;
+        decimal sumPaidAcrossReqs = 0m;
+        foreach (var rid in distinctReqs)
+        {
+            if (requests.TryGetValue(rid, out var rr)) sumProjectAmt += rr.PlanAmount;
+            if (paidMap.TryGetValue(rid, out var pv))  sumPaidAcrossReqs += pv;
+        }
+        var sumDue = System.Math.Max(0, sumProjectAmt - sumPaidAcrossReqs);
+        var sumThisPage = Model.Sum(m => m.Amount);
+        var sumVerifiedThisPage = Model.Where(m => m.IsVerified).Sum(m => m.Amount);
+    }
+
+    <!-- Summary cards -->
+    <div class="g4 mb-3">
+        <div class="sc">
+            <div class="sc-label">Payments Visible</div>
+            <div class="sc-val blue">@Model.Count()</div>
+            <div class="sc-sub">Total ₹@sumThisPage.ToString("N0") on this page</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Verified Amount</div>
+            <div class="sc-val green">₹@sumVerifiedThisPage.ToString("N0")</div>
+            <div class="sc-sub">Confirmed payments on this page</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Project Total</div>
+            <div class="sc-val gold">₹@sumProjectAmt.ToString("N0")</div>
+            <div class="sc-sub">@distinctReqs.Count distinct request(s)</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Outstanding Due</div>
+            <div class="sc-val red">₹@sumDue.ToString("N0")</div>
+            <div class="sc-sub">Across visible requests</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Receipt #</th>
+                        <th>Request ID</th>
+                        <th>Member Name</th>
+                        <th style="text-align:right">Project Amount</th>
+                        <th style="text-align:right">Paid (Total)</th>
+                        <th style="text-align:right">Due</th>
+                        <th style="text-align:right">This Payment</th>
+                        <th>UTR</th>
+                        <th>Method</th>
+                        <th>Date</th>
+                        <th>Uploaded By</th>
+                        <th>Receipt Image</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var p in Model)
+                {
+                    requests.TryGetValue(p.SolarRequestId, out var req);
+                    var paidTotal = paidMap.TryGetValue(p.SolarRequestId, out var pv) ? pv : 0m;
+                    var projectAmt = req?.PlanAmount ?? 0m;
+                    var due = System.Math.Max(0, projectAmt - paidTotal);
+                    var isAdminEntry = !string.IsNullOrEmpty(p.Notes) && p.Notes.Contains("[ADMIN ENTRY");
+                    <tr>
+                        <td><small>@p.ReceiptNumber</small></td>
+                        <td><strong>@req?.RequestNumber</strong></td>
+                        <td>@req?.ApplicantName</td>
+                        <td style="text-align:right;color:#16a34a;font-weight:600">₹@projectAmt.ToString("N0")</td>
+                        <td style="text-align:right;color:#0d9488;font-weight:600">₹@paidTotal.ToString("N0")</td>
+                        <td style="text-align:right;color:@(due > 0 ? "#dc2626" : "#16a34a");font-weight:600">
+                            ₹@due.ToString("N0")
+                            @if (due == 0 && projectAmt > 0)
+                            {
+                                <small style="display:block;font-size:10px;color:#16a34a">✓ Fully Paid</small>
+                            }
+                        </td>
+                        <td style="text-align:right">₹@p.Amount.ToString("N0")</td>
+                        <td><code>@p.UTRNumber</code></td>
+                        <td>@p.PaymentMethod</td>
+                        <td>@p.PaymentDate.ToLocalTime().ToString("dd MMM yyyy")</td>
+                        <td>
+                            @if (isAdminEntry)
+                            {
+                                <span class="badge bg-info">Admin</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">User</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(p.ReceiptImagePath))
+                            {
+                                <a href="~/@p.ReceiptImagePath" target="_blank">View</a>
+                            }
+                            else { <small class="text-muted">—</small> }
+                        </td>
+                        <td>
+                            @if (p.IsVerified)
+                            {
+                                <span class="badge bg-success">Verified</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning">Pending</span>
+                            }
+                        </td>
+                        <td>
+                            @if (!p.IsVerified)
+                            {
+                                <button class="btn btn-sm btn-success btn-verify" data-id="@p.Id">Verify</button>
+                                <button class="btn btn-sm btn-danger btn-reject" data-id="@p.Id">Reject</button>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="14" class="text-center text-muted py-3">No payments.</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+const token = $('input[name="__RequestVerificationToken"]').val();
+
+$('.btn-verify').on('click', function () {
+    const id = $(this).data('id');
+    if (!confirm('Verify this payment?')) return;
+    $.post('@Url.Action("Verify")', { id: id, __RequestVerificationToken: token }, function (r) {
+        alert(r.message);
+        if (r.success) location.reload();
+    });
+});
+$('.btn-reject').on('click', function () {
+    const id = $(this).data('id');
+    const reason = prompt('Reason for rejection?');
+    if (reason === null) return;
+    $.post('@Url.Action("Reject")', { id: id, reason: reason, __RequestVerificationToken: token }, function (r) {
+        alert(r.message);
+        if (r.success) location.reload();
+    });
+});
+
+// Admin Add Payment modal submit
+// Admin Add Payment modal: live summary when a request is picked
+(function () {
+    const sel  = document.getElementById('adminPaySelectReq');
+    const box  = document.getElementById('adminPayReqSummary');
+    const amt  = document.getElementById('adminPayAmount');
+    const hint = document.getElementById('adminPayAmountHint');
+    if (!sel || !box) return;
+
+    function fmt(n) { return '₹' + Number(n || 0).toLocaleString('en-IN'); }
+
+    sel.addEventListener('change', function () {
+        const opt = sel.options[sel.selectedIndex];
+        if (!opt || !opt.value) { box.style.display = 'none'; return; }
+
+        const total = parseFloat(opt.dataset.total || '0');
+        const paid  = parseFloat(opt.dataset.paid  || '0');
+        const due   = parseFloat(opt.dataset.due   || '0');
+        const reqNo = opt.dataset.reqno || '';
+        const app   = opt.dataset.applicant || '';
+
+        document.getElementById('apSumReq').textContent  = `${reqNo} — ${app}`;
+        document.getElementById('apSumTotal').textContent = fmt(total);
+        document.getElementById('apSumPaid').textContent  = fmt(paid);
+        document.getElementById('apSumDue').textContent   = fmt(due);
+        box.style.display = '';
+
+        // Pre-fill the amount with the remaining due as a helpful default.
+        // Admin can override (this endpoint bypasses caps anyway).
+        if (amt && (!amt.value || parseFloat(amt.value) === 0)) {
+            amt.value = due > 0 ? due : '';
+        }
+        if (hint) {
+            hint.textContent = due > 0
+                ? `Suggested: ₹${due.toLocaleString('en-IN')} (remaining due). Admin can enter any amount — caps don't apply.`
+                : 'This project is fully paid. You can still record an over-payment if needed.';
+        }
+    });
+})();
+
+$('#adminAddPaymentForm').on('submit', function (e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    fetch('@Url.Action("AddByAdmin")', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(d => {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: d.success ? 'success' : 'error',
+                    title: d.success ? 'Saved' : 'Failed',
+                    text: d.message || '',
+                    background: '#ffffff', color: '#1f2937', confirmButtonColor: '#16a34a'
+                }).then(() => { if (d.success) location.reload(); });
+            } else {
+                alert(d.message || (d.success ? 'Saved' : 'Failed'));
+                if (d.success) location.reload();
+            }
+        })
+        .catch(err => alert('Network error: ' + err.message));
+});
+</script>
+}

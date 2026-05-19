@@ -1,0 +1,22 @@
+@{
+    ViewData["Title"] = "Access Denied";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+<div class="auth-card">
+    <div class="auth-logo">
+        <div class="brand-logo-lg">🚫</div>
+        <h1 class="auth-title">ACCESS DENIED</h1>
+        <p class="auth-sub">You don't have permission to access this resource</p>
+    </div>
+
+    <div class="alert alert-w">
+        <span class="ai">⚠</span> You need appropriate permissions to view this page.
+    </div>
+
+    <div style="text-align:center;margin-top:20px">
+        <a asp-action="Index" asp-controller="Dashboard" asp-area="@(User.IsInRole("Admin") ? "Admin" : "User")" class="btn btn-p">
+            🏠 Go to Dashboard
+        </a>
+    </div>
+</div>

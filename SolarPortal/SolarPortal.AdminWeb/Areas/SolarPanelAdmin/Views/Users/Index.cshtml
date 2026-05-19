@@ -1,0 +1,117 @@
+@model IEnumerable<SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.UsersController.UserRow>
+@{
+    ViewData["Title"] = "User Management";
+    var filter = ViewBag.Filter as string ?? "all";
+    var pendingCount = (int)(ViewBag.PendingCount ?? 0);
+}
+
+<div class="page-header" style="padding:16px">
+    <h2>User Management</h2>
+    <p class="text-muted">Approve new registrations, manage user status.</p>
+</div>
+
+<div class="container-fluid">
+    <div class="mb-3">
+        <a class="btn @(filter == "all" ? "btn-primary" : "btn-outline-primary")" asp-route-filter="all">All</a>
+        <a class="btn @(filter == "pending" ? "btn-warning" : "btn-outline-warning")" asp-route-filter="pending">
+            Pending @if (pendingCount > 0) { <span class="badge bg-danger">@pendingCount</span> }
+        </a>
+        <a class="btn @(filter == "active" ? "btn-success" : "btn-outline-success")" asp-route-filter="active">Active</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Mobile</th>
+                        <th>City/State</th>
+                        <th>Roles</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var row in Model)
+                {
+                    <tr id="row-@row.User.Id">
+                        <td>
+                            <strong>@row.User.FullName</strong>
+                            @if (!string.IsNullOrEmpty(row.User.FatherName))
+                            {
+                                <br /><small class="text-muted">S/o @row.User.FatherName</small>
+                            }
+                        </td>
+                        <td>@row.User.Email</td>
+                        <td>@row.User.MobileNumber</td>
+                        <td>@row.User.City, @row.User.State</td>
+                        <td><span class="badge bg-info">@row.Roles</span></td>
+                        <td>
+                            @if (row.User.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning">Pending</span>
+                            }
+                        </td>
+                        <td>@row.User.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                        <td>
+                            @if (!row.User.IsActive)
+                            {
+                                <button class="btn btn-sm btn-success btn-approve" data-id="@row.User.Id">Approve</button>
+                                <button class="btn btn-sm btn-danger btn-reject" data-id="@row.User.Id">Reject</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-secondary btn-toggle" data-id="@row.User.Id">Deactivate</button>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="8" class="text-center text-muted py-3">No users to show.</td></tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+const token = $('input[name="__RequestVerificationToken"]').val();
+
+$('.btn-approve').on('click', function () {
+    const id = $(this).data('id');
+    $.post('@Url.Action("Approve")', { id: id, __RequestVerificationToken: token }, function (r) {
+        alert(r.message);
+        if (r.success) location.reload();
+    });
+});
+$('.btn-reject').on('click', function () {
+    const id = $(this).data('id');
+    const reason = prompt('Reason for rejection?');
+    if (reason === null) return;
+    $.post('@Url.Action("Reject")', { id: id, reason: reason, __RequestVerificationToken: token }, function (r) {
+        alert(r.message);
+        if (r.success) location.reload();
+    });
+});
+$('.btn-toggle').on('click', function () {
+    const id = $(this).data('id');
+    if (!confirm('Toggle active status?')) return;
+    $.post('@Url.Action("ToggleActive")', { id: id, __RequestVerificationToken: token }, function (r) {
+        alert(r.message);
+        if (r.success) location.reload();
+    });
+});
+</script>
+}

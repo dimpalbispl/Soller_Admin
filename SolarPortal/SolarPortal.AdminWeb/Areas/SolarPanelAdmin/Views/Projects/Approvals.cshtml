@@ -1,0 +1,66 @@
+﻿@model IEnumerable<SolarRequestDto>
+@{
+    ViewData["Title"] = "Pending Approvals";
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Approvals</span></div>
+        <div class="ph-title">✅ Pending Approvals</div>
+        <div class="ph-sub">Review and approve/reject incoming solar connection requests</div>
+    </div>
+
+    <div class="card">
+        <div class="ct"><span class="ct-dot"></span>Requests Awaiting Approval (@Model.Count())</div>
+        <div class="tbl-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Request No.</th>
+                        <th>Applicant</th>
+                        <th>Mobile</th>
+                        <th>Type</th>
+                        <th>kV</th>
+                        <th>Plan</th>
+                        <th>Applied On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td class="td-b">
+                                <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Details"
+                                   asp-route-id="@r.Id" style="color:var(--sun)">@r.RequestNumber</a>
+                            </td>
+                            <td>@r.ApplicantName</td>
+                            <td>@r.MobileNumber</td>
+                            <td>@r.ConnectionType</td>
+                            <td>@r.KVCapacity</td>
+                            <td>@r.SelectedPlan</td>
+                            <td>@r.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td>
+                                <button class="btn btn-g btn-sm" onclick="approveRequest(@r.Id)">
+                                    ✓ Approve
+                                </button>
+                                <button class="btn btn-d btn-sm" onclick="rejectRequest(@r.Id)"
+                                        style="margin-left:4px">
+                                    ✕ Reject
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="8" style="text-align:center;padding:30px;color:var(--text3)">
+                                🎉 No pending approvals!
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,113 @@
+@model IEnumerable<SolarPortal.Application.DTOs.SolarProjectDto>
+@{
+    ViewData["Title"] = "Solar Projects";
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Solar Projects</span></div>
+        <div class="ph-title">☀️ Solar Project Master</div>
+        <div class="ph-sub">Define solar product plans (Solar Type, BV, fees, total amount)</div>
+    </div>
+
+    <div class="btn-row" style="margin-bottom:16px">
+        <a asp-area="SolarPanelAdmin" asp-controller="SolarProjects" asp-action="Create" class="btn btn-p">
+            ➕ Add Solar Project
+        </a>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>All Solar Projects (@Model.Count())</div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Solar Type</th>
+                            <th>Connection</th>
+                            <th>BV</th>
+                            <th>Final BV</th>
+                            <th>Discom</th>
+                            <th>Deal Close</th>
+                            <th>SCZ</th>
+                            <th>Sportain</th>
+                            <th>Total (Internal)</th>
+                            <th>Project Amount (User)</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model)
+                        {
+                            <tr>
+                                <td class="td-b">@p.Name</td>
+                                <td>@p.SolarTypeKV kV</td>
+                                <td>@p.ConnectionType</td>
+                                <td>@p.BV</td>
+                                <td>@p.FinalBV</td>
+                                <td>₹@p.DiscomWork.ToString("N0")</td>
+                                <td>₹@p.DealClose.ToString("N0")</td>
+                                <td>₹@p.SCZMenue.ToString("N0")</td>
+                                <td>₹@p.SportainTeam.ToString("N0")</td>
+                                <td style="color:#94a3b8">₹@p.TotalAmount.ToString("N0")</td>
+                                <td style="color:var(--sun);font-weight:600">₹@p.ProjectAmount.ToString("N0")</td>
+                                <td>
+                                    <span class="sts @(p.IsActive ? "sts-act" : "sts-pend")">
+                                        @(p.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-s btn-sm" onclick="toggleActive(@p.Id)">
+                                        @(p.IsActive ? "🔴 Disable" : "🟢 Enable")
+                                    </button>
+                                    <button class="btn btn-d btn-sm" onclick="deleteProject(@p.Id)" style="margin-left:4px">🗑️</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>No Solar Projects</div>
+            <div style="text-align:center;padding:40px;color:var(--text3)">
+                <div style="font-size:48px;margin-bottom:16px">☀️</div>
+                <div style="font-size:18px;margin-bottom:8px">No solar projects defined yet</div>
+                <a asp-area="SolarPanelAdmin" asp-controller="SolarProjects" asp-action="Create" class="btn btn-p" style="margin-top:16px">
+                    ➕ Add First Project
+                </a>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function toggleActive(id) {
+            const fd = new FormData();
+            fd.append('id', id);
+            const t = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (t) fd.append('__RequestVerificationToken', t.value);
+            fetch('/SolarPanelAdmin/SolarProjects/ToggleActive', { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(d => { if (d.success) location.reload(); else showError(d.message || 'Failed'); });
+        }
+        function deleteProject(id) {
+            showConfirm('Delete this solar project?', () => {
+                const fd = new FormData();
+                fd.append('id', id);
+                const t = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (t) fd.append('__RequestVerificationToken', t.value);
+                fetch('/SolarPanelAdmin/SolarProjects/Delete', { method: 'POST', body: fd })
+                    .then(r => r.json())
+                    .then(d => { if (d.success) location.reload(); else showError(d.message || 'Failed'); });
+            });
+        }
+    </script>
+}

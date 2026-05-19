@@ -1,0 +1,37 @@
+﻿@model int
+@{
+    var currentStage = Model;
+    // Stage numbers must match ProjectStatus enum int values.
+    // SiteSurvey (6) is intentionally skipped — feature on hold.
+    var stages = new[]
+    {
+        (1, "✅", "Registration", "Customer verified & registered"),
+        (2, "💳", "Product Selection", "Choose plan & connection type"),
+        (3, "💰", "Payment", "Submit payment & receipt"),
+        (4, "🗺️", "PM Survey", "Pre-meter survey by team"),
+        (5, "⚡", "Meter Dispatch", "Admin dispatching meter"),
+        (7, "📦", "Material Dispatch", "Solar panels & equipment"),
+        (8, "🔧", "Installation", "Physical installation"),
+        (9, "📄", "DCR Update", "Documentation & closure"),
+    };
+}
+
+<div class="flow">
+    @foreach (var (stageNum, icon, title, desc) in stages)
+    {
+        string iconClass = stageNum < currentStage ? "done"
+        : stageNum == currentStage ? "cur"
+        : "pend";
+        <div class="fstep">
+            <div class="ficon @iconClass">@(stageNum < currentStage ? "✅" : icon)</div>
+            <div class="finfo">
+                <div class="ftitle">@title</div>
+                <div class="fdesc">@(stageNum < currentStage ? "Completed" : stageNum == currentStage ? desc : "Pending")</div>
+                @if (stageNum == currentStage)
+                {
+                    <div class="fnote">⚡ Current Stage</div>
+                }
+            </div>
+        </div>
+    }
+</div>

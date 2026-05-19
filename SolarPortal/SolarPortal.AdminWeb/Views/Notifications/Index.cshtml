@@ -1,0 +1,141 @@
+@model IEnumerable<SolarPortal.Application.DTOs.NotificationDto>
+@{
+    ViewData["Title"] = "Notifications";
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">@(User.IsInRole("Admin") ? "🛡️ Admin" : "👤 User") / <span>Notifications</span></div>
+        <div class="ph-title">🔔 Notifications</div>
+        <div class="ph-sub">Stay updated with your solar project notifications</div>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>All Notifications</div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Title</th>
+                            <th>Message</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var notification in Model.OrderByDescending(n => n.CreatedAt))
+                        {
+                            <tr class="@(notification.IsRead ? "" : "unread-notification")">
+                                <td>
+                                    <span class="notif-type @GetTypeClass(notification.NotificationType)">
+                                        @GetTypeIcon(notification.NotificationType)
+                                    </span>
+                                </td>
+                                <td class="td-b">@notification.Title</td>
+                                <td>@notification.Message</td>
+                                <td>@notification.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    @if (notification.IsRead)
+                                    {
+                                        <span class="sts sts-act">Read</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="sts sts-pend">Unread</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!notification.IsRead)
+                                    {
+                                        <button class="btn btn-sm btn-p" onclick="markAsRead(@notification.Id)">
+                                            Mark Read
+                                        </button>
+                                    }
+                                    @if (notification.SolarRequestId.HasValue)
+                                    {
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Details"
+                                               asp-route-id="@notification.SolarRequestId"
+                                               class="btn btn-sm btn-s" style="margin-left:4px">
+                                                View Project
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a asp-area="SolarPanelUserPanel" asp-controller="SolarRequest" asp-action="Details"
+                                               asp-route-id="@notification.SolarRequestId"
+                                               class="btn btn-sm btn-s" style="margin-left:4px">
+                                                View Project
+                                            </a>
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>No Notifications</div>
+            <div style="text-align:center;padding:40px;color:var(--text3)">
+                <div style="font-size:48px;margin-bottom:16px">🔔</div>
+                <div style="font-size:18px;margin-bottom:8px">No notifications yet</div>
+                <div>You'll receive notifications about your solar projects here.</div>
+            </div>
+        </div>
+    }
+</div>
+
+@functions {
+    string GetTypeClass(string? type) => type?.ToLower() switch
+    {
+        "approval" => "notif-approval",
+        "payment" => "notif-payment",
+        "status" => "notif-status",
+        "document" => "notif-document",
+        _ => "notif-general"
+    };
+
+    string GetTypeIcon(string? type) => type?.ToLower() switch
+    {
+        "approval" => "✅",
+        "payment" => "💰",
+        "status" => "📊",
+        "document" => "📄",
+        _ => "🔔"
+    };
+}
+
+@section Scripts {
+    <script>
+        async function markAsRead(id) {
+            try {
+                const response = await fetch('/Notifications/MarkRead', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify({ id: id })
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    Swal.fire('Error', 'Failed to mark notification as read', 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'An error occurred', 'error');
+            }
+        }
+    </script>
+}

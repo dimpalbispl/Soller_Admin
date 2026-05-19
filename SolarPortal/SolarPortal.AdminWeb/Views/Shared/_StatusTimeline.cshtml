@@ -1,0 +1,99 @@
+@model SolarPortal.Application.DTOs.SolarRequestDto?
+@{
+    if (Model == null) { return; }
+
+    // Spec-ordered workflow steps (independent of enum integer ordering)
+    var steps = new (string Label, SolarPortal.Domain.Enums.ProjectStatus Stage, string Icon)[]
+    {
+        ("Registration",          SolarPortal.Domain.Enums.ProjectStatus.Registration,     "📝"),
+        ("Solar Request & Payment", SolarPortal.Domain.Enums.ProjectStatus.Payment,        "💰"),
+        ("PM Surya Ghar",         SolarPortal.Domain.Enums.ProjectStatus.PMSurvey,         "📋"),
+        ("Meter Dispatch",        SolarPortal.Domain.Enums.ProjectStatus.MeterDispatch,    "⚡"),
+        ("Site Survey",           SolarPortal.Domain.Enums.ProjectStatus.SiteSurvey,       "📐"),
+        ("Material Dispatch",     SolarPortal.Domain.Enums.ProjectStatus.MaterialDispatch, "📦"),
+        ("Installation",          SolarPortal.Domain.Enums.ProjectStatus.Installation,     "🔧"),
+        ("DCR",                   SolarPortal.Domain.Enums.ProjectStatus.DCRUpdate,        "📄"),
+        ("Completion",            SolarPortal.Domain.Enums.ProjectStatus.Completed,        "✅"),
+    };
+
+    // Determine the spec-order index for the current stage
+    // Treat ProductSelection as the same combined step as Payment for timeline purposes.
+    // Internally they remain distinct enum values; only the visual maps both to one step.
+    var effectiveStage = Model.CurrentStage == SolarPortal.Domain.Enums.ProjectStatus.ProductSelection
+        ? SolarPortal.Domain.Enums.ProjectStatus.Payment
+        : Model.CurrentStage;
+
+    int currentIdx = -1;
+    for (int i = 0; i < steps.Length; i++)
+        if (steps[i].Stage == effectiveStage) { currentIdx = i; break; }
+
+    // Commercial connections skip DCR — collapse the timeline
+    var isDomestic = Model.ConnectionType == SolarPortal.Domain.Enums.ConnectionType.Domestic;
+    var visibleSteps = isDomestic ? steps : steps.Where(s => s.Stage != SolarPortal.Domain.Enums.ProjectStatus.DCRUpdate).ToArray();
+
+    int visibleCurrentIdx = -1;
+    for (int i = 0; i < visibleSteps.Length; i++)
+        if (visibleSteps[i].Stage == effectiveStage) { visibleCurrentIdx = i; break; }
+
+    var progress = visibleCurrentIdx < 0 ? 0 : (int)Math.Round((visibleCurrentIdx + 1) * 100.0 / visibleSteps.Length);
+}
+
+<div class="timeline-card" style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:16px">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="mb-0">@Model.RequestNumber · @Model.SelectedPlan</h5>
+            <small class="text-muted">@Model.ApplicantName · @(isDomestic ? "Domestic" : "Commercial")</small>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-@(Model.ApprovalStatus == SolarPortal.Domain.Enums.ApprovalStatus.Approved ? "success" : Model.ApprovalStatus == SolarPortal.Domain.Enums.ApprovalStatus.Rejected ? "danger" : "warning") px-3 py-2">
+                @Model.ApprovalStatus
+            </span>
+        </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress mb-4" style="height:24px;border-radius:12px">
+        <div class="progress-bar bg-success" role="progressbar" style="width:@(progress)%">
+            @progress% Complete
+        </div>
+    </div>
+
+    <!-- Step list -->
+    <div class="timeline-steps">
+        @{
+            // When the project is fully Completed, treat the last step as Done too
+            var isFullyComplete = Model.CurrentStage == SolarPortal.Domain.Enums.ProjectStatus.Completed;
+        }
+        @for (int i = 0; i < visibleSteps.Length; i++)
+        {
+            var step = visibleSteps[i];
+            var isDone = i < visibleCurrentIdx || (isFullyComplete && i == visibleCurrentIdx);
+            var isCurrent = !isFullyComplete && i == visibleCurrentIdx;
+            var isPending = i > visibleCurrentIdx;
+            var color = isDone ? "#10b981" : isCurrent ? "#f59e0b" : "#d1d5db";
+            var bgColor = isDone ? "#d1fae5" : isCurrent ? "#fef3c7" : "#f3f4f6";
+
+            <div class="timeline-step d-flex align-items-center mb-3" style="gap:14px">
+                <div style="width:48px;height:48px;border-radius:50%;background:@bgColor;color:@color;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:bold;flex-shrink:0;border:3px solid @color">
+                    @if (isDone) { <span>✓</span> }
+                    else if (isCurrent) { <span>@step.Icon</span> }
+                    else { <span style="opacity:0.5">@step.Icon</span> }
+                </div>
+                <div style="flex:1">
+                    <div style="font-weight:@(isCurrent ? "600" : "500");color:@(isPending ? "#9ca3af" : "#222")">
+                        @step.Label
+                    </div>
+                    <small class="text-muted">
+                        @if (isDone) { <span>Completed</span> }
+                        else if (isCurrent) { <span>In progress</span> }
+                        else { <span>Pending</span> }
+                    </small>
+                </div>
+                @if (i < visibleSteps.Length - 1)
+                {
+                    <div style="position:absolute;margin-left:23px;margin-top:48px;width:2px;height:24px;background:@(isDone ? "#10b981" : "#d1d5db")"></div>
+                }
+            </div>
+        }
+    </div>
+</div>

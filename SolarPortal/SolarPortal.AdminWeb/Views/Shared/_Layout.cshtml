@@ -1,0 +1,97 @@
+@using Microsoft.AspNetCore.Identity
+@using SolarPortal.Domain.Entities
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+
+@{
+    var user = await UserManager.GetUserAsync(User);
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+    var isInstaller = User.IsInRole("Installer");
+    var roleLabel = isAdmin ? "Admin" : isInstaller ? "Installer" : "User";
+    var area = ViewContext.RouteData.Values["area"]?.ToString();
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — Solar Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/solar-theme.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body data-role="@roleLabel">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <div class="brand">
+            <div class="brand-logo">☀️</div>
+            <span class="brand-name">SOLAR PORTAL</span>
+            <span class="brand-role">@roleLabel.ToUpper()</span>
+        </div>
+        <div class="top-right">
+            <span style="font-size:13px;color:var(--text2)">@user?.FullName</span>
+            <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" style="display:inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="top-btn">⬅ Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- LAYOUT -->
+    <div class="app-layout">
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <partial name="~/Views/Shared/_AdminSidebar.cshtml" />
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            @RenderBody()
+        </div>
+    </div>
+
+    <!-- MOBILE NAV -->
+    <div class="mob-nav">
+        <div class="mob-nav-inner">
+            <div class="mni" onclick="location.href='@Url.Action("Index","Dashboard",new{area="SolarPanelAdmin"})'">
+                <span class="mi2">📊</span><span class="ml2">Dashboard</span>
+            </div>
+            <div class="mni" onclick="location.href='@Url.Action("Index","Projects",new{area="SolarPanelAdmin"})'">
+                <span class="mi2">🏗️</span><span class="ml2">Projects</span>
+            </div>
+            <div class="mni" onclick="location.href='@Url.Action("Index","PMSurya",new{area="SolarPanelAdmin"})'">
+                <span class="mi2">📋</span><span class="ml2">PM Surya</span>
+            </div>
+            <div class="mni" onclick="location.href='@Url.Action("Index","Workers",new{area="SolarPanelAdmin"})'">
+                <span class="mi2">👷</span><span class="ml2">Workers</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.5/sweetalert2.all.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/solar-portal.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        // Reskin the SweetAlert modals to match the light theme
+        if (typeof Swal !== 'undefined') {
+            const _origFire = Swal.fire.bind(Swal);
+            Swal.fire = function (opts, ...rest) {
+                if (typeof opts === 'object' && opts !== null) {
+                    opts.background = opts.background || '#ffffff';
+                    opts.color      = opts.color      || '#1f2937';
+                }
+                return _origFire(opts, ...rest);
+            };
+        }
+    </script>
+    <partial name="_Toasts" />
+</body>
+</html>

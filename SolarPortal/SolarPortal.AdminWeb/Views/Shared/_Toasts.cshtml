@@ -1,0 +1,105 @@
+@*
+    Global toast renderer.
+    Reads TempData["Success" | "Error" | "Warning" | "Info"] and emits
+    SweetAlert2 toasts on page load. Also handles serverside ModelState
+    errors so form validation failures show as toasts too.
+
+    Include in _Layout.cshtml AFTER SweetAlert2 script is loaded:
+        <partial name="_Toasts" />
+*@
+@{
+    var success = TempData["Success"] as string;
+    var error   = TempData["Error"]   as string;
+    var warning = TempData["Warning"] as string;
+    var info    = TempData["Info"]    as string;
+
+    // Collect model errors that weren't already shown as inline messages
+    var modelErrors = ViewData.ModelState
+        .SelectMany(kv => kv.Value!.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(m => !string.IsNullOrWhiteSpace(m))
+        .Distinct()
+        .ToList();
+}
+
+<script>
+(function () {
+    if (typeof Swal === 'undefined') return;
+
+    // Reusable toast factory
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+        showCloseButton: true,
+        didOpen: (el) => {
+            el.addEventListener('mouseenter', Swal.stopTimer);
+            el.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+
+    // Expose globally so any page or AJAX handler can use it
+    window.SolarToast = {
+        success: (msg)  => Toast.fire({ icon: 'success',  title: msg }),
+        error:   (msg)  => Toast.fire({ icon: 'error',    title: msg, timer: 6000 }),
+        warning: (msg)  => Toast.fire({ icon: 'warning',  title: msg }),
+        info:    (msg)  => Toast.fire({ icon: 'info',     title: msg })
+    };
+
+    // Render server-side messages (TempData)
+    @if (!string.IsNullOrEmpty(success))
+    {
+        <text>SolarToast.success(@Json.Serialize(success));</text>
+    }
+    @if (!string.IsNullOrEmpty(error))
+    {
+        <text>SolarToast.error(@Json.Serialize(error));</text>
+    }
+    @if (!string.IsNullOrEmpty(warning))
+    {
+        <text>SolarToast.warning(@Json.Serialize(warning));</text>
+    }
+    @if (!string.IsNullOrEmpty(info))
+    {
+        <text>SolarToast.info(@Json.Serialize(info));</text>
+    }
+
+    // Render ModelState errors (only on the page where they exist)
+    @if (modelErrors.Any())
+    {
+        <text>
+        var errs = @Json.Serialize(modelErrors);
+        errs.forEach(function (m, idx) {
+            setTimeout(function () { SolarToast.error(m); }, idx * 300);
+        });
+        </text>
+    }
+
+    // ─── jQuery AJAX integration ──────────────────────────────────────
+    // Any controller JSON response shaped like { success: true, message: '...' }
+    // automatically becomes a toast — no per-page wiring needed.
+    if (typeof jQuery !== 'undefined') {
+        $(document).ajaxSuccess(function (event, xhr, settings) {
+            try {
+                if (xhr.responseJSON && typeof xhr.responseJSON === 'object') {
+                    var r = xhr.responseJSON;
+                    if (r.message) {
+                        if (r.success === true)  SolarToast.success(r.message);
+                        else if (r.success === false) SolarToast.error(r.message);
+                    }
+                }
+            } catch (e) { /* ignore parse failures */ }
+        });
+        $(document).ajaxError(function (event, xhr) {
+            var msg = 'Something went wrong.';
+            try {
+                if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                else if (xhr.statusText) msg = xhr.statusText;
+            } catch (e) { /* ignore */ }
+            SolarToast.error(msg);
+        });
+    }
+})();
+</script>

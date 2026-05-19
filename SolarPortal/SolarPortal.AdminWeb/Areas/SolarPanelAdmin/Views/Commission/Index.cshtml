@@ -1,0 +1,66 @@
+@model IEnumerable<SolarPortal.Domain.Entities.Commission>
+@{
+    ViewData["Title"] = "INC Commission";
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>INC Commission</span></div>
+        <div class="ph-title">📈 Installer Commission</div>
+        <div class="ph-sub">Track and manage commissions for completed projects</div>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Commission Records (@Model.Count())</div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Project Amount</th>
+                            <th>%</th>
+                            <th>Commission</th>
+                            <th>Status</th>
+                            <th>Paid On</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model)
+                        {
+                            <tr>
+                                <td class="td-b">#@c.SolarRequestId</td>
+                                <td>₹@c.ProjectAmount.ToString("N0")</td>
+                                <td>@c.CommissionPercentage%</td>
+                                <td style="color:var(--sun)">₹@c.CommissionAmount.ToString("N0")</td>
+                                <td>
+                                    @if (c.IsPaid)
+                                    {
+                                        <span class="sts sts-act">Paid</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="sts sts-pend">Pending</span>
+                                    }
+                                </td>
+                                <td>@(c.PaidAt?.ToString("dd MMM yyyy") ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>No Commissions</div>
+            <div style="text-align:center;padding:40px;color:var(--text3)">
+                <div style="font-size:48px;margin-bottom:16px">📈</div>
+                <div style="font-size:18px;margin-bottom:8px">No commissions to display</div>
+                <div>Commissions will appear here once projects are completed.</div>
+            </div>
+        </div>
+    }
+</div>

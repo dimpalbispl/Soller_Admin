@@ -1,0 +1,136 @@
+@model SolarPortal.Application.DTOs.CreateSolarProjectDto
+@{
+    ViewData["Title"] = "Add Solar Project";
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">
+            🛡️ Admin /
+            <a asp-area="SolarPanelAdmin" asp-controller="SolarProjects" asp-action="Index" style="color:var(--sun)">Solar Projects</a> /
+            <span>Add</span>
+        </div>
+        <div class="ph-title">➕ Add Solar Project</div>
+        <div class="ph-sub">Define a product plan with all fees and final amount</div>
+    </div>
+
+    <div class="card" style="max-width:760px;margin:0 auto">
+        <div class="ct"><span class="ct-dot"></span>Solar Project Details</div>
+
+        <form asp-area="SolarPanelAdmin" asp-controller="SolarProjects" asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-e"></div>
+
+            <div class="fg">
+                <label asp-for="Name">Project Name <span class="req">*</span></label>
+                <input asp-for="Name" placeholder="e.g. Plan A — 1.1 kV Domestic" required />
+                <span asp-validation-for="Name" class="hint" style="color:var(--danger)"></span>
+            </div>
+
+            <div class="fr">
+                <div class="fg">
+                    <label asp-for="SolarTypeKV">Solar Type <span class="req">*</span></label>
+                    <select asp-for="SolarTypeKV" required>
+                        <option value="1.1">1.1 kV</option>
+                        <option value="3">3 kV</option>
+                        <option value="5">5 kV</option>
+                        <option value="10">10 kV</option>
+                    </select>
+                </div>
+                <div class="fg">
+                    <label asp-for="ConnectionType">Connection Type <span class="req">*</span></label>
+                    <select asp-for="ConnectionType" required>
+                        <option value="1">Domestic</option>
+                        <option value="2">Commercial</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="fr">
+                <div class="fg">
+                    <label asp-for="BV">BV (Default 100)</label>
+                    <input asp-for="BV" type="number" value="100" />
+                </div>
+                <div class="fg">
+                    <label asp-for="FinalBV">Final BV <span class="req">*</span></label>
+                    <input asp-for="FinalBV" type="number" placeholder="110 / 175" required />
+                </div>
+            </div>
+
+            <div class="section-t" style="margin-top:14px">Fees Breakdown</div>
+
+            <div class="fr">
+                <div class="fg">
+                    <label asp-for="DiscomWork">Discom Work ₹</label>
+                    <div class="ig"><span class="ig-pre">₹</span>
+                        <input asp-for="DiscomWork" type="number" step="0.01" placeholder="1500" onchange="recalc()" />
+                    </div>
+                </div>
+                <div class="fg">
+                    <label asp-for="DealClose">Deal Close ₹</label>
+                    <div class="ig"><span class="ig-pre">₹</span>
+                        <input asp-for="DealClose" type="number" step="0.01" placeholder="1500" onchange="recalc()" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="fr">
+                <div class="fg">
+                    <label asp-for="SCZMenue">SCZ Menue ₹</label>
+                    <div class="ig"><span class="ig-pre">₹</span>
+                        <input asp-for="SCZMenue" type="number" step="0.01" placeholder="3000" onchange="recalc()" />
+                    </div>
+                </div>
+                <div class="fg">
+                    <label asp-for="SportainTeam">Sportain Team / Fix Sport ₹</label>
+                    <div class="ig"><span class="ig-pre">₹</span>
+                        <input asp-for="SportainTeam" type="number" step="0.01" placeholder="3000" onchange="recalc()" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="fg">
+                <label asp-for="TotalAmount">Total Amount (Sale Price) ₹ <span class="req">*</span></label>
+                <div class="ig"><span class="ig-pre">₹</span>
+                    <input asp-for="TotalAmount" id="totalAmount" type="number" step="0.01" placeholder="15900" required />
+                </div>
+                <div class="hint" id="sumHint">Sum of fees: ₹0. Internal only — not shown to user.</div>
+            </div>
+
+            <div class="fg">
+                <label asp-for="ProjectAmount" style="font-weight:600;color:#1f6e3e">Project Amount (Shown to User) ₹ <span class="req">*</span></label>
+                <div class="ig"><span class="ig-pre">₹</span>
+                    <input asp-for="ProjectAmount" type="number" step="0.01" placeholder="10000" required />
+                </div>
+                <div class="hint">This is the amount shown to users in the plan picker (e.g., 1 kW = ₹10,000).</div>
+            </div>
+
+            <div class="fg">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input asp-for="IsActive" type="checkbox" style="width:auto" checked />
+                    <span>Active (available for user selection)</span>
+                </label>
+            </div>
+
+            <div class="btn-row" style="margin-top:16px">
+                <a asp-area="SolarPanelAdmin" asp-controller="SolarProjects" asp-action="Index" class="btn btn-d">← Cancel</a>
+                <button type="submit" class="btn btn-p">✓ Create Project</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function recalc() {
+            const v = id => parseFloat(document.querySelector(`[name="${id}"]`)?.value || 0);
+            const total = v('DiscomWork') + v('DealClose') + v('SCZMenue') + v('SportainTeam');
+            const hint = document.getElementById('sumHint');
+            if (hint) hint.textContent = 'Sum of fees: ₹' + total.toLocaleString('en-IN');
+            const tot = document.getElementById('totalAmount');
+            if (tot && (!tot.value || parseFloat(tot.value) === 0)) tot.value = total;
+        }
+        document.addEventListener('DOMContentLoaded', recalc);
+    </script>
+}

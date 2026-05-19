@@ -1,0 +1,102 @@
+@model SolarPortal.Domain.Entities.SiteSurvey
+@{
+    ViewData["Title"] = "Site Survey Review";
+    var req = (SolarPortal.Domain.Entities.SolarRequest?)ViewBag.Request;
+    var files = (Model.SurveyPhotoPath ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries);
+}
+
+<div class="page-header" style="padding:16px">
+    <h2>Site Survey — @req?.RequestNumber</h2>
+    <p class="text-muted">Submitted @Model.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</p>
+</div>
+
+<div class="container-fluid">
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">Files</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                    @foreach (var f in files)
+                    {
+                        var isImg = f.EndsWith(".jpg") || f.EndsWith(".jpeg") || f.EndsWith(".png");
+                        <div class="col-md-4">
+                            <div class="card">
+                                @if (isImg)
+                                {
+                                    <img src="~/@f" class="card-img-top" style="height:200px; object-fit:cover" />
+                                }
+                                else
+                                {
+                                    <div style="height:200px;display:flex;align-items:center;justify-content:center;background:#f8f9fa">
+                                        <span style="font-size:48px">📄</span>
+                                    </div>
+                                }
+                                <div class="card-body p-2">
+                                    <a href="~/@f" target="_blank" class="btn btn-sm btn-outline-primary w-100">Open</a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (!files.Any())
+                    {
+                        <p class="text-muted">No files attached.</p>
+                    }
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.SurveyNotes))
+                    {
+                        <hr />
+                        <h6>Notes</h6>
+                        <pre style="white-space:pre-wrap">@Model.SurveyNotes</pre>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">Approve</div>
+                <div class="card-body">
+                    <textarea id="approveNotes" class="form-control mb-2" placeholder="Optional admin notes"></textarea>
+                    <button id="btnApprove" class="btn btn-success w-100">Approve & Move to Meter Dispatch</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header bg-danger text-white">Reject</div>
+                <div class="card-body">
+                    <textarea id="rejectReason" class="form-control mb-2" placeholder="Reason for rejection (required)"></textarea>
+                    <button id="btnReject" class="btn btn-danger w-100">Reject Survey</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+const token = $('input[name="__RequestVerificationToken"]').val();
+
+$('#btnApprove').on('click', function () {
+    if (!confirm('Approve this site survey?')) return;
+    $.post('@Url.Action("Approve")',
+        { surveyId: @Model.Id, notes: $('#approveNotes').val(), __RequestVerificationToken: token },
+        function (r) {
+            alert(r.message);
+            if (r.success) window.location.href = '@Url.Action("Index")';
+        });
+});
+
+$('#btnReject').on('click', function () {
+    const reason = $('#rejectReason').val();
+    if (!reason || !reason.trim()) { alert('Reason is required'); return; }
+    $.post('@Url.Action("Reject")',
+        { surveyId: @Model.Id, reason: reason, __RequestVerificationToken: token },
+        function (r) {
+            alert(r.message);
+            if (r.success) window.location.href = '@Url.Action("Index")';
+        });
+});
+</script>
+}

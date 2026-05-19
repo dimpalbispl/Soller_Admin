@@ -1,0 +1,67 @@
+@{
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    string IsActive(string ctrl) => currentController == ctrl ? "active" : "";
+}
+
+<div class="sb-section">
+    <div class="sb-label">Admin Menu</div>
+    <a class="sb-item @IsActive("Dashboard")" asp-area="SolarPanelAdmin" asp-controller="Dashboard" asp-action="Index">
+        <span class="sbi">📊</span>Dashboard
+    </a>
+    <a class="sb-item @IsActive("Projects")" asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Index">
+        <span class="sbi">🏗️</span>All Projects
+        <span class="sb-badge" id="total-badge">--</span>
+    </a>
+    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Approvals">
+        <span class="sbi">✅</span>Approvals
+        <span class="sb-badge red" id="approval-badge">--</span>
+    </a>
+</div>
+<div class="sb-section">
+    <div class="sb-label">Users & Payments</div>
+    <a class="sb-item @IsActive("Users")" asp-area="SolarPanelAdmin" asp-controller="Users" asp-action="Index">
+        <span class="sbi">👤</span>User Management
+    </a>
+    <a class="sb-item @IsActive("Payments")" asp-area="SolarPanelAdmin" asp-controller="Payments" asp-action="Index">
+        <span class="sbi">💰</span>Payment Verification
+    </a>
+</div>
+<div class="sb-section">
+    <div class="sb-label">Workflow</div>
+    <a class="sb-item @IsActive("PMSurya")" asp-area="SolarPanelAdmin" asp-controller="PMSurya" asp-action="Index">
+        <span class="sbi">📋</span>PM Surya Ghar
+    </a>
+    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="MeterDispatch">
+        <span class="sbi">⚡</span>Meter Dispatch
+    </a>
+    <a class="sb-item @IsActive("SiteSurvey")" asp-area="SolarPanelAdmin" asp-controller="SiteSurvey" asp-action="Index">
+        <span class="sbi">📐</span>Site Survey
+    </a>
+    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="MaterialDispatch">
+        <span class="sbi">📦</span>Material Dispatch
+    </a>
+    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="Installation">
+        <span class="sbi">🔧</span>Installation
+    </a>
+    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="DCRUpdate">
+        <span class="sbi">📄</span>DCR Verify
+    </a>
+</div>
+<div class="sb-section">
+    <div class="sb-label">Masters</div>
+    <a class="sb-item @IsActive("SolarProjects")" asp-area="SolarPanelAdmin" asp-controller="SolarProjects" asp-action="Index">
+        <span class="sbi">☀️</span>Solar Projects
+    </a>
+    <a class="sb-item @IsActive("Workers")" asp-area="SolarPanelAdmin" asp-controller="Workers" asp-action="Index">
+        <span class="sbi">👷</span>Installers (INC)
+    </a>
+</div>
+<div class="sb-section">
+    <div class="sb-label">Management</div>
+    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Commission" asp-action="Index">
+        <span class="sbi">📈</span>INC Commission
+    </a>
+    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Settings" asp-action="Index">
+        <span class="sbi">⚙️</span>Settings
+    </a>
+</div>

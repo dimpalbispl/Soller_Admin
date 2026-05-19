@@ -1,0 +1,28 @@
+@model ErrorViewModel
+@{
+    Layout = null;
+    var isAuthed = User?.Identity?.IsAuthenticated == true;
+    var target = isAuthed
+        ? Url.Action("Index", "Dashboard", new { area = "SolarPanelAdmin" })
+        : Url.Action("Login", "Account", new { area = "" });
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="refresh" content="0;url=@target" />
+    <title>Redirecting…</title>
+    <style>
+        body { margin:0; background:#f8fafc; font-family:system-ui,sans-serif; display:flex; align-items:center; justify-content:center; min-height:100vh; color:#64748b; }
+        .spin { width:36px; height:36px; border:3px solid #e2e8f0; border-top-color:#16a34a; border-radius:50%; animation:s 0.7s linear infinite; margin:0 auto 10px; }
+        @@keyframes s { to { transform:rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div style="text-align:center">
+        <div class="spin"></div>
+        <div>Redirecting…</div>
+    </div>
+    <script>setTimeout(function () { window.location.href = '@Html.Raw(target)'; }, 0);</script>
+</body>
+</html>

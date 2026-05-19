@@ -1,0 +1,96 @@
+@{
+    ViewData["Title"] = "PM Surya Ghar Review";
+    var req = (SolarPortal.Domain.Entities.SolarRequest)ViewBag.Request;
+    var docs = (IEnumerable<SolarPortal.Application.DTOs.PMDocumentDto>)ViewBag.Documents;
+}
+
+<div class="page-header" style="padding:16px">
+    <h2>PM Surya Ghar — @req.RequestNumber</h2>
+    <p class="text-muted">@req.ApplicantName · @req.MobileNumber · @req.City, @req.State</p>
+</div>
+
+<div class="container-fluid">
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">Uploaded Documents</div>
+                <div class="card-body">
+                    @if (!docs.Any())
+                    {
+                        <p class="text-muted">No documents uploaded yet.</p>
+                    }
+                    <table class="table">
+                        <thead>
+                            <tr><th>Type</th><th>File</th><th>Status</th><th>Remarks</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var d in docs)
+                        {
+                            <tr id="row-@d.Id">
+                                <td>@d.DocumentType</td>
+                                <td><a href="~/@d.FilePath" target="_blank">@d.FileName</a></td>
+                                <td>
+                                    <span class="badge bg-@(d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Approved ? "success" : d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Rejected ? "danger" : "warning")">
+                                        @d.Status
+                                    </span>
+                                </td>
+                                <td>@d.Remarks</td>
+                                <td>
+                                    @if (d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Pending)
+                                    {
+                                        <button class="btn btn-sm btn-success btn-approve" data-id="@d.Id">Approve</button>
+                                        <button class="btn btn-sm btn-danger btn-reject"   data-id="@d.Id">Reject</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">Approve & Advance</div>
+                <div class="card-body">
+                    <p>Once all documents are valid, approve the whole batch and move the project to <strong>Meter Dispatch</strong>.</p>
+                    <textarea id="advanceNotes" class="form-control mb-2" placeholder="Optional notes"></textarea>
+                    <button id="btnAdvance" class="btn btn-success w-100">Approve All & Move to Meter Dispatch</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+<script>
+const token = $('input[name="__RequestVerificationToken"]').val();
+
+$('.btn-approve').on('click', function () {
+    const id = $(this).data('id');
+    $.post('@Url.Action("ApproveDocument")', { docId: id, __RequestVerificationToken: token }, function (r) {
+        if (r.success) { alert(r.message); location.reload(); }
+    });
+});
+$('.btn-reject').on('click', function () {
+    const id = $(this).data('id');
+    const remarks = prompt('Rejection reason?');
+    if (remarks === null) return;
+    $.post('@Url.Action("RejectDocument")', { docId: id, remarks: remarks, __RequestVerificationToken: token }, function (r) {
+        if (r.success) { alert(r.message); location.reload(); }
+    });
+});
+
+$('#btnAdvance').on('click', function () {
+    if (!confirm('Approve all PM Surya Ghar docs and move this project to Meter Dispatch?')) return;
+    $.post('@Url.Action("ApproveAndAdvance")',
+        { requestId: @req.Id, notes: $('#advanceNotes').val(), __RequestVerificationToken: token },
+        function (r) {
+            alert(r.message);
+            if (r.success) window.location.href = '@Url.Action("Index")';
+        });
+});
+</script>
+}

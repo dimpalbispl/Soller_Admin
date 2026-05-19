@@ -1,0 +1,140 @@
+@model IEnumerable<SolarPortal.Application.DTOs.WorkerDto>
+@{
+    ViewData["Title"] = "Workers Management";
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Workers</span></div>
+        <div class="ph-title">👷 Workers Management</div>
+        <div class="ph-sub">Manage field workers and their assignments</div>
+    </div>
+
+    <div class="btn-row" style="margin-bottom:20px">
+        <a asp-controller="Workers" asp-action="Create" class="btn btn-p">
+            ➕ Add Worker
+        </a>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Active Workers (@Model.Count())</div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Mobile</th>
+                            <th>Type</th>
+                            <th>Specialization</th>
+                            <th>City</th>
+                            <th>Is Available</th>
+                            <th>Assignments</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var worker in Model)
+                        {
+                            <tr>
+                                <td class="td-b">@worker.Name</td>
+                                <td>@worker.MobileNumber</td>
+                                <td>
+                                    <span class="sts @(worker.Type == SolarPortal.Domain.Enums.WorkerType.INC ? "sts-inst" : "sts-disp")">
+                                        @worker.Type
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="chip chip-s">@worker.Specialization</span>
+                                </td>
+                                <td>@worker.City</td>
+                                <td>
+                                    <span class="sts @(worker.IsAvailable ? "sts-act" : "sts-pend")">
+                                        @(worker.IsAvailable ? "✓ Available" : "Busy")
+                                    </span>
+                                </td>
+                                <td style="text-align:center">@worker.AssignmentsCount</td>
+                                <td>
+                                    <button class="btn btn-s btn-sm" onclick="toggleAvailability(@worker.Id, @worker.IsAvailable.ToString().ToLower())">
+                                        @(worker.IsAvailable ? "🔴 Mark Busy" : "🟢 Mark Available")
+                                    </button>
+                                    <button class="btn btn-d btn-sm" onclick="deleteWorker(@worker.Id)" style="margin-left:4px">
+                                        🗑️
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>No Workers</div>
+            <div style="text-align:center;padding:40px;color:var(--text3)">
+                <div style="font-size:48px;margin-bottom:16px">👷</div>
+                <div style="font-size:18px;margin-bottom:8px">No workers registered</div>
+                <div>
+                    <a asp-controller="Workers" asp-action="Create" class="btn btn-p" style="margin-top:16px">
+                        ➕ Add First Worker
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function toggleAvailability(workerId, currentStatus) {
+            const newStatus = !JSON.parse(currentStatus);
+            fetch('/SolarPanelAdmin/Workers/ToggleAvailability', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify({ id: workerId })
+            }).then(r => r.json())
+                .then(d => {
+                    if (d.success) {
+                        Swal.fire('Success', 'Availability updated', 'success').then(() => location.reload());
+                    } else {
+                        Swal.fire('Error', 'Failed to update availability', 'error');
+                    }
+                });
+        }
+
+        function deleteWorker(workerId) {
+            Swal.fire({
+                title: 'Delete Worker?',
+                text: 'This action cannot be undone',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Delete',
+                cancelButtonText: 'Cancel'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    fetch('/SolarPanelAdmin/Workers/Delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                        },
+                        body: JSON.stringify({ id: workerId })
+                    }).then(r => r.json())
+                        .then(d => {
+                            if (d.success) {
+                                Swal.fire('Deleted', 'Worker deleted successfully', 'success').then(() => location.reload());
+                            } else {
+                                Swal.fire('Error', 'Failed to delete worker', 'error');
+                            }
+                        });
+                }
+            });
+        }
+    </script>
+}

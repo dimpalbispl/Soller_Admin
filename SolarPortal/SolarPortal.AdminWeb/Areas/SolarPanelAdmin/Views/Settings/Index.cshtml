@@ -1,0 +1,40 @@
+@{
+    ViewData["Title"] = "Settings";
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Settings</span></div>
+        <div class="ph-title">⚙️ Application Settings</div>
+        <div class="ph-sub">View and manage application configuration</div>
+    </div>
+
+    <div class="g2">
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>File Upload</div>
+            <div class="sr"><span class="srk">Max File Size</span><span class="srv">@ViewBag.MaxFileSizeMB MB</span></div>
+            <div class="sr"><span class="srk">Upload Path</span><span class="srv">@ViewBag.UploadPath</span></div>
+            <div class="sr"><span class="srk">Allowed Types</span><span class="srv">JPG, PNG, PDF</span></div>
+        </div>
+
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Identity</div>
+            <div class="sr"><span class="srk">Min Password Length</span><span class="srv">8</span></div>
+            <div class="sr"><span class="srk">Require Digit</span><span class="srv">Yes</span></div>
+            <div class="sr"><span class="srk">Require Uppercase</span><span class="srv">No</span></div>
+            <div class="sr"><span class="srk">Lockout</span><span class="srv">After 5 attempts</span></div>
+        </div>
+
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Database</div>
+            <div class="sr"><span class="srk">Provider</span><span class="srv">SQL Server</span></div>
+            <div class="sr"><span class="srk">Database</span><span class="srv">SolarPortalDb</span></div>
+        </div>
+
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Branding</div>
+            <div class="sr"><span class="srk">Brand Name</span><span class="srv">SOLAR PORTAL</span></div>
+            <div class="sr"><span class="srk">Theme</span><span class="srv">Dark / Solar Gold</span></div>
+        </div>
+    </div>
+</div>

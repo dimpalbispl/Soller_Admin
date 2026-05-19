@@ -1,0 +1,154 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+<div class="auth-card">
+    <div class="auth-logo">
+        <div class="brand-logo-lg">☀️</div>
+        <h1 class="auth-title">SOLAR PORTAL</h1>
+        <p class="auth-sub">Create your account</p>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-e">
+            <span class="ai">⚠</span> @TempData["Error"]
+        </div>
+    }
+
+    <form asp-action="Register" method="post" enctype="multipart/form-data" id="registerForm">
+        <div class="fg">
+            <label asp-for="FullName">Full Name</label>
+            <input asp-for="FullName" type="text" placeholder="Enter your full name" />
+            <span asp-validation-for="FullName" class="text-danger" style="font-size:11px"></span>
+        </div>
+        <div class="fg">
+            <label asp-for="FatherName">Father Name</label>
+            <input asp-for="FatherName" type="text" placeholder="Enter father's name" />
+            <span asp-validation-for="FatherName" class="text-danger" style="font-size:11px"></span>
+        </div>
+        <div class="fg">
+            <label asp-for="Email">Email Address</label>
+            <input asp-for="Email" type="email" placeholder="user@solarportal.com" autocomplete="email" />
+            <span asp-validation-for="Email" class="text-danger" style="font-size:11px"></span>
+        </div>
+        <div class="fg">
+            <label asp-for="MobileNumber">Mobile Number</label>
+            <input asp-for="MobileNumber" type="tel" placeholder="Enter mobile number" />
+            <span asp-validation-for="MobileNumber" class="text-danger" style="font-size:11px"></span>
+        </div>
+        <div class="fg">
+            <label asp-for="AadharNumber">Aadhaar Number</label>
+            <input asp-for="AadharNumber" type="text" placeholder="12-digit Aadhaar number" />
+            <span asp-validation-for="AadharNumber" class="text-danger" style="font-size:11px"></span>
+        </div>
+        <div class="fg">
+            <label asp-for="PANNumber">PAN Number</label>
+            <input asp-for="PANNumber" type="text" placeholder="ABCDE1234F" maxlength="10" style="text-transform:uppercase" />
+            <span asp-validation-for="PANNumber" class="text-danger" style="font-size:11px"></span>
+        </div>
+        <div class="fg">
+            <label asp-for="Address">Address</label>
+            <textarea asp-for="Address" rows="3" placeholder="Enter full address"></textarea>
+            <span asp-validation-for="Address" class="text-danger" style="font-size:11px"></span>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="fg">
+                    <label asp-for="City">City</label>
+                    <input asp-for="City" type="text" placeholder="Enter city" />
+                    <span asp-validation-for="City" class="text-danger" style="font-size:11px"></span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="fg">
+                    <label asp-for="State">State</label>
+                    <input asp-for="State" type="text" placeholder="Enter state" />
+                    <span asp-validation-for="State" class="text-danger" style="font-size:11px"></span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="fg">
+                    <label asp-for="PinCode">Pin Code</label>
+                    <input asp-for="PinCode" type="text" placeholder="Enter pin code" />
+                    <span asp-validation-for="PinCode" class="text-danger" style="font-size:11px"></span>
+                </div>
+            </div>
+        </div>
+        <div class="fg">
+            <label asp-for="Password">Password</label>
+            <input asp-for="Password" type="password" placeholder="Minimum 8 characters" />
+            <span asp-validation-for="Password" class="text-danger" style="font-size:11px"></span>
+        </div>
+        <div class="fg">
+            <label asp-for="ConfirmPassword">Confirm Password</label>
+            <input asp-for="ConfirmPassword" type="password" placeholder="Re-enter password" />
+            <span asp-validation-for="ConfirmPassword" class="text-danger" style="font-size:11px"></span>
+        </div>
+
+        <h5 class="mt-4 mb-3">Document Uploads</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="fg">
+                    <label asp-for="AadharCard">Aadhaar Card</label>
+                    <input asp-for="AadharCard" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                    <small class="text-muted">Upload PDF/JPG/PNG</small>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="fg">
+                    <label asp-for="PANCard">PAN Card</label>
+                    <input asp-for="PANCard" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                    <small class="text-muted">Upload PDF/JPG/PNG</small>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="fg">
+                    <label asp-for="BankPassbook">Bank Passbook</label>
+                    <input asp-for="BankPassbook" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                    <small class="text-muted">Upload PDF/JPG/PNG</small>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="fg">
+                    <label asp-for="LightBill">Light Bill</label>
+                    <input asp-for="LightBill" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                    <small class="text-muted">Upload PDF/JPG/PNG</small>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="fg">
+                    <label asp-for="PropertyDocument">Property Document</label>
+                    <input asp-for="PropertyDocument" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                    <small class="text-muted">Upload PDF/JPG/PNG</small>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="fg">
+                    <label asp-for="GPSPhoto">GPS Photo</label>
+                    <input asp-for="GPSPhoto" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                    <small class="text-muted">Upload PDF/JPG/PNG</small>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-p btn-full" style="margin-top:4px">
+            ☀️ Create Account
+        </button>
+    </form>
+
+    <div style="text-align:center;margin-top:20px;font-size:13px;color:var(--text3)">
+        Already have an account?
+        <a asp-action="Login" style="color:var(--sun)">Sign in here</a>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

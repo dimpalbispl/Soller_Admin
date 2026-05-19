@@ -1,0 +1,356 @@
+@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
+@{
+    ViewData["Title"] = ViewBag.Title ?? "Operations";
+    var op = (string)(ViewBag.Op ?? "");           // meter | material | installation | dcr
+    var states = (List<string>)(ViewBag.States ?? new List<string>());
+    var workers = (List<SolarPortal.Domain.Entities.Worker>)(ViewBag.Workers ?? new List<SolarPortal.Domain.Entities.Worker>());
+    var filterState = (string?)ViewBag.FilterState;
+    var filterCity = (string?)ViewBag.FilterCity;
+    var titleLower = ((string)ViewBag.Title ?? "operations").ToLower();
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>@ViewBag.Title</span></div>
+        <div class="ph-title">@ViewBag.Title</div>
+        <div class="ph-sub">Manage @titleLower operations — filter, take action, advance stage</div>
+    </div>
+
+    @{
+        var opFilter = (ViewBag.Filter as string) ?? "pending";
+    }
+    <div class="mb-3" style="margin-bottom:10px">
+        <a class="btn @(opFilter == "pending" ? "btn-p btn-sm" : "btn-s btn-sm")"
+           asp-action="@op.Replace("meter","MeterDispatch").Replace("material","MaterialDispatch").Replace("installation","Installation").Replace("dcr","DCRUpdate")"
+           asp-route-state="@filterState" asp-route-city="@filterCity" asp-route-filter="pending">⏳ Pending</a>
+        <a class="btn @(opFilter == "all" ? "btn-p btn-sm" : "btn-s btn-sm")"
+           asp-action="@op.Replace("meter","MeterDispatch").Replace("material","MaterialDispatch").Replace("installation","Installation").Replace("dcr","DCRUpdate")"
+           asp-route-state="@filterState" asp-route-city="@filterCity" asp-route-filter="all">📋 All (history)</a>
+    </div>
+
+    <!-- Filter card -->
+    <div class="card" style="margin-bottom:14px">
+        <div class="ct"><span class="ct-dot"></span>Filter</div>
+        <form method="get">
+            <input type="hidden" name="filter" value="@opFilter" />
+            <div class="fr3">
+                <div class="fg">
+                    <label>State</label>
+                    <select name="state">
+                        <option value="">All States</option>
+                        @foreach (var s in states)
+                        {
+                            <option value="@s" selected="@(s == filterState)">@s</option>
+                        }
+                    </select>
+                </div>
+                <div class="fg">
+                    <label>City</label>
+                    <input type="text" name="city" value="@filterCity" placeholder="Filter by city" />
+                </div>
+                <div class="fg">
+                    <label>&nbsp;</label>
+                    <div style="display:flex;gap:8px">
+                        <button type="submit" class="btn btn-p btn-sm">🔍 Apply</button>
+                        <a href="?" class="btn btn-s btn-sm">Reset</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>@ViewBag.Title Queue (@Model.Count())</div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Request</th>
+                            <th>Applicant</th>
+                            <th>Type</th>
+                            <th>Capacity</th>
+                            <th>City / State</th>
+                            <th>Stage</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model)
+                        {
+                            <tr>
+                                <td class="td-b">
+                                    <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Details"
+                                       asp-route-id="@r.Id" style="color:var(--sun)">@r.RequestNumber</a>
+                                </td>
+                                <td>@r.ApplicantName<div style="font-size:11px;color:var(--text3)">@r.MobileNumber</div></td>
+                                <td>@r.ConnectionType</td>
+                                <td>@r.KVCapacity kV</td>
+                                <td>@r.City<div style="font-size:11px;color:var(--text3)">@r.State</div></td>
+                                <td>
+                                    <span class="sts sts-disp">@r.CurrentStage.ToString().Replace("_", " ")</span>
+                                </td>
+                                <td>
+                                    @{
+                                        // Map the page's "op" to the stage it acts on
+                                        var actStage =
+                                            op == "meter"        ? SolarPortal.Domain.Enums.ProjectStatus.MeterDispatch :
+                                            op == "material"     ? SolarPortal.Domain.Enums.ProjectStatus.MaterialDispatch :
+                                            op == "installation" ? SolarPortal.Domain.Enums.ProjectStatus.Installation :
+                                            op == "dcr"          ? SolarPortal.Domain.Enums.ProjectStatus.DCRUpdate :
+                                                                   SolarPortal.Domain.Enums.ProjectStatus.Registration;
+                                        var isActiveRow = r.CurrentStage == actStage;
+                                    }
+                                    @if (isActiveRow)
+                                    {
+                                        @switch (op)
+                                        {
+                                            case "meter":
+                                                <button class="btn btn-p btn-sm" onclick="openMeterForm(@r.Id, '@r.RequestNumber')">📦 Dispatch Meter</button>
+                                                break;
+                                            case "material":
+                                                <button class="btn btn-p btn-sm" onclick="openMaterialForm(@r.Id, '@r.RequestNumber')">📦 Dispatch Material</button>
+                                                break;
+                                            case "installation":
+                                                <button class="btn btn-p btn-sm" onclick="openInstallForm(@r.Id, '@r.RequestNumber')">🔧 Mark Installation</button>
+                                                break;
+                                            case "dcr":
+                                                <button class="btn btn-p btn-sm" onclick="openDCRForm(@r.Id, '@r.RequestNumber')">📄 Submit DCR</button>
+                                                break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="sts sts-act">✅ Processed</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>No @ViewBag.Title Queue</div>
+            <div style="text-align:center;padding:40px;color:var(--text3)">
+                <div style="font-size:48px;margin-bottom:16px">@GetEmptyIcon((string)ViewBag.Title)</div>
+                <div style="font-size:18px;margin-bottom:8px">No @titleLower pending</div>
+                <div>All eligible requests in the previous stage have been processed.</div>
+            </div>
+        </div>
+    }
+</div>
+
+@functions {
+    string GetEmptyIcon(string title) => title switch
+    {
+        "Meter Dispatch" => "📦",
+        "Material Dispatch" => "📦",
+        "Installation" => "🔧",
+        "DCR Update" => "📄",
+        _ => "📋"
+    };
+}
+
+@* Hidden CSRF token holder for fetch() based form posts *@
+<form id="csrfForm" style="display:none">@Html.AntiForgeryToken()</form>
+
+@* Worker options reused in modals *@
+@{
+    var workerJson = System.Text.Json.JsonSerializer.Serialize(
+        workers.Select(w => new { id = w.Id, name = w.Name, type = w.Type.ToString(), city = w.City ?? "" }));
+}
+<script id="workerOptions" type="application/json">@Html.Raw(workerJson)</script>
+
+@section Scripts {
+    <script>
+        const workerData = JSON.parse(document.getElementById('workerOptions').textContent || '[]');
+        const csrfToken = document.querySelector('#csrfForm input[name="__RequestVerificationToken"]')?.value || '';
+        const today = new Date().toISOString().split('T')[0];
+
+        function workerOptionsHtml(includeBlank=true) {
+            const blank = includeBlank ? '<option value="">— Not assigned —</option>' : '';
+            return blank + workerData.map(w => `<option value="${w.id}">${w.name} (${w.type}, ${w.city || ''})</option>`).join('');
+        }
+
+        async function postForm(url, formData, msgOnFail='Failed') {
+            formData.append('__RequestVerificationToken', csrfToken);
+            try {
+                const r = await fetch(url, { method: 'POST', body: formData });
+                const d = await r.json();
+                return d;
+            } catch (e) {
+                return { success: false, message: msgOnFail };
+            }
+        }
+
+        function openMeterForm(requestId, requestNumber) {
+            Swal.fire({
+                title: '📦 Meter Dispatch — ' + requestNumber,
+                html: `
+                    <div style="text-align:left;font-size:13px">
+                        <label>Meter Number *</label>
+                        <input id="f-meter-num" type="text" class="swal2-input" required>
+                        <label>Meter Type *</label>
+                        <select id="f-meter-type" class="swal2-input">
+                            <option value="Single Phase">Single Phase</option>
+                            <option value="Three Phase">Three Phase</option>
+                        </select>
+                        <label>Dispatch Date *</label>
+                        <input id="f-meter-date" type="date" class="swal2-input" value="${today}">
+                        <label>Remark</label>
+                        <textarea id="f-meter-remark" class="swal2-textarea" placeholder="Courier / tracking / notes"></textarea>
+                        <label>Document (optional)</label>
+                        <input id="f-meter-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
+                    </div>`,
+                background: '#ffffff', color: '#1f2937',
+                showCancelButton: true,
+                confirmButtonText: 'Dispatch',
+                preConfirm: async () => {
+                    const num = document.getElementById('f-meter-num').value.trim();
+                    if (!num) { Swal.showValidationMessage('Meter number is required'); return false; }
+                    const fd = new FormData();
+                    fd.append('requestId', requestId);
+                    fd.append('meterNumber', num);
+                    fd.append('meterType', document.getElementById('f-meter-type').value);
+                    fd.append('dispatchDate', document.getElementById('f-meter-date').value);
+                    fd.append('remark', document.getElementById('f-meter-remark').value);
+                    const file = document.getElementById('f-meter-doc').files[0];
+                    if (file) fd.append('dispatchDoc', file);
+                    return await postForm('/SolarPanelAdmin/Operations/SubmitMeterDispatch', fd);
+                }
+            }).then(r => {
+                if (r.isConfirmed && r.value && r.value.success) {
+                    Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+                } else if (r.isConfirmed) {
+                    Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+                }
+            });
+        }
+
+        function openMaterialForm(requestId, requestNumber) {
+            Swal.fire({
+                title: '📦 Material Dispatch — ' + requestNumber,
+                html: `
+                    <div style="text-align:left;font-size:13px">
+                        <label>Material Details</label>
+                        <textarea id="f-mat-detail" class="swal2-textarea" placeholder="Solar panels, inverter, wiring, mounts..."></textarea>
+                        <label>Dispatch Date *</label>
+                        <input id="f-mat-date" type="date" class="swal2-input" value="${today}">
+                        <label>Vehicle / Courier</label>
+                        <input id="f-mat-veh" type="text" class="swal2-input" placeholder="RJ-14-AB-1234 / DTDC AWB...">
+                        <label>Despatch Person (Worker)</label>
+                        <select id="f-mat-worker" class="swal2-input">${workerOptionsHtml()}</select>
+                        <label>Remark</label>
+                        <textarea id="f-mat-remark" class="swal2-textarea"></textarea>
+                        <label>Document (optional)</label>
+                        <input id="f-mat-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
+                    </div>`,
+                background: '#ffffff', color: '#1f2937',
+                showCancelButton: true,
+                confirmButtonText: 'Dispatch',
+                preConfirm: async () => {
+                    const fd = new FormData();
+                    fd.append('requestId', requestId);
+                    fd.append('materialDetails', document.getElementById('f-mat-detail').value);
+                    fd.append('dispatchDate', document.getElementById('f-mat-date').value);
+                    fd.append('vehicleDetails', document.getElementById('f-mat-veh').value);
+                    fd.append('remark', document.getElementById('f-mat-remark').value);
+                    const w = document.getElementById('f-mat-worker').value;
+                    if (w) fd.append('workerId', w);
+                    const file = document.getElementById('f-mat-doc').files[0];
+                    if (file) fd.append('dispatchDoc', file);
+                    return await postForm('/SolarPanelAdmin/Operations/SubmitMaterialDispatch', fd);
+                }
+            }).then(r => {
+                if (r.isConfirmed && r.value && r.value.success) {
+                    Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+                } else if (r.isConfirmed) {
+                    Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+                }
+            });
+        }
+
+        function openInstallForm(requestId, requestNumber) {
+            Swal.fire({
+                title: '🔧 Installation — ' + requestNumber,
+                html: `
+                    <div style="text-align:left;font-size:13px">
+                        <label>Installation Date *</label>
+                        <input id="f-ins-date" type="date" class="swal2-input" value="${today}">
+                        <label>Installer (Worker)</label>
+                        <select id="f-ins-worker" class="swal2-input">${workerOptionsHtml()}</select>
+                        <label>Notes</label>
+                        <textarea id="f-ins-notes" class="swal2-textarea" placeholder="Panels installed, inverter SN, meter reading..."></textarea>
+                        <label>Remark</label>
+                        <textarea id="f-ins-remark" class="swal2-textarea"></textarea>
+                        <label>Completion Photo (optional)</label>
+                        <input id="f-ins-photo" type="file" accept="image/*" class="swal2-file">
+                    </div>`,
+                background: '#ffffff', color: '#1f2937',
+                showCancelButton: true,
+                confirmButtonText: 'Submit',
+                preConfirm: async () => {
+                    const fd = new FormData();
+                    fd.append('requestId', requestId);
+                    fd.append('installationDate', document.getElementById('f-ins-date').value);
+                    fd.append('notes', document.getElementById('f-ins-notes').value);
+                    fd.append('remark', document.getElementById('f-ins-remark').value);
+                    const w = document.getElementById('f-ins-worker').value;
+                    if (w) fd.append('workerId', w);
+                    const file = document.getElementById('f-ins-photo').files[0];
+                    if (file) fd.append('completionPhoto', file);
+                    return await postForm('/SolarPanelAdmin/Operations/SubmitInstallation', fd);
+                }
+            }).then(r => {
+                if (r.isConfirmed && r.value && r.value.success) {
+                    Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+                } else if (r.isConfirmed) {
+                    Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+                }
+            });
+        }
+
+        function openDCRForm(requestId, requestNumber) {
+            Swal.fire({
+                title: '📄 DCR Update — ' + requestNumber,
+                html: `
+                    <div style="text-align:left;font-size:13px">
+                        <label>DCR Number *</label>
+                        <input id="f-dcr-num" type="text" class="swal2-input" required>
+                        <label>DCR Date *</label>
+                        <input id="f-dcr-date" type="date" class="swal2-input" value="${today}">
+                        <label>Remark</label>
+                        <textarea id="f-dcr-remark" class="swal2-textarea"></textarea>
+                        <label>DCR Document (optional)</label>
+                        <input id="f-dcr-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
+                    </div>`,
+                background: '#ffffff', color: '#1f2937',
+                showCancelButton: true,
+                confirmButtonText: 'Submit DCR',
+                preConfirm: async () => {
+                    const num = document.getElementById('f-dcr-num').value.trim();
+                    if (!num) { Swal.showValidationMessage('DCR number is required'); return false; }
+                    const fd = new FormData();
+                    fd.append('requestId', requestId);
+                    fd.append('dcrNumber', num);
+                    fd.append('dcrDate', document.getElementById('f-dcr-date').value);
+                    fd.append('remark', document.getElementById('f-dcr-remark').value);
+                    const file = document.getElementById('f-dcr-doc').files[0];
+                    if (file) fd.append('dcrDoc', file);
+                    return await postForm('/SolarPanelAdmin/Operations/SubmitDCR', fd);
+                }
+            }).then(r => {
+                if (r.isConfirmed && r.value && r.value.success) {
+                    Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+                } else if (r.isConfirmed) {
+                    Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+                }
+            });
+        }
+    </script>
+}

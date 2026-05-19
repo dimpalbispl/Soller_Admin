@@ -1,0 +1,141 @@
+<!-- Operation Modals Container -->
+<div id="operationModals" style="display:none">
+    <!-- Meter Dispatch Modal -->
+    <div id="meterDispatchModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📦 Meter Dispatch</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <form asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="SubmitMeterDispatch" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="requestId" id="meterRequestId" />
+                <div class="fr">
+                    <div class="fg">
+                        <label for="meterNumber">Meter Number <span class="req">*</span></label>
+                        <input type="text" name="meterNumber" id="meterNumber" required />
+                    </div>
+                    <div class="fg">
+                        <label for="meterType">Meter Type <span class="req">*</span></label>
+                        <select name="meterType" id="meterType" required>
+                            <option value="">Select Type</option>
+                            <option value="Single Phase">Single Phase</option>
+                            <option value="Three Phase">Three Phase</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="fg">
+                    <label for="dispatchDoc">Dispatch Document (PDF/Image)</label>
+                    <input type="file" name="dispatchDoc" id="dispatchDoc" accept=".pdf,.jpg,.jpeg,.png" />
+                </div>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn-p">📦 Dispatch Meter</button>
+                    <button type="button" class="btn btn-d modal-close-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DCR Update Modal -->
+    <div id="dcrModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📄 DCR Update</h3>
+                <span class="modal-close">&times;</span>
+            </div>
+            <form asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="SubmitDCR" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="requestId" id="dcrRequestId" />
+                <div class="fg">
+                    <label for="dcrNumber">DCR Number <span class="req">*</span></label>
+                    <input type="text" name="dcrNumber" id="dcrNumber" required />
+                </div>
+                <div class="fg">
+                    <label for="dcrDoc">DCR Document (PDF/Image)</label>
+                    <input type="file" name="dcrDoc" id="dcrDoc" accept=".pdf,.jpg,.jpeg,.png" />
+                </div>
+                <div class="btn-row">
+                    <button type="submit" class="btn btn-p">📄 Submit DCR</button>
+                    <button type="button" class="btn btn-d modal-close-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: var(--bg2);
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--text);
+}
+
+.modal-close {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--text3);
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: var(--text);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal .btn-row {
+    padding: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.modal-close, .modal-close-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            this.closest('.modal').style.display = 'none';
+        });
+    });
+
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+});
+</script>

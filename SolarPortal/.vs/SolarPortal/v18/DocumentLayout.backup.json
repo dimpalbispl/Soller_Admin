@@ -1,0 +1,67 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "\\\\localhost\\Sadhna\\New folder (21)\\files\\SolarPortal-LiveDb-AdminSite\\SolarPortal\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|SolarPortal.AdminWeb\\SolarPortal.AdminWeb.csproj|\\\\localhost\\sadhna\\new folder (21)\\files\\solarportal-livedb-adminsite\\solarportal\\solarportal.adminweb\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{22222222-2222-2222-2222-222222222222}|SolarPortal.Application\\SolarPortal.Application.csproj|\\\\localhost\\sadhna\\new folder (21)\\files\\solarportal-livedb-adminsite\\solarportal\\solarportal.application\\dtos\\solarrequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|SolarPortal.AdminWeb\\SolarPortal.AdminWeb.csproj|\\\\localhost\\sadhna\\new folder (21)\\files\\solarportal-livedb-adminsite\\solarportal\\solarportal.adminweb\\views\\account\\login.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "SolarRequestDto.cs",
+              "DocumentMoniker": "\\\\localhost\\Sadhna\\New folder (21)\\files\\SolarPortal-LiveDb-AdminSite\\SolarPortal\\SolarPortal.Application\\DTOs\\SolarRequestDto.cs",
+              "RelativeDocumentMoniker": "SolarPortal.Application\\DTOs\\SolarRequestDto.cs",
+              "ToolTip": "\\\\localhost\\Sadhna\\New folder (21)\\files\\SolarPortal-LiveDb-AdminSite\\SolarPortal\\SolarPortal.Application\\DTOs\\SolarRequestDto.cs",
+              "RelativeToolTip": "SolarPortal.Application\\DTOs\\SolarRequestDto.cs",
+              "ViewState": "AgIAACkAAAAAAAAAAAAswD8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-19T08:10:59.763Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "\\\\localhost\\Sadhna\\New folder (21)\\files\\SolarPortal-LiveDb-AdminSite\\SolarPortal\\SolarPortal.AdminWeb\\appsettings.json",
+              "RelativeDocumentMoniker": "SolarPortal.AdminWeb\\appsettings.json",
+              "ToolTip": "\\\\localhost\\Sadhna\\New folder (21)\\files\\SolarPortal-LiveDb-AdminSite\\SolarPortal\\SolarPortal.AdminWeb\\appsettings.json",
+              "RelativeToolTip": "SolarPortal.AdminWeb\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAC1AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-05-19T08:08:53.977Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Login.cshtml",
+              "DocumentMoniker": "\\\\localhost\\Sadhna\\New folder (21)\\files\\SolarPortal-LiveDb-AdminSite\\SolarPortal\\SolarPortal.AdminWeb\\Views\\Account\\Login.cshtml",
+              "RelativeDocumentMoniker": "SolarPortal.AdminWeb\\Views\\Account\\Login.cshtml",
+              "ToolTip": "\\\\localhost\\Sadhna\\New folder (21)\\files\\SolarPortal-LiveDb-AdminSite\\SolarPortal\\SolarPortal.AdminWeb\\Views\\Account\\Login.cshtml",
+              "RelativeToolTip": "SolarPortal.AdminWeb\\Views\\Account\\Login.cshtml",
+              "ViewState": "AgIAAA8AAAAAAAAAAAAAADMAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-19T07:43:22.24Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

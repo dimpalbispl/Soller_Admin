@@ -1,0 +1,11 @@
+\\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.Domain\bin\Debug\net8.0\SolarPortal.Domain.deps.json
+\\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.Domain\bin\Debug\net8.0\SolarPortal.Domain.dll
+\\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.Domain\bin\Debug\net8.0\SolarPortal.Domain.pdb
+\\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.Domain\obj\Debug\net8.0\SolarPortal.Domain.GeneratedMSBuildEditorConfig.editorconfig
+\\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.Domain\obj\Debug\net8.0\SolarPortal.Domain.AssemblyInfoInputs.cache
+\\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.Domain\obj\Debug\net8.0\SolarPortal.Domain.AssemblyInfo.cs
+\\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.Domain\obj\Debug\net8.0\SolarPortal.Domain.csproj.CoreCompileInputs.cache
+\\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.Domain\obj\Debug\net8.0\SolarPortal.Domain.dll
+\\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.Domain\obj\Debug\net8.0\refint\SolarPortal.Domain.dll
+\\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.Domain\obj\Debug\net8.0\SolarPortal.Domain.pdb
+\\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.Domain\obj\Debug\net8.0\ref\SolarPortal.Domain.dll

@@ -1,0 +1,92 @@
+@model SolarPortal.Application.DTOs.CreateWorkerDto
+@{
+    ViewData["Title"] = "Add Worker";
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <a asp-controller="Workers" asp-action="Index" style="color:var(--sun)">Workers</a> / <span>Add</span></div>
+        <div class="ph-title">➕ Add New Worker</div>
+        <div class="ph-sub">Register a new field worker to the system</div>
+    </div>
+
+    <div class="card" style="max-width:600px;margin:20px auto">
+        <div class="ct"><span class="ct-dot"></span>Worker Details</div>
+        
+        <form asp-controller="Workers" asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            
+            <div class="fr">
+                <div class="fg">
+                    <label asp-for="Name">Full Name <span class="req">*</span></label>
+                    <input asp-for="Name" placeholder="Worker name" required />
+                    <span asp-validation-for="Name" class="text-danger hint"></span>
+                </div>
+                <div class="fg">
+                    <label asp-for="MobileNumber">Mobile Number <span class="req">*</span></label>
+                    <input asp-for="MobileNumber" type="tel" placeholder="9800000000" maxlength="10" required />
+                    <span asp-validation-for="MobileNumber" class="text-danger hint"></span>
+                </div>
+            </div>
+
+            <div class="fr">
+                <div class="fg">
+                    <label asp-for="Type">Worker Type <span class="req">*</span></label>
+                    <select asp-for="Type" required>
+                        <option value="1">JOB (Salaried / Direct)</option>
+                        <option value="2">INC (Incentive / Commission based)</option>
+                    </select>
+                    <span class="hint">INC = earns per-connection commission. JOB = salaried.</span>
+                </div>
+                <div class="fg">
+                    <label asp-for="Specialization">Specialization <span class="req">*</span></label>
+                    <select asp-for="Specialization" required>
+                        <option value="">Select specialization</option>
+                        <option value="Solar Electrician">Solar Electrician</option>
+                        <option value="Installer">Installer</option>
+                        <option value="Wiring Expert">Wiring Expert</option>
+                        <option value="Civil Worker">Civil Worker</option>
+                        <option value="Surveyor">Surveyor</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <span asp-validation-for="Specialization" class="text-danger hint"></span>
+                </div>
+            </div>
+            <div class="fr">
+                <div class="fg">
+                    <label asp-for="City">City <span class="req">*</span></label>
+                    <input asp-for="City" placeholder="Jaipur" required />
+                    <span asp-validation-for="City" class="text-danger hint"></span>
+                </div>
+                <div class="fg">
+                    <label asp-for="Email">Email</label>
+                    <input asp-for="Email" type="email" placeholder="worker@example.com" />
+                </div>
+            </div>
+
+            <div class="fr">
+                <div class="fg">
+                    <label asp-for="State">State <span class="req">*</span></label>
+                    <input asp-for="State" placeholder="Rajasthan" required />
+                    <span asp-validation-for="State" class="text-danger hint"></span>
+                </div>
+                <div class="fg">
+                    <label asp-for="IsAvailable">Available for Assignment</label>
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <input asp-for="IsAvailable" type="checkbox" id="isAvailable" checked />
+                        <label for="isAvailable" style="margin:0;font-size:14px">Yes, worker is available</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-row" style="justify-content:space-between;margin-top:20px;border-top:1px solid var(--border);padding-top:20px">
+                <a asp-controller="Workers" asp-action="Index" class="btn btn-d">← Cancel</a>
+                <button type="submit" class="btn btn-p">✓ Add Worker</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

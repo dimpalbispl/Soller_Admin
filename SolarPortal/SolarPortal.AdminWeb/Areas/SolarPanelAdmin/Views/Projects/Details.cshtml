@@ -1,0 +1,316 @@
+@model SolarPortal.Application.DTOs.SolarRequestDto
+@{
+    ViewData["Title"] = @Model?.RequestNumber ?? "Project Details";
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <a asp-controller="Projects" asp-action="Index" style="color:var(--sun)">Projects</a> / <span>Details</span></div>
+        <div class="ph-title">📄 Project @Model?.RequestNumber</div>
+        <div class="ph-sub">View and manage this solar connection project</div>
+    </div>
+
+    @if (Model != null)
+    {
+        <div class="g2">
+            <!-- Project Info -->
+            <div class="card">
+                <div class="ct"><span class="ct-dot"></span>Project Information</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Request Number</span>
+                        <span class="detail-value">@Model.RequestNumber</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value">
+                            <span class="sts @GetStatusClass(Model.ApprovalStatus)">@Model.ApprovalStatus</span>
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Current Stage</span>
+                        <span class="detail-value">
+                            <span class="sts @GetStageClass(Model.CurrentStage)">@Model.CurrentStage.ToString().Replace("_", " ")</span>
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Connection Type</span>
+                        <span class="detail-value">@Model.ConnectionType</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Applicant Info -->
+            <div class="card">
+                <div class="ct"><span class="ct-dot"></span>Applicant Details</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Name</span>
+                        <span class="detail-value">@Model.ApplicantName</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Mobile</span>
+                        <span class="detail-value">@Model.MobileNumber</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Email</span>
+                        <span class="detail-value">@Model.Email</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Address</span>
+                        <span class="detail-value">@Model.Address, @Model.City, @Model.State @Model.PinCode</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Capacity & Amount -->
+            <div class="card">
+                <div class="ct"><span class="ct-dot"></span>Project Details</div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Capacity</span>
+                        <span class="detail-value">@Model.KVCapacity kV</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Requested Amount</span>
+                        <span class="detail-value gold">₹@Model.RequestedAmount.ToString("N0")</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Approved Amount</span>
+                        <span class="detail-value green">₹@Model.ApprovedAmount.ToString("N0")</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Submitted On</span>
+                        <span class="detail-value">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents -->
+            @if (Model.Documents.Any())
+            {
+                <div class="card">
+                    <div class="ct"><span class="ct-dot"></span>Attached Documents (@Model.Documents.Count)</div>
+                    <div style="max-height:300px;overflow-y:auto">
+                        @foreach (var doc in Model.Documents)
+                        {
+                                <div style="padding:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+                                    <div>
+                                        <div style="font-size:12px">@doc.DocumentType</div>
+                                        <div style="color:var(--text2);font-size:11px">@doc.FileName</div>
+                                    </div>
+                                    <a href="@doc.FilePath" target="_blank" class="btn btn-s btn-sm">
+                                        📥 View
+                                    </a>
+                                </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Actions -->
+            <div class="card">
+                <div class="ct"><span class="ct-dot"></span>Actions</div>
+                <div class="btn-row">
+                    @if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Pending)
+                    {
+                        <button class="btn btn-g" onclick="approveProject(@Model.Id)">✓ Approve</button>
+                        <button class="btn btn-d" onclick="rejectProject(@Model.Id)" style="margin-left:4px">✕ Reject</button>
+                    }
+                    @if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Approved && 
+                         Model.CurrentStage != Domain.Enums.ProjectStatus.Completed)
+                    {
+                        <button class="btn btn-p" onclick="updateStage(@Model.Id)">📊 Update Stage</button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Flow -->
+        <div class="card" style="margin-top:20px">
+            <div class="ct"><span class="ct-dot"></span>Project Status Flow</div>
+            <partial name="~/Views/Shared/_StatusFlow.cshtml" model="(int)Model.CurrentStage" />
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div style="text-align:center;padding:40px;color:var(--text3)">Project not found</div>
+        </div>
+    }
+</div>
+
+<style>
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 0;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detail-label {
+    font-size: 12px;
+    color: var(--text2);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.detail-value {
+    font-size: 16px;
+    color: var(--text1);
+    font-weight: 500;
+}
+
+.detail-value.gold {
+    color: var(--sun);
+}
+
+.detail-value.green {
+    color: var(--succ);
+}
+</style>
+
+@functions {
+    string GetStatusClass(Domain.Enums.ApprovalStatus status) => status switch
+    {
+        Domain.Enums.ApprovalStatus.Pending => "sts-pend",
+        Domain.Enums.ApprovalStatus.Approved => "sts-act",
+        Domain.Enums.ApprovalStatus.Rejected => "sts-rej",
+        _ => "sts-pend"
+    };
+
+    string GetStageClass(Domain.Enums.ProjectStatus stage) => stage switch
+    {
+        Domain.Enums.ProjectStatus.Registration => "sts-pend",
+        Domain.Enums.ProjectStatus.ProductSelection => "sts-pend",
+        Domain.Enums.ProjectStatus.Payment => "sts-pend",
+        Domain.Enums.ProjectStatus.PMSurvey => "sts-pend",
+        Domain.Enums.ProjectStatus.MeterDispatch => "sts-act",
+        Domain.Enums.ProjectStatus.MaterialDispatch => "sts-act",
+        Domain.Enums.ProjectStatus.Installation => "sts-act",
+        Domain.Enums.ProjectStatus.DCRUpdate => "sts-act",
+        Domain.Enums.ProjectStatus.Completed => "sts-act",
+        _ => "sts-pend"
+    };
+}
+
+@section Scripts {
+    <script>
+        function approveProject(id) {
+            Swal.fire({
+                title: 'Approve Project?',
+                text: 'This will approve the solar connection request',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Approve',
+                cancelButtonText: 'Cancel',
+                background: '#ffffff',
+                color: '#1f2937'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    const fd = new FormData();
+                    fd.append('id', id);
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                    if (token) fd.append('__RequestVerificationToken', token.value);
+
+                    fetch('/SolarPanelAdmin/Projects/Approve', { method: 'POST', body: fd })
+                        .then(r => r.json())
+                        .then(d => {
+                            if (d.success) {
+                                Swal.fire('Approved', d.message || 'Approved', 'success').then(() => location.reload());
+                            } else {
+                                Swal.fire('Error', d.message || 'Failed', 'error');
+                            }
+                        });
+                }
+            });
+        }
+
+        function rejectProject(id) {
+            Swal.fire({
+                title: 'Reject Project?',
+                text: 'Enter rejection reason',
+                icon: 'warning',
+                input: 'textarea',
+                inputPlaceholder: 'Reason for rejection...',
+                showCancelButton: true,
+                confirmButtonText: 'Reject',
+                background: '#ffffff',
+                color: '#1f2937',
+                preConfirm: (reason) => {
+                    if (!reason) {
+                        Swal.showValidationMessage('Please enter a reason');
+                        return false;
+                    }
+                    return reason;
+                }
+            }).then(result => {
+                if (result.isConfirmed) {
+                    const fd = new FormData();
+                    fd.append('id', id);
+                    fd.append('reason', result.value);
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                    if (token) fd.append('__RequestVerificationToken', token.value);
+
+                    fetch('/SolarPanelAdmin/Projects/Reject', { method: 'POST', body: fd })
+                        .then(r => r.json())
+                        .then(d => {
+                            if (d.success) {
+                                Swal.fire('Rejected', d.message || 'Rejected', 'success').then(() => location.reload());
+                            } else {
+                                Swal.fire('Error', d.message || 'Failed', 'error');
+                            }
+                        });
+                }
+            });
+        }
+
+        function updateStage(id) {
+            Swal.fire({
+                title: 'Override Project Stage',
+                text: 'Select the stage to set this project to',
+                input: 'select',
+                inputOptions: {
+                    '1': 'Registration',
+                    '2': 'Product Selection',
+                    '3': 'Payment',
+                    '4': 'PM Survey',
+                    '5': 'Meter Dispatch',
+                    '7': 'Material Dispatch',
+                    '8': 'Installation',
+                    '9': 'DCR Update',
+                    '10': 'Completed'
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Update Stage',
+                background: '#ffffff',
+                color: '#1f2937'
+            }).then(result => {
+                if (result.isConfirmed && result.value) {
+                    const fd = new FormData();
+                    fd.append('Id', id);
+                    fd.append('NewStage', result.value);
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                    if (token) fd.append('__RequestVerificationToken', token.value);
+
+                    fetch('/SolarPanelAdmin/Projects/UpdateStage', { method: 'POST', body: fd })
+                        .then(r => r.json())
+                        .then(d => {
+                            if (d.success) {
+                                Swal.fire('Updated', 'Stage updated successfully', 'success').then(() => location.reload());
+                            } else {
+                                Swal.fire('Error', d.message || 'Failed', 'error');
+                            }
+                        });
+                }
+            });
+        }
+    </script>
+}

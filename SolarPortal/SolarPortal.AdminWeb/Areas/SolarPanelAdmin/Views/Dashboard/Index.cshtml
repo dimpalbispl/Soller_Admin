@@ -1,0 +1,129 @@
+﻿@model AdminDashboardDto
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Dashboard</span></div>
+        <div class="ph-title">Admin Dashboard</div>
+        <div class="ph-sub">Manage all solar connection requests and operations</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="g4" style="margin-bottom:18px">
+        <div class="sc">
+            <div class="sc-label">Total Projects</div>
+            <div class="sc-val gold">@Model.TotalProjects</div>
+            <div class="sc-sub">All applications</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Pending Approvals</div>
+            <div class="sc-val red">@Model.PendingApprovals</div>
+            <div class="sc-sub">Awaiting action</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Active Installations</div>
+            <div class="sc-val blue">@Model.ActiveInstallations</div>
+            <div class="sc-sub">In progress</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Total Revenue</div>
+            <div class="sc-val green">₹@Model.TotalRevenue.ToString("N0")</div>
+            <div class="sc-sub">Verified payments</div>
+        </div>
+    </div>
+
+    <div class="g2">
+        <!-- Recent Requests -->
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Recent Applications</div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Applicant</th>
+                            <th>Type</th>
+                            <th>Stage</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.RecentRequests)
+                        {
+                            <tr>
+                                <td class="td-b">
+                                    <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Details"
+                                       asp-route-id="@r.Id" style="color:var(--sun)">@r.RequestNumber</a>
+                                </td>
+                                <td>@r.ApplicantName</td>
+                                <td>@r.ConnectionType</td>
+                                <td>@r.CurrentStage.ToString().Replace("_", " ")</td>
+                                <td>
+                                    <span class="sts @GetStatusClass(r.ApprovalStatus)">
+                                        @r.ApprovalStatus
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (r.ApprovalStatus == ApprovalStatus.Pending)
+                                    {
+                                        <button class="btn btn-g btn-sm"
+                                                onclick="approveRequest(@r.Id)">
+                                            ✓ Approve
+                                        </button>
+                                        <button class="btn btn-d btn-sm"
+                                                onclick="rejectRequest(@r.Id)" style="margin-left:4px">
+                                            ✕
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="btn-row">
+                <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Approvals" class="btn btn-p">
+                    ✅ View Approvals (@Model.PendingApprovals)
+                </a>
+            </div>
+        </div>
+
+        <!-- Stage Distribution -->
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Project Stage Distribution</div>
+            @foreach (var kv in Model.StatusDistribution.OrderBy(x => x.Value).Take(8))
+            {
+                var pct = Model.TotalProjects > 0 ? (int)((double)kv.Value / Model.TotalProjects * 100) : 0;
+                <div style="margin-bottom:12px">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                        <span style="color:var(--text2)">@kv.Key.Replace("_", " ")</span>
+                        <span style="color:var(--sun)">@kv.Value</span>
+                    </div>
+                    <div class="prog-wrap">
+                        <div class="prog-bar" data-width="@pct" style="width:0"></div>
+                    </div>
+                </div>
+            }
+
+            <div class="btn-row">
+                <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Index" class="btn btn-s">
+                    View All Projects →
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@using SolarPortal.Domain.Enums
+@functions {
+    string GetStatusClass(ApprovalStatus status) => status switch
+    {
+        ApprovalStatus.Pending => "sts-pend",
+        ApprovalStatus.Approved => "sts-act",
+        ApprovalStatus.Rejected => "sts-rej",
+        _ => "sts-pend"
+    };
+}
