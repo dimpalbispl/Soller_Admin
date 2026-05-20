@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "lSts2x8kWg4=",
+  "dgSpecHash": "DjddRlXDmpk=",
   "success": true,
-  "projectFilePath": "\\\\localhost\\Sadhna\\New folder (21)\\files\\SolarPortal-LiveDb-AdminSite\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj",
+  "projectFilePath": "\\\\localhost\\Sadhna\\New folder (12)\\SolarPortal_FINAL\\AdminPanel\\Soller_Admin\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Claude1\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.25\\microsoft.windowsdesktop.app.ref.8.0.25.nupkg.sha512",
     "C:\\Users\\Claude1\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.25\\microsoft.netcore.app.ref.8.0.25.nupkg.sha512",

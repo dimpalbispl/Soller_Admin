@@ -90,6 +90,8 @@ public static class DependencyInjection
         services.AddScoped<IPMDocumentService, PMDocumentService>();
         services.AddScoped<IWalletService, WalletService>();
         services.AddScoped<IWithdrawalService, WithdrawalService>();
+        // Legacy view reader for the With Activation product picker (V#SpProductDetail)
+        services.AddScoped<IBasicProductService, BasicProductService>();
 
         return services;
     }

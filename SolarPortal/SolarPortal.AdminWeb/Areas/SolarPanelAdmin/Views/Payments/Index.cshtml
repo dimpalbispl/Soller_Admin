@@ -18,6 +18,7 @@
             <a class="btn @(filter == "all" ? "btn-primary" : "btn-outline-primary")" asp-route-filter="all">All</a>
             <a class="btn @(filter == "pending" ? "btn-warning" : "btn-outline-warning")" asp-route-filter="pending">Pending</a>
             <a class="btn @(filter == "verified" ? "btn-success" : "btn-outline-success")" asp-route-filter="verified">Verified</a>
+            <a class="btn @(filter == "rejected" ? "btn-danger" : "btn-outline-danger")" asp-route-filter="rejected">Rejected</a>
         </div>
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPaymentModal">
             ➕ Add Payment (Admin Entry)
@@ -165,8 +166,11 @@
                 <thead>
                     <tr>
                         <th>Receipt #</th>
+                        <th>Member ID</th>
                         <th>Request ID</th>
                         <th>Member Name</th>
+                        <th>Mobile</th>
+                        <th>Address</th>
                         <th style="text-align:right">Project Amount</th>
                         <th style="text-align:right">Paid (Total)</th>
                         <th style="text-align:right">Due</th>
@@ -175,9 +179,9 @@
                         <th>Method</th>
                         <th>Date</th>
                         <th>Uploaded By</th>
-                        <th>Receipt Image</th>
+                        <th>Receipt</th>
                         <th>Status</th>
-                        <th></th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -188,10 +192,50 @@
                     var projectAmt = req?.PlanAmount ?? 0m;
                     var due = System.Math.Max(0, projectAmt - paidTotal);
                     var isAdminEntry = !string.IsNullOrEmpty(p.Notes) && p.Notes.Contains("[ADMIN ENTRY");
+                    var isRejected = p.Status == SolarPortal.Domain.Enums.PaymentStatus.Rejected;
+                    // ===== Receipt URL normalization =====
+                    // ReceiptImagePath is stored as a relative path; older records sometimes carried
+                    // a stray "wwwroot/" prefix because the upload service used to write it that way.
+                    // Strip it here so the URL resolves correctly from the web root, then prefix "/".
+                    string? receiptUrl = null;
+                    if (!string.IsNullOrEmpty(p.ReceiptImagePath))
+                    {
+                        var rel = p.ReceiptImagePath.Replace("\\", "/").TrimStart('/');
+                        if (rel.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                            rel = rel.Substring("wwwroot/".Length);
+                        receiptUrl = "/" + rel;
+                    }
+                    var receiptIsPdf = receiptUrl != null && receiptUrl.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
                     <tr>
                         <td><small>@p.ReceiptNumber</small></td>
+                        <td><code style="font-size:11px;color:#0d9488">@p.UserId</code></td>
                         <td><strong>@req?.RequestNumber</strong></td>
                         <td>@req?.ApplicantName</td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(req?.MobileNumber))
+                            {
+                                <a href="tel:@req.MobileNumber" style="color:#0d9488;font-size:12px">@req.MobileNumber</a>
+                            }
+                            else { <span class="text-muted" style="font-size:11px">—</span> }
+                        </td>
+                        <td style="max-width:180px;font-size:12px" title="@req?.Address">
+                            @{
+                                // Compact address: combine City + State for the cell, with full
+                                // Address in tooltip so wide cards stay readable.
+                                var addr = string.Join(", ",
+                                    new[] { req?.City, req?.State, req?.PinCode }
+                                    .Where(s => !string.IsNullOrWhiteSpace(s)));
+                            }
+                            @if (!string.IsNullOrWhiteSpace(addr))
+                            {
+                                <span>@addr</span>
+                            }
+                            else if (!string.IsNullOrWhiteSpace(req?.Address))
+                            {
+                                <span>@(req.Address.Length > 40 ? req.Address.Substring(0, 40) + "…" : req.Address)</span>
+                            }
+                            else { <span class="text-muted" style="font-size:11px">—</span> }
+                        </td>
                         <td style="text-align:right;color:#16a34a;font-weight:600">₹@projectAmt.ToString("N0")</td>
                         <td style="text-align:right;color:#0d9488;font-weight:600">₹@paidTotal.ToString("N0")</td>
                         <td style="text-align:right;color:@(due > 0 ? "#dc2626" : "#16a34a");font-weight:600">
@@ -216,9 +260,13 @@
                             }
                         </td>
                         <td>
-                            @if (!string.IsNullOrEmpty(p.ReceiptImagePath))
+                            @if (receiptUrl != null)
                             {
-                                <a href="~/@p.ReceiptImagePath" target="_blank">View</a>
+                                <a href="javascript:void(0)" class="receipt-preview"
+                                   data-url="@receiptUrl" data-pdf="@(receiptIsPdf ? "1" : "0")"
+                                   data-utr="@p.UTRNumber">
+                                   @(receiptIsPdf ? "📄 View PDF" : "🖼️ View Image")
+                                </a>
                             }
                             else { <small class="text-muted">—</small> }
                         </td>
@@ -227,23 +275,34 @@
                             {
                                 <span class="badge bg-success">Verified</span>
                             }
+                            else if (isRejected)
+                            {
+                                <span class="badge bg-danger">Rejected</span>
+                            }
                             else
                             {
                                 <span class="badge bg-warning">Pending</span>
                             }
                         </td>
                         <td>
-                            @if (!p.IsVerified)
+                            @* === Buttons hide once a decision is made (verified OR rejected) === *@
+                            @* This satisfies: "Payment reject/approve hone ke baad buttons hide/disable karo" *@
+                            @* AND "Duplicate approval/reject allow mat karo" (server-side guard backs this up). *@
+                            @if (!p.IsVerified && !isRejected)
                             {
                                 <button class="btn btn-sm btn-success btn-verify" data-id="@p.Id">Verify</button>
                                 <button class="btn btn-sm btn-danger btn-reject" data-id="@p.Id">Reject</button>
+                            }
+                            else
+                            {
+                                <small class="text-muted" title="Decision locked">— locked —</small>
                             }
                         </td>
                     </tr>
                 }
                 @if (!Model.Any())
                 {
-                    <tr><td colspan="14" class="text-center text-muted py-3">No payments.</td></tr>
+                    <tr><td colspan="17" class="text-center text-muted py-3">No payments.</td></tr>
                 }
                 </tbody>
             </table>
@@ -253,26 +312,79 @@
 
 @Html.AntiForgeryToken()
 
+@* === Receipt preview modal ===
+   Replaces the plain target="_blank" link. Opens images inline and embeds PDFs
+   via <object>, with a fallback "open in new tab" link. *@
+<div class="modal fade" id="receiptPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="receiptPreviewTitle">Receipt</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center" id="receiptPreviewBody" style="min-height:400px">
+                <!-- filled by JS -->
+            </div>
+            <div class="modal-footer">
+                <a id="receiptPreviewOpen" href="#" target="_blank" class="btn btn-outline-primary">Open in new tab</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
 const token = $('input[name="__RequestVerificationToken"]').val();
 
+// Helper: disable both action buttons on the row, show inline spinner
+function lockRow(btn, label) {
+    const $row = $(btn).closest('tr');
+    $row.find('.btn-verify, .btn-reject').prop('disabled', true).addClass('disabled');
+    $(btn).html(`<span class="spinner-border spinner-border-sm"></span> ${label}`);
+}
+
 $('.btn-verify').on('click', function () {
     const id = $(this).data('id');
-    if (!confirm('Verify this payment?')) return;
+    if (!confirm('Verify this payment? This action cannot be undone.')) return;
+    lockRow(this, 'Verifying...');
     $.post('@Url.Action("Verify")', { id: id, __RequestVerificationToken: token }, function (r) {
         alert(r.message);
         if (r.success) location.reload();
-    });
+        else location.reload();   // refresh either way so stale state is corrected
+    }).fail(() => { alert('Network error.'); location.reload(); });
 });
+
 $('.btn-reject').on('click', function () {
     const id = $(this).data('id');
-    const reason = prompt('Reason for rejection?');
+    const reason = prompt('Reason for rejection? (required)');
     if (reason === null) return;
+    if (!reason.trim()) { alert('A reason is required.'); return; }
+    lockRow(this, 'Rejecting...');
     $.post('@Url.Action("Reject")', { id: id, reason: reason, __RequestVerificationToken: token }, function (r) {
         alert(r.message);
-        if (r.success) location.reload();
-    });
+        location.reload();
+    }).fail(() => { alert('Network error.'); location.reload(); });
+});
+
+// === Receipt preview ===
+$(document).on('click', '.receipt-preview', function () {
+    const url   = $(this).data('url');
+    const isPdf = String($(this).data('pdf')) === '1';
+    const utr   = $(this).data('utr') || '';
+    $('#receiptPreviewTitle').text('Receipt' + (utr ? ' — UTR ' + utr : ''));
+    $('#receiptPreviewOpen').attr('href', url);
+    const $body = $('#receiptPreviewBody').empty();
+    if (isPdf) {
+        $body.append(
+            `<object data="${url}" type="application/pdf" width="100%" height="500">
+                <p>PDF preview not supported in this browser.
+                   <a href="${url}" target="_blank">Open in new tab</a>.</p>
+             </object>`);
+    } else {
+        $body.append(`<img src="${url}" alt="Receipt" style="max-width:100%;max-height:550px;border:1px solid #ddd;border-radius:4px" />`);
+    }
+    new bootstrap.Modal(document.getElementById('receiptPreviewModal')).show();
 });
 
 // Admin Add Payment modal submit

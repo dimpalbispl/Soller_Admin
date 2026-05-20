@@ -18,9 +18,9 @@
             <div class="sc-sub">All applications</div>
         </div>
         <div class="sc">
-            <div class="sc-label">Pending Approvals</div>
+            <div class="sc-label">Pending Payment Verifications</div>
             <div class="sc-val red">@Model.PendingApprovals</div>
-            <div class="sc-sub">Awaiting action</div>
+            <div class="sc-sub">Awaiting payment review</div>
         </div>
         <div class="sc">
             <div class="sc-label">Active Installations</div>
@@ -47,10 +47,14 @@
                             <th>Type</th>
                             <th>Stage</th>
                             <th>Status</th>
-                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
+                        @* Per spec: separate Approval module removed.
+                           Approve/Reject buttons are gone from this list — all
+                           decisions now happen on the Payment Verification page,
+                           which is the single source of truth. The table here is
+                           informational only. *@
                         @foreach (var r in Model.RecentRequests)
                         {
                             <tr>
@@ -66,27 +70,17 @@
                                         @r.ApprovalStatus
                                     </span>
                                 </td>
-                                <td>
-                                    @if (r.ApprovalStatus == ApprovalStatus.Pending)
-                                    {
-                                        <button class="btn btn-g btn-sm"
-                                                onclick="approveRequest(@r.Id)">
-                                            ✓ Approve
-                                        </button>
-                                        <button class="btn btn-d btn-sm"
-                                                onclick="rejectRequest(@r.Id)" style="margin-left:4px">
-                                            ✕
-                                        </button>
-                                    }
-                                </td>
                             </tr>
                         }
                     </tbody>
                 </table>
             </div>
             <div class="btn-row">
-                <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Approvals" class="btn btn-p">
-                    ✅ View Approvals (@Model.PendingApprovals)
+                @* Per spec: Approval module merged into Payment Verification.
+                   The dashboard CTA now jumps to Payments/Index instead of the
+                   legacy Projects/Approvals page. *@
+                <a asp-area="SolarPanelAdmin" asp-controller="Payments" asp-action="Index" class="btn btn-p">
+                    💰 Open Payment Verification (@Model.PendingApprovals)
                 </a>
             </div>
         </div>

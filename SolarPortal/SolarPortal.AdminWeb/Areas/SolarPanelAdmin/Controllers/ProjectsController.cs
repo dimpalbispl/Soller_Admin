@@ -56,10 +56,27 @@ public class ProjectsController : Controller
     public async Task<IActionResult> Approvals()
     {
         var result = await _solarRequestService.GetPendingApprovalsAsync();
-        return View(result.Data ?? Enumerable.Empty<SolarRequestDto>());
+        var pending = (result.Data ?? Enumerable.Empty<SolarRequestDto>()).ToList();
+
+        // Payments per request (so the approval card can show what the user has paid so far).
+        // EF Core requires sequential awaits on the same DbContext.
+        var paidMap = new Dictionary<int, decimal>();
+        var paymentsMap = new Dictionary<int, List<SolarPortal.Domain.Entities.Payment>>();
+        var allPayments = await _unitOfWork.Payments.GetAllAsync();
+        foreach (var p in pending)
+        {
+            var related = allPayments.Where(x => x.SolarRequestId == p.Id)
+                                     .OrderByDescending(x => x.CreatedAt).ToList();
+            paymentsMap[p.Id] = related;
+            paidMap[p.Id] = related.Where(x => x.IsVerified).Sum(x => x.Amount);
+        }
+        ViewBag.PaidMap = paidMap;
+        ViewBag.PaymentsMap = paymentsMap;
+        return View(pending);
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Approve(int id, string? notes)
     {
         var adminId = _userManager.GetUserId(User)!;
@@ -68,8 +85,11 @@ public class ProjectsController : Controller
     }
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Reject(int id, string reason)
     {
+        if (string.IsNullOrWhiteSpace(reason))
+            return Json(new { success = false, message = "Rejection reason is required." });
         var adminId = _userManager.GetUserId(User)!;
         var result = await _solarRequestService.RejectAsync(id, adminId, reason);
         return Json(new { success = result.IsSuccess, message = result.Message ?? result.Errors.FirstOrDefault() });

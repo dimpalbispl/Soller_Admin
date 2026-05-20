@@ -45,26 +45,53 @@ public class PaymentsController : Controller
     // GET: /Admin/Payments
     public async Task<IActionResult> Index(string? filter)
     {
-        // ===== Auto-heal: advance any request whose verified payments already meet ₹20K =====
-        // This catches edge cases where a prior Verify call's stage advance failed silently.
+        // ===== Auto-heal: stage rollback + advance =====
+        // Per spec: PMSurvey stage tab tak nahi aana chahiye jab tak full payment.
+        // Two heals run on every admin Payments page load:
+        //   1. ADVANCE: requests stuck at Payment/Registration with full verified
+        //      payment → move to PMSurvey
+        //   2. ROLLBACK: requests sitting at PMSurvey/MeterDispatch/etc. but whose
+        //      verified payment is now LESS than PlanAmount (because a payment was
+        //      rejected, or the project amount was increased) → move back to Payment
         try
         {
             var allRequests = await _uow.SolarRequests.GetAllAsync();
+            var adminId = _userManager.GetUserId(User) ?? "system";
+
+            // (1) ADVANCE — Payment → PMSurvey when fully paid
             var stuck = allRequests.Where(r =>
                 r.CurrentStage == ProjectStatus.Registration ||
                 r.CurrentStage == ProjectStatus.ProductSelection ||
                 r.CurrentStage == ProjectStatus.Payment).ToList();
-            var adminId = _userManager.GetUserId(User) ?? "system";
             foreach (var r in stuck)
             {
                 var verified = await _payments.GetVerifiedPaidAsync(r.Id);
-                if (verified >= PaymentService.MinimumPaymentThreshold)
+                if (r.PlanAmount > 0 && verified >= r.PlanAmount)
                 {
                     await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
                     {
                         Id = r.Id,
                         NewStage = ProjectStatus.PMSurvey,
-                        Notes = $"Auto-advanced on admin payments load. Verified ₹{verified:N0} ≥ ₹{PaymentService.MinimumPaymentThreshold:N0}."
+                        Notes = $"Auto-advanced on admin payments load. Verified ₹{verified:N0} ≥ project total ₹{r.PlanAmount:N0}."
+                    }, adminId);
+                }
+            }
+
+            // (2) ROLLBACK — PMSurvey → Payment when NOT fully paid.
+            // Only touch PMSurvey itself (don't undo MeterDispatch+ which mean
+            // admin/operations already did downstream work). This fixes the case
+            // shown in the screenshot: Stage was PMSurvey but Paid=₹20K / Plan=₹30K.
+            var advanced = allRequests.Where(r => r.CurrentStage == ProjectStatus.PMSurvey).ToList();
+            foreach (var r in advanced)
+            {
+                var verified = await _payments.GetVerifiedPaidAsync(r.Id);
+                if (r.PlanAmount > 0 && verified < r.PlanAmount)
+                {
+                    await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
+                    {
+                        Id = r.Id,
+                        NewStage = ProjectStatus.Payment,
+                        Notes = $"Auto-rolled back to Payment. Verified ₹{verified:N0} < project total ₹{r.PlanAmount:N0}."
                     }, adminId);
                 }
             }
@@ -74,11 +101,33 @@ public class PaymentsController : Controller
         var all = await _uow.Payments.GetAllAsync();
         var rows = filter switch
         {
-            "pending"  => all.Where(p => !p.IsVerified),
+            "pending"  => all.Where(p => !p.IsVerified && p.Status != PaymentStatus.Rejected),
             "verified" => all.Where(p => p.IsVerified),
+            "rejected" => all.Where(p => p.Status == PaymentStatus.Rejected),
             _          => all
         };
-        rows = rows.OrderByDescending(p => p.CreatedAt).ToList();
+
+        // ===== Deduplicate =====
+        // Per spec: "Payment Verification me duplicate records remove karo."
+        // A user occasionally submits the same proof twice (re-uploads receipt and re-submits).
+        // We group by (SolarRequestId + normalized UTR) and keep the most-progressed record:
+        //   verified > pending > rejected, with newest CreatedAt as tiebreaker.
+        // This way a verified row always wins over its duplicate pending row.
+        static int Rank(Payment p) =>
+            p.IsVerified                          ? 3 :
+            p.Status == PaymentStatus.Rejected    ? 1 :
+                                                    2;   // pending
+
+        rows = rows
+            .GroupBy(p => new {
+                p.SolarRequestId,
+                Utr = (p.UTRNumber ?? "").Trim().ToUpperInvariant()
+            })
+            .Select(g => g.OrderByDescending(Rank)
+                          .ThenByDescending(p => p.CreatedAt)
+                          .First())
+            .OrderByDescending(p => p.CreatedAt)
+            .ToList();
 
         // hydrate request numbers
         var reqIds = rows.Select(r => r.SolarRequestId).Distinct().ToList();
@@ -110,8 +159,17 @@ public class PaymentsController : Controller
             if (payment == null)
                 return Json(new { success = false, message = "Payment not found" });
 
+            // === Idempotency guards ===
+            // Once a payment is verified, repeated Verify calls return a clear error
+            // instead of silently re-running side effects (notifications, stage gate, etc.)
             if (payment.IsVerified)
-                return Json(new { success = false, message = "Payment is already verified." });
+                return Json(new { success = false, message = "Payment is already verified. Duplicate approval not allowed." });
+
+            // A rejected payment must NOT be verifiable from the same record —
+            // user has to submit a new payment proof. This prevents the
+            // reject → re-approve loop that allowed state to flip freely.
+            if (payment.Status == PaymentStatus.Rejected)
+                return Json(new { success = false, message = "This payment was rejected and cannot be verified. Ask the user to submit a new payment." });
 
             var adminId = _userManager.GetUserId(User)!;
             var result = await _payments.VerifyAsync(id, adminId);
@@ -128,7 +186,10 @@ public class PaymentsController : Controller
                 NotificationType = "Payment"
             });
 
-            // ====== Stage gate: advance to PM Surya Ghar when VERIFIED total ≥ ₹20,000 ======
+            // ====== Stage gate: advance to PM Surya Ghar ONLY when full project payment is verified ======
+            // Per spec: "Jab tak full project amount complete nahi hota, PM Surya Ghar
+            // step locked rahe." The ₹20K minimum still triggers Mode-2 auto-activation
+            // (legacy rule), but the stage advance now requires verifiedTotal >= PlanAmount.
             var verifiedTotal = await _payments.GetVerifiedPaidAsync(payment.SolarRequestId);
             var min           = PaymentService.MinimumPaymentThreshold;
             var stageAdvanced = false;
@@ -142,6 +203,7 @@ public class PaymentsController : Controller
                 // If the request was created under "Only Solar without Activation" mode,
                 // the user's account stays inactive until payment is verified. Once admin
                 // approves payment, automatically activate the user.
+                // Note: this still uses the ₹20K minimum (account activation, not stage advance).
                 if (req != null && req.RequestType == RequestType.OnlySolarWithoutActivation)
                 {
                     var owner = await _userManager.FindByIdAsync(payment.UserId);
@@ -162,7 +224,10 @@ public class PaymentsController : Controller
                     }
                 }
 
+                // FULL-PAYMENT gate for stage advance. Project amount must be fully paid.
                 if (req != null &&
+                    req.PlanAmount > 0 &&
+                    verifiedTotal >= req.PlanAmount &&
                     (req.CurrentStage == ProjectStatus.Registration ||
                      req.CurrentStage == ProjectStatus.ProductSelection ||
                      req.CurrentStage == ProjectStatus.Payment))
@@ -171,7 +236,7 @@ public class PaymentsController : Controller
                     {
                         Id = payment.SolarRequestId,
                         NewStage = ProjectStatus.PMSurvey,
-                        Notes = $"Verified payments total ₹{verifiedTotal:N0} ≥ minimum ₹{min:N0} — advanced to PM Surya Ghar by admin."
+                        Notes = $"Verified payments total ₹{verifiedTotal:N0} ≥ project total ₹{req.PlanAmount:N0} — advanced to PM Surya Ghar by admin."
                     }, adminId);
 
                     if (stageResult.IsSuccess)
@@ -182,7 +247,7 @@ public class PaymentsController : Controller
                             UserId = payment.UserId,
                             SolarRequestId = payment.SolarRequestId,
                             Title = "Workflow advanced",
-                            Message = "Minimum verified payment reached. You can now upload PM Surya Ghar documents.",
+                            Message = "Full project payment verified. You can now upload PM Surya Ghar documents.",
                             NotificationType = "StatusUpdate"
                         });
                     }
@@ -221,12 +286,28 @@ public class PaymentsController : Controller
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(reason))
+                return Json(new { success = false, message = "Rejection reason is required." });
+
             var payment = await _uow.Payments.GetByIdAsync(id);
             if (payment == null)
                 return Json(new { success = false, message = "Payment not found" });
 
-            payment.Status = PaymentStatus.Pending;
+            // === Idempotency guards ===
+            // Previously, Reject set Status back to Pending and IsVerified=false,
+            // which meant the same row could ping-pong between approved/rejected.
+            // Now reject is a TERMINAL state for that payment row — the user must
+            // submit a fresh proof. This is what closes the SE86372259-style bug.
+            if (payment.Status == PaymentStatus.Rejected)
+                return Json(new { success = false, message = "Payment is already rejected. Duplicate rejection not allowed." });
+
+            if (payment.IsVerified)
+                return Json(new { success = false, message = "Cannot reject an already-verified payment." });
+
+            payment.Status = PaymentStatus.Rejected;
             payment.IsVerified = false;
+            payment.VerifiedBy = _userManager.GetUserId(User);
+            payment.VerifiedAt = DateTime.UtcNow;   // re-using as "decision timestamp"
             payment.Notes = (payment.Notes ?? "") + $"\n[REJECTED by admin] {reason}";
             _uow.Payments.Update(payment);
             await _uow.SaveChangesAsync();
@@ -236,7 +317,7 @@ public class PaymentsController : Controller
                 UserId = payment.UserId,
                 SolarRequestId = payment.SolarRequestId,
                 Title = "Payment rejected",
-                Message = $"Your payment of ₹{payment.Amount:N0} was rejected. Reason: {reason}",
+                Message = $"Your payment of ₹{payment.Amount:N0} was rejected. Reason: {reason}. Please submit a new payment proof.",
                 NotificationType = "Payment"
             });
 
@@ -312,12 +393,12 @@ public class PaymentsController : Controller
                 NotificationType = "Payment"
             });
 
-            // Stage gate: same rule as user-verify path — advance to PMSurvey when verified ≥ ₹20K
+            // Stage gate: same rule as user-verify path — full PlanAmount required to advance to PMSurvey.
             var verifiedTotal = await _payments.GetVerifiedPaidAsync(solarRequestId);
-            var min = PaymentService.MinimumPaymentThreshold;
             var stageAdvanced = false;
 
-            if (verifiedTotal >= min &&
+            if (req.PlanAmount > 0 &&
+                verifiedTotal >= req.PlanAmount &&
                 (req.CurrentStage == ProjectStatus.Registration ||
                  req.CurrentStage == ProjectStatus.ProductSelection ||
                  req.CurrentStage == ProjectStatus.Payment))
@@ -326,7 +407,7 @@ public class PaymentsController : Controller
                 {
                     Id       = solarRequestId,
                     NewStage = ProjectStatus.PMSurvey,
-                    Notes    = $"Admin-recorded payment brought verified total to ₹{verifiedTotal:N0} ≥ ₹{min:N0}."
+                    Notes    = $"Admin-recorded payment brought verified total to ₹{verifiedTotal:N0} ≥ project total ₹{req.PlanAmount:N0}."
                 }, adminId);
                 stageAdvanced = stageResult.IsSuccess;
             }

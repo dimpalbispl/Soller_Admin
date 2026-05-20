@@ -39,17 +39,8 @@
                     <span class="hint">INC = earns per-connection commission. JOB = salaried.</span>
                 </div>
                 <div class="fg">
-                    <label asp-for="Specialization">Specialization <span class="req">*</span></label>
-                    <select asp-for="Specialization" required>
-                        <option value="">Select specialization</option>
-                        <option value="Solar Electrician">Solar Electrician</option>
-                        <option value="Installer">Installer</option>
-                        <option value="Wiring Expert">Wiring Expert</option>
-                        <option value="Civil Worker">Civil Worker</option>
-                        <option value="Surveyor">Surveyor</option>
-                        <option value="Other">Other</option>
-                    </select>
-                    <span asp-validation-for="Specialization" class="text-danger hint"></span>
+                    <label asp-for="Email">Email</label>
+                    <input asp-for="Email" type="email" placeholder="worker@example.com" />
                 </div>
             </div>
             <div class="fr">
@@ -59,25 +50,17 @@
                     <span asp-validation-for="City" class="text-danger hint"></span>
                 </div>
                 <div class="fg">
-                    <label asp-for="Email">Email</label>
-                    <input asp-for="Email" type="email" placeholder="worker@example.com" />
-                </div>
-            </div>
-
-            <div class="fr">
-                <div class="fg">
                     <label asp-for="State">State <span class="req">*</span></label>
                     <input asp-for="State" placeholder="Rajasthan" required />
                     <span asp-validation-for="State" class="text-danger hint"></span>
                 </div>
-                <div class="fg">
-                    <label asp-for="IsAvailable">Available for Assignment</label>
-                    <div style="display:flex;align-items:center;gap:12px">
-                        <input asp-for="IsAvailable" type="checkbox" id="isAvailable" checked />
-                        <label for="isAvailable" style="margin:0;font-size:14px">Yes, worker is available</label>
-                    </div>
-                </div>
             </div>
+
+            @* Removed per spec:
+                 - "Specialization" dropdown (was on this form line 42-53)
+                 - "Available for Assignment" checkbox (was on this form line 73-79)
+               Specialization is no longer captured; IsAvailable is set to true by default
+               in the DTO and can be toggled from the worker list if needed. *@
 
             <div class="btn-row" style="justify-content:space-between;margin-top:20px;border-top:1px solid var(--border);padding-top:20px">
                 <a asp-controller="Workers" asp-action="Index" class="btn btn-d">← Cancel</a>

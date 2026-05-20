@@ -807,3 +807,127 @@ table.table-hover tbody tr:hover { background: var(--bg3); }
     margin-top: 10px !important;
     font-size: 12.5px !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+ *  CONTRAST RESTORE — Bootstrap colored components on light theme
+ * ════════════════════════════════════════════════════════════════════
+ *  The body sets `color: var(--text1)` (dark gray) so all elements
+ *  inherit dark text by default. Bootstrap's colored utility classes
+ *  (.bg-success, .bg-primary, .bg-danger, etc.) expect WHITE text on
+ *  the dark backgrounds — but on our theme they were inheriting the
+ *  dark text, making content invisible or unreadable.
+ *
+ *  These rules force white text on colored backgrounds wherever they
+ *  appear: progress bars, badges, alerts, buttons, modal headers,
+ *  and the admin payment-verification action cards.
+ *
+ *  Everything below uses `!important` because Bootstrap's own rules
+ *  also use specific selectors; without the bump our overrides lose
+ *  the cascade race.
+ * ════════════════════════════════════════════════════════════════════ */
+
+/* — Bootstrap colored backgrounds always pair with white text — */
+.bg-primary,
+.bg-success,
+.bg-danger,
+.bg-warning,
+.bg-info,
+.bg-dark,
+.bg-secondary {
+    color: #ffffff !important;
+}
+
+/* Bootstrap warning is yellow by default — black text reads better there.
+ * Keep that exception but make it explicit (dark text on yellow). */
+.bg-warning,
+.badge.bg-warning,
+.btn-warning {
+    color: #1f2937 !important;
+}
+
+/* — Progress bars (the original reported issue) — */
+.progress-bar {
+    color: #ffffff !important;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.progress-bar.bg-warning {
+    color: #1f2937 !important;
+    text-shadow: none;
+}
+
+/* — Bootstrap badges on colored grounds — */
+.badge.bg-primary,
+.badge.bg-success,
+.badge.bg-danger,
+.badge.bg-info,
+.badge.bg-dark,
+.badge.bg-secondary {
+    color: #ffffff !important;
+}
+
+/* — Bootstrap solid buttons — */
+.btn-primary,
+.btn-success,
+.btn-danger,
+.btn-info,
+.btn-dark,
+.btn-secondary {
+    color: #ffffff !important;
+}
+.btn-primary:hover,
+.btn-success:hover,
+.btn-danger:hover,
+.btn-info:hover,
+.btn-dark:hover,
+.btn-secondary:hover {
+    color: #ffffff !important;
+}
+
+/* — Modal / card headers with colored backgrounds (used on Site Survey
+     Approve/Reject cards, etc.) — */
+.card-header.bg-success,
+.card-header.bg-danger,
+.card-header.bg-primary,
+.card-header.bg-info,
+.card-header.bg-dark,
+.modal-header.bg-success,
+.modal-header.bg-danger,
+.modal-header.bg-primary {
+    color: #ffffff !important;
+}
+
+/* — Bootstrap alert variants — keep their original tinted backgrounds
+     readable. These already have their own text color from Bootstrap,
+     we just make sure our theme's `body { color }` doesn't override. — */
+.alert-success { color: #14532d !important; }
+.alert-danger  { color: #7f1d1d !important; }
+.alert-warning { color: #78350f !important; }
+.alert-info    { color: #1e3a8a !important; }
+.alert-primary { color: #1e3a8a !important; }
+
+/* — Table header rows when admin uses bg-* classes — */
+thead.bg-success > tr > th,
+thead.bg-primary > tr > th,
+thead.bg-dark    > tr > th {
+    color: #ffffff !important;
+}
+
+/* — Outline buttons keep their colored TEXT, not the inverse — */
+.btn-outline-primary  { color: #0d6efd !important; }
+.btn-outline-success  { color: #198754 !important; }
+.btn-outline-danger   { color: #dc3545 !important; }
+.btn-outline-warning  { color: #f59e0b !important; }
+.btn-outline-info     { color: #0dcaf0 !important; }
+.btn-outline-secondary{ color: #6c757d !important; }
+/* Their HOVER state inverts: colored bg + white text. */
+.btn-outline-primary:hover,
+.btn-outline-success:hover,
+.btn-outline-danger:hover,
+.btn-outline-info:hover,
+.btn-outline-secondary:hover {
+    color: #ffffff !important;
+}
+.btn-outline-warning:hover {
+    color: #1f2937 !important;   /* yellow exception, same as above */
+}

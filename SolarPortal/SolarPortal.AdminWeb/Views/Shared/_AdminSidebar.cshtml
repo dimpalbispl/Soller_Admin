@@ -12,16 +12,24 @@
         <span class="sbi">🏗️</span>All Projects
         <span class="sb-badge" id="total-badge">--</span>
     </a>
+    @* Approvals link hidden per spec: "Remove separate Approval module completely
+       because Payment Approval and Request Approval both are same process."
+       Payment Verification is now the single approval entry-point. The route
+       still exists for SuperAdmin direct URL access if needed for diagnostics.
     <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Approvals">
         <span class="sbi">✅</span>Approvals
         <span class="sb-badge red" id="approval-badge">--</span>
     </a>
+    *@
 </div>
 <div class="sb-section">
     <div class="sb-label">Users & Payments</div>
+    @* User Management link hidden per spec: "User Management module remove/hide karo."
+       Route still exists for SuperAdmin direct access.
     <a class="sb-item @IsActive("Users")" asp-area="SolarPanelAdmin" asp-controller="Users" asp-action="Index">
         <span class="sbi">👤</span>User Management
     </a>
+    *@
     <a class="sb-item @IsActive("Payments")" asp-area="SolarPanelAdmin" asp-controller="Payments" asp-action="Index">
         <span class="sbi">💰</span>Payment Verification
     </a>
@@ -61,7 +69,10 @@
     <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Commission" asp-action="Index">
         <span class="sbi">📈</span>INC Commission
     </a>
+    @* Settings link hidden per spec: "Settings menu hide karo."
+       The controller/route still exists for direct access by SuperAdmin if needed.
     <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Settings" asp-action="Index">
         <span class="sbi">⚙️</span>Settings
     </a>
+    *@
 </div>

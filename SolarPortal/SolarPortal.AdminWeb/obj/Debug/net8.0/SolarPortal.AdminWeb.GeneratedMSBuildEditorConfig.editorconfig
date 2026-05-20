@@ -11,161 +11,161 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = SolarPortal.AdminWeb
 build_property.RootNamespace = SolarPortal.AdminWeb
-build_property.ProjectDir = \\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.AdminWeb\
+build_property.ProjectDir = \\localhost\Sadhna\New folder (12)\SolarPortal_FINAL\AdminPanel\Soller_Admin\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = true
-build_property.MSBuildProjectDirectory = \\localhost\Sadhna\New folder (21)\files\SolarPortal-LiveDb-AdminSite\SolarPortal\SolarPortal.AdminWeb
+build_property.MSBuildProjectDirectory = \\localhost\Sadhna\New folder (12)\SolarPortal_FINAL\AdminPanel\Soller_Admin\Soller_Admin\SolarPortal\SolarPortal.AdminWeb
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 8.0
 build_property.EnableCodeStyleSeverity = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Commission/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Commission/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXENvbW1pc3Npb25cSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Dashboard/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Dashboard/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXERhc2hib2FyZFxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Operations/OperationsList.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Operations/OperationsList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXE9wZXJhdGlvbnNcT3BlcmF0aW9uc0xpc3QuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Operations/_OperationModal.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Operations/_OperationModal.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXE9wZXJhdGlvbnNcX09wZXJhdGlvbk1vZGFsLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Payments/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Payments/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFBheW1lbnRzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/PMSurya/Details.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/PMSurya/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFBNU3VyeWFcRGV0YWlscy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/PMSurya/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/PMSurya/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFBNU3VyeWFcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Projects/Approvals.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Projects/Approvals.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFByb2plY3RzXEFwcHJvdmFscy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Projects/Details.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Projects/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFByb2plY3RzXERldGFpbHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Projects/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Projects/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFByb2plY3RzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Settings/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Settings/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFNldHRpbmdzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/SiteSurvey/Details.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/SiteSurvey/Details.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFNpdGVTdXJ2ZXlcRGV0YWlscy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/SiteSurvey/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/SiteSurvey/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFNpdGVTdXJ2ZXlcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/SolarProjects/Create.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/SolarProjects/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFNvbGFyUHJvamVjdHNcQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/SolarProjects/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/SolarProjects/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFNvbGFyUHJvamVjdHNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Users/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Users/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFVzZXJzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Workers/Create.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Workers/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFdvcmtlcnNcQ3JlYXRlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Workers/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Workers/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXFdvcmtlcnNcSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/_ViewImports.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXF9WaWV3SW1wb3J0cy5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/_ViewStart.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXF9WaWV3U3RhcnQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Account/AccessDenied.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Account/AccessDenied.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxBY2Nlc3NEZW5pZWQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Account/ForgotPassword.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Account/ForgotPassword.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxGb3Jnb3RQYXNzd29yZC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Account/Login.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Account/Login.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxMb2dpbi5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Account/Register.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Account/Register.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxSZWdpc3Rlci5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Home/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Home/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Home/Privacy.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Home/Privacy.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Notifications/Index.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Notifications/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcTm90aWZpY2F0aW9uc1xJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Shared/Error.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Shared/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_AdminSidebar.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_AdminSidebar.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9BZG1pblNpZGViYXIuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_AuthLayout.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_AuthLayout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9BdXRoTGF5b3V0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_StatusFlow.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_StatusFlow.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9TdGF0dXNGbG93LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_StatusTimeline.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_StatusTimeline.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9TdGF0dXNUaW1lbGluZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_Toasts.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_Toasts.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9Ub2FzdHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_ValidationScriptsPartial.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/_ViewImports.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/_ViewStart.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[//localhost/Sadhna/New folder (21)/files/SolarPortal-LiveDb-AdminSite/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_Layout.cshtml]
+[//localhost/Sadhna/New folder (12)/SolarPortal_FINAL/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Views/Shared/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = b-dh2a87zd5d

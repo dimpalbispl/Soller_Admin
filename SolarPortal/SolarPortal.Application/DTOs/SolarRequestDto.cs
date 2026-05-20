@@ -31,6 +31,16 @@ public class SolarRequestDto
     public string? MemberFullName { get; set; }   // Live from m_membermaster (MemFirstName + MemLastName)
     public decimal TotalPaid { get; set; }
     public decimal TotalDue { get; set; }
+
+    // Legacy basic-product reference (V#SpProductDetail.ProdId) for With Activation flow.
+    public int? ExternalProductId { get; set; }
+
+    // Admin annotations on the request. RejectionReason is set when admin rejects;
+    // AdminNotes is the general-purpose note (approval comment, follow-up, etc).
+    // Both round-trip via AutoMapper from the matching SolarRequest entity fields.
+    public string? RejectionReason { get; set; }
+    public string? AdminNotes { get; set; }
+
     public List<DocumentDto> Documents { get; set; } = new();
 }
 
@@ -52,6 +62,7 @@ public class CreateSolarRequestDto
     public int? SolarProjectId { get; set; }
     public string? SelectedPlan { get; set; }
     public decimal PlanAmount { get; set; }
+    public int? ExternalProductId { get; set; }
 }
 
 public class UpdateSolarRequestStatusDto

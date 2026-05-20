@@ -1,66 +1,214 @@
-﻿@model IEnumerable<SolarRequestDto>
+@model IEnumerable<SolarRequestDto>
 @{
     ViewData["Title"] = "Pending Approvals";
+    var paidMap = (Dictionary<int, decimal>)(ViewBag.PaidMap ?? new Dictionary<int, decimal>());
+    var paymentsMap = (Dictionary<int, List<SolarPortal.Domain.Entities.Payment>>)(ViewBag.PaymentsMap
+                       ?? new Dictionary<int, List<SolarPortal.Domain.Entities.Payment>>());
 }
 
 <div class="page active">
     <div class="ph">
         <div class="ph-bc">🛡️ Admin / <span>Approvals</span></div>
         <div class="ph-title">✅ Pending Approvals</div>
-        <div class="ph-sub">Review and approve/reject incoming solar connection requests</div>
+        <div class="ph-sub">
+            Review and approve/reject incoming solar connection requests.
+            <strong>Note:</strong> Approval here only releases the request into payment workflow.
+            Final approval happens automatically once cumulative verified payment ≥ ₹20,000
+            via the Payment Verification screen.
+        </div>
     </div>
 
     <div class="card">
         <div class="ct"><span class="ct-dot"></span>Requests Awaiting Approval (@Model.Count())</div>
-        <div class="tbl-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Request No.</th>
-                        <th>Applicant</th>
-                        <th>Mobile</th>
-                        <th>Type</th>
-                        <th>kV</th>
-                        <th>Plan</th>
-                        <th>Applied On</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var r in Model)
-                    {
-                        <tr>
-                            <td class="td-b">
+
+        @Html.AntiForgeryToken()
+
+        @if (!Model.Any())
+        {
+            <div style="text-align:center;padding:30px;color:var(--text3)">
+                🎉 No pending approvals!
+            </div>
+        }
+        else
+        {
+            foreach (var r in Model)
+            {
+                var paid = paidMap.TryGetValue(r.Id, out var pv) ? pv : 0m;
+                var due  = System.Math.Max(0, r.PlanAmount - paid);
+                paymentsMap.TryGetValue(r.Id, out var payments);
+                payments ??= new List<SolarPortal.Domain.Entities.Payment>();
+                var memberName = !string.IsNullOrWhiteSpace(r.MemberFullName) ? r.MemberFullName
+                               : !string.IsNullOrWhiteSpace(r.UserFullName)   ? r.UserFullName
+                               : r.ApplicantName;
+
+                <div class="card approval-card" id="approval-card-@r.Id"
+                     style="margin:16px 0;border-left:4px solid var(--sun);padding:16px">
+
+                    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+                        <div>
+                            <div style="font-size:18px;font-weight:700">
                                 <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Details"
                                    asp-route-id="@r.Id" style="color:var(--sun)">@r.RequestNumber</a>
-                            </td>
-                            <td>@r.ApplicantName</td>
-                            <td>@r.MobileNumber</td>
-                            <td>@r.ConnectionType</td>
-                            <td>@r.KVCapacity</td>
-                            <td>@r.SelectedPlan</td>
-                            <td>@r.CreatedAt.ToString("dd MMM yyyy")</td>
-                            <td>
-                                <button class="btn btn-g btn-sm" onclick="approveRequest(@r.Id)">
-                                    ✓ Approve
-                                </button>
-                                <button class="btn btn-d btn-sm" onclick="rejectRequest(@r.Id)"
-                                        style="margin-left:4px">
-                                    ✕ Reject
-                                </button>
-                            </td>
-                        </tr>
-                    }
-                    @if (!Model.Any())
+                                <span style="color:#6b7280;font-weight:500;font-size:14px">— @r.ApplicantName</span>
+                            </div>
+                            <div style="font-size:12px;color:#6b7280;margin-top:4px">
+                                Applied: @r.CreatedAt.ToString("dd MMM yyyy HH:mm")
+                            </div>
+                        </div>
+                        <div>
+                            <span class="badge bg-warning">⏳ Pending Approval</span>
+                        </div>
+                    </div>
+
+                    <!-- User & Request details grid -->
+                    <div class="row g-3" style="font-size:13px">
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Member ID</div>
+                            <div style="font-weight:700"><code style="font-size:13px">@r.UserId</code></div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Member Name</div>
+                            <div style="font-weight:600">@memberName</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Mobile</div>
+                            <div>@r.MobileNumber</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Email</div>
+                            <div style="word-break:break-all">@r.Email</div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Connection</div>
+                            <div>@r.ConnectionType / @r.RequestType</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Capacity</div>
+                            <div><strong>@r.KVCapacity kV</strong></div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Selected Plan</div>
+                            <div>@(string.IsNullOrEmpty(r.SelectedPlan) ? "—" : r.SelectedPlan)</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Plan Amount</div>
+                            <div style="font-weight:700;color:#0d9488">₹@r.PlanAmount.ToString("N0")</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Address</div>
+                            <div>@r.Address, @r.City, @r.State - @r.PinCode</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Aadhaar</div>
+                            <div>@(string.IsNullOrEmpty(r.AadharNumber) ? "—" : r.AadharNumber)</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">PAN</div>
+                            <div>@(string.IsNullOrEmpty(r.PANNumber) ? "—" : r.PANNumber)</div>
+                        </div>
+                    </div>
+
+                    <!-- Payment summary -->
+                    <div class="row g-2" style="margin-top:12px;padding-top:12px;border-top:1px dashed #ddd">
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Total Paid (Verified)</div>
+                            <div style="font-weight:700;color:#16a34a">₹@paid.ToString("N0")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Due</div>
+                            <div style="font-weight:700;color:@(due > 0 ? "#dc2626" : "#16a34a")">₹@due.ToString("N0")</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Payment Entries</div>
+                            <div>@payments.Count submission(s)</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div style="color:#6b7280;font-size:11px;text-transform:uppercase">Stage</div>
+                            <div>@r.CurrentStage</div>
+                        </div>
+                    </div>
+
+                    @if (payments.Any())
                     {
-                        <tr>
-                            <td colspan="8" style="text-align:center;padding:30px;color:var(--text3)">
-                                🎉 No pending approvals!
-                            </td>
-                        </tr>
+                        <details style="margin-top:10px">
+                            <summary style="cursor:pointer;color:#0d9488;font-size:13px">View payment submissions (@payments.Count)</summary>
+                            <table class="table table-sm" style="margin-top:8px;font-size:12px">
+                                <thead>
+                                    <tr>
+                                        <th>UTR</th>
+                                        <th style="text-align:right">Amount</th>
+                                        <th>Method</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var p in payments)
+                                {
+                                    <tr>
+                                        <td><code>@p.UTRNumber</code></td>
+                                        <td style="text-align:right">₹@p.Amount.ToString("N0")</td>
+                                        <td>@(p.PaymentMethod ?? "—")</td>
+                                        <td>@p.PaymentDate.ToLocalTime().ToString("dd MMM yyyy")</td>
+                                        <td>
+                                            @if (p.IsVerified) { <span class="badge bg-success">Verified</span> }
+                                            else if (p.Status == SolarPortal.Domain.Enums.PaymentStatus.Rejected) { <span class="badge bg-danger">Rejected</span> }
+                                            else { <span class="badge bg-warning">Pending</span> }
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </details>
                     }
-                </tbody>
-            </table>
-        </div>
+
+                    <!-- Action buttons -->
+                    <div class="btn-row" style="margin-top:14px;display:flex;gap:8px">
+                        <button class="btn btn-success btn-approve" data-id="@r.Id">✓ Approve</button>
+                        <button class="btn btn-danger btn-reject"   data-id="@r.Id">✕ Reject</button>
+                    </div>
+                </div>
+            }
+        }
     </div>
 </div>
+
+@section Scripts {
+<script>
+const token = $('input[name="__RequestVerificationToken"]').val();
+
+// Lock the entire card (both buttons) once a decision is in flight.
+// This is the front-end half of "Duplicate approval/reject allow mat karo" —
+// the back-end SolarRequestService rejects duplicates regardless.
+function lockApprovalCard(id, label) {
+    const $card = $('#approval-card-' + id);
+    $card.find('.btn-approve, .btn-reject').prop('disabled', true).addClass('disabled');
+    $card.css('opacity', '0.6');
+    $card.append(`<div class="mt-2"><em>${label}...</em></div>`);
+}
+
+$('.btn-approve').on('click', function () {
+    const id = $(this).data('id');
+    if (!confirm('Approve this request? The user will be allowed to proceed to payment.')) return;
+    lockApprovalCard(id, 'Approving');
+    $.post('@Url.Action("Approve")',
+        { id: id, __RequestVerificationToken: token },
+        function (r) { alert(r.message || (r.success ? 'Approved' : 'Failed')); location.reload(); }
+    ).fail(() => { alert('Network error.'); location.reload(); });
+});
+
+$('.btn-reject').on('click', function () {
+    const id = $(this).data('id');
+    const reason = prompt('Reason for rejection? (required)');
+    if (reason === null) return;
+    if (!reason.trim()) { alert('A reason is required.'); return; }
+    lockApprovalCard(id, 'Rejecting');
+    $.post('@Url.Action("Reject")',
+        { id: id, reason: reason, __RequestVerificationToken: token },
+        function (r) { alert(r.message || (r.success ? 'Rejected' : 'Failed')); location.reload(); }
+    ).fail(() => { alert('Network error.'); location.reload(); });
+});
+</script>
+}

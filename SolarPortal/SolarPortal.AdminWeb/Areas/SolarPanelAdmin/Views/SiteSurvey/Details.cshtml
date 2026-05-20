@@ -2,72 +2,256 @@
 @{
     ViewData["Title"] = "Site Survey Review";
     var req = (SolarPortal.Domain.Entities.SolarRequest?)ViewBag.Request;
-    var files = (Model.SurveyPhotoPath ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries);
+
+    // Helper for displaying a value or a placeholder when empty
+    string Show(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v;
+    string ShowDecimal(decimal? v) => v.HasValue ? v.Value.ToString("N2") : "—";
+
+    // Photos — the user's Upload action saves RoofPhotoPath and GpsPhotoPath
+    // separately. Legacy records may use SurveyPhotoPath (semicolon-CSV) too,
+    // so we show all available file references.
+    var photos = new List<(string Label, string? Path)>
+    {
+        ("Roof Photo",   Model.RoofPhotoPath),
+        ("GPS Photo",    Model.GpsPhotoPath),
+        ("Survey Photo", Model.SurveyPhotoPath),  // legacy combined
+    };
 }
 
 <div class="page-header" style="padding:16px">
     <h2>Site Survey — @req?.RequestNumber</h2>
-    <p class="text-muted">Submitted @Model.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</p>
+    <p class="text-muted">
+        Submitted by user on @Model.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+        @if (!string.IsNullOrEmpty(Model.OperationsRemark))
+        {
+            <span class="badge bg-warning text-dark ms-2">Previously rejected: @Model.OperationsRemark</span>
+        }
+    </p>
 </div>
 
 <div class="container-fluid">
     <div class="row g-3">
         <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">Files</div>
+            @* ===== Applicant + Request context ===== *@
+            <div class="card mb-3">
+                <div class="card-header"><strong>Applicant Information</strong></div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Member ID</small>
+                            <code style="font-size:13px;color:#0d9488">@Show(req?.UserId)</code>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Request #</small>
+                            <strong>@Show(req?.RequestNumber)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Name</small>
+                            @Show(req?.ApplicantName)
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Mobile</small>
+                            @if (!string.IsNullOrWhiteSpace(req?.MobileNumber))
+                            {
+                                <a href="tel:@req.MobileNumber">@req.MobileNumber</a>
+                            }
+                            else { <span>—</span> }
+                        </div>
+                        <div class="col-md-12">
+                            <small class="text-muted d-block">Address</small>
+                            @Show(req?.Address), @Show(req?.City), @Show(req?.State) - @Show(req?.PinCode)
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Plan</small>
+                            @Show(req?.SelectedPlan)
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Project Amount</small>
+                            ₹@(req?.PlanAmount.ToString("N0") ?? "0")
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ===== Section 1: General ===== *@
+            <div class="card mb-3">
+                <div class="card-header"><strong>Section 1 — General</strong></div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Property Type</small>
+                            <strong>@Show(Model.PropertyType)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Roof Available</small>
+                            <strong>@Show(Model.RoofAvailable)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Roof Type</small>
+                            <strong>@Show(Model.RoofType)</strong>
+                            @if (Model.RoofType == "Other" && !string.IsNullOrWhiteSpace(Model.RoofTypeOther))
+                            {
+                                <span class="text-muted"> (@Model.RoofTypeOther)</span>
+                            }
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Roof Total Area</small>
+                            <strong>@ShowDecimal(Model.RoofTotalAreaSqft)</strong> sqft
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ===== Section 2: Electrical ===== *@
+            <div class="card mb-3">
+                <div class="card-header"><strong>Section 2 — Electrical</strong></div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">DISCOM Name</small>
+                            <strong>@Show(Model.DiscomName)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Consumer Number</small>
+                            <strong>@Show(Model.ConsumerNumber)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Meter Type</small>
+                            <strong>@Show(Model.MeterType)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Grid Type</small>
+                            <strong>@Show(Model.GridType)</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ===== Section 3: Site Conditions ===== *@
+            <div class="card mb-3">
+                <div class="card-header"><strong>Section 3 — Site Conditions</strong></div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Shadow on Roof</small>
+                            <strong>@Show(Model.ShadowOnRoof)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Obstructions</small>
+                            <strong>@Show(Model.Obstructions)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Roof Direction</small>
+                            <strong>@Show(Model.RoofDirection)</strong>
+                            @if (Model.RoofDirection == "Other" && !string.IsNullOrWhiteSpace(Model.RoofDirectionOther))
+                            {
+                                <span class="text-muted"> (@Model.RoofDirectionOther)</span>
+                            }
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Earthing Available</small>
+                            <strong>@Show(Model.EarthingAvailable)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Internet Available</small>
+                            <strong>@Show(Model.InternetAvailable)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Survey Date</small>
+                            <strong>@(Model.SurveyDate?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* ===== Section 4: Photos & Notes ===== *@
+            <div class="card mb-3">
+                <div class="card-header"><strong>Section 4 — Photos &amp; Notes</strong></div>
                 <div class="card-body">
                     <div class="row g-3">
-                    @foreach (var f in files)
-                    {
-                        var isImg = f.EndsWith(".jpg") || f.EndsWith(".jpeg") || f.EndsWith(".png");
-                        <div class="col-md-4">
-                            <div class="card">
-                                @if (isImg)
-                                {
-                                    <img src="~/@f" class="card-img-top" style="height:200px; object-fit:cover" />
-                                }
-                                else
-                                {
-                                    <div style="height:200px;display:flex;align-items:center;justify-content:center;background:#f8f9fa">
-                                        <span style="font-size:48px">📄</span>
+                        @foreach (var photo in photos.Where(p => !string.IsNullOrWhiteSpace(p.Path)))
+                        {
+                            @* Normalize stored path so URL resolves from web root.
+                               Older records sometimes carried a 'wwwroot/' prefix. *@
+                            var rel = photo.Path!.Replace("\\", "/").TrimStart('/');
+                            if (rel.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                                rel = rel.Substring("wwwroot/".Length);
+                            var url = "/" + rel;
+                            var isImg = url.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+                                     || url.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+                                     || url.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+                                     || url.EndsWith(".webp", StringComparison.OrdinalIgnoreCase);
+
+                            <div class="col-md-4">
+                                <div class="card">
+                                    @if (isImg)
+                                    {
+                                        <img src="@url" class="card-img-top" style="height:200px; object-fit:cover" alt="@photo.Label" />
+                                    }
+                                    else
+                                    {
+                                        <div style="height:200px;display:flex;align-items:center;justify-content:center;background:#f8f9fa">
+                                            <span style="font-size:48px">📄</span>
+                                        </div>
+                                    }
+                                    <div class="card-body p-2">
+                                        <small class="text-muted d-block mb-1">@photo.Label</small>
+                                        <a href="@url" target="_blank" class="btn btn-sm btn-outline-primary w-100">Open</a>
                                     </div>
-                                }
-                                <div class="card-body p-2">
-                                    <a href="~/@f" target="_blank" class="btn btn-sm btn-outline-primary w-100">Open</a>
                                 </div>
                             </div>
-                        </div>
-                    }
-                    @if (!files.Any())
-                    {
-                        <p class="text-muted">No files attached.</p>
-                    }
+                        }
+                        @if (!photos.Any(p => !string.IsNullOrWhiteSpace(p.Path)))
+                        {
+                            <p class="text-muted">No photos uploaded.</p>
+                        }
                     </div>
 
-                    @if (!string.IsNullOrEmpty(Model.SurveyNotes))
+                    @if (!string.IsNullOrWhiteSpace(Model.SurveyNotes))
                     {
                         <hr />
-                        <h6>Notes</h6>
-                        <pre style="white-space:pre-wrap">@Model.SurveyNotes</pre>
+                        <h6>User's Survey Notes</h6>
+                        <pre style="white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px;font-size:13px">@Model.SurveyNotes</pre>
                     }
                 </div>
             </div>
         </div>
+
+        @* ===== Right rail: action buttons (Approve / Reject) ===== *@
         <div class="col-lg-4">
-            <div class="card mb-3">
-                <div class="card-header bg-success text-white">Approve</div>
-                <div class="card-body">
-                    <textarea id="approveNotes" class="form-control mb-2" placeholder="Optional admin notes"></textarea>
-                    <button id="btnApprove" class="btn btn-success w-100">Approve & Move to Meter Dispatch</button>
+            @if (Model.IsCompleted)
+            {
+                <div class="card mb-3 border-success">
+                    <div class="card-header bg-success text-white">✓ Already Approved</div>
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Approved on:</strong>
+                            @(Model.CompletedAt?.ToLocalTime().ToString("dd MMM yyyy HH:mm") ?? "—")</p>
+                        @if (!string.IsNullOrWhiteSpace(Model.OperationsRemark))
+                        {
+                            <p class="mb-0"><strong>Admin notes:</strong> @Model.OperationsRemark</p>
+                        }
+                        <p class="text-muted small mt-2 mb-0">This survey has been approved and the workflow has moved to the next stage. No further action allowed here.</p>
+                    </div>
                 </div>
-            </div>
-            <div class="card">
-                <div class="card-header bg-danger text-white">Reject</div>
-                <div class="card-body">
-                    <textarea id="rejectReason" class="form-control mb-2" placeholder="Reason for rejection (required)"></textarea>
-                    <button id="btnReject" class="btn btn-danger w-100">Reject Survey</button>
+            }
+            else
+            {
+                <div class="card mb-3">
+                    <div class="card-header bg-success text-white">Approve</div>
+                    <div class="card-body">
+                        <textarea id="approveNotes" class="form-control mb-2" placeholder="Optional admin notes" rows="3"></textarea>
+                        <button id="btnApprove" class="btn btn-success w-100">Approve &amp; Move to Material Dispatch</button>
+                    </div>
                 </div>
-            </div>
+                <div class="card">
+                    <div class="card-header bg-danger text-white">Reject</div>
+                    <div class="card-body">
+                        <textarea id="rejectReason" class="form-control mb-2" placeholder="Reason for rejection (required) — user will see this" rows="3"></textarea>
+                        <button id="btnReject" class="btn btn-danger w-100">Reject Survey</button>
+                        <small class="text-muted d-block mt-2">User can re-submit the survey after fixing the reasons.</small>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -79,23 +263,34 @@
 const token = $('input[name="__RequestVerificationToken"]').val();
 
 $('#btnApprove').on('click', function () {
-    if (!confirm('Approve this site survey?')) return;
+    if (!confirm('Approve this site survey? This advances the project to Material Dispatch.')) return;
+    const $btn = $(this).prop('disabled', true).text('Approving…');
     $.post('@Url.Action("Approve")',
         { surveyId: @Model.Id, notes: $('#approveNotes').val(), __RequestVerificationToken: token },
         function (r) {
             alert(r.message);
             if (r.success) window.location.href = '@Url.Action("Index")';
+            else $btn.prop('disabled', false).text('Approve & Move to Material Dispatch');
+        }).fail(function () {
+            alert('Server error. Please refresh and try again.');
+            $btn.prop('disabled', false).text('Approve & Move to Material Dispatch');
         });
 });
 
 $('#btnReject').on('click', function () {
     const reason = $('#rejectReason').val();
     if (!reason || !reason.trim()) { alert('Reason is required'); return; }
+    if (!confirm('Reject this survey? User will be notified and can re-submit.')) return;
+    const $btn = $(this).prop('disabled', true).text('Rejecting…');
     $.post('@Url.Action("Reject")',
         { surveyId: @Model.Id, reason: reason, __RequestVerificationToken: token },
         function (r) {
             alert(r.message);
             if (r.success) window.location.href = '@Url.Action("Index")';
+            else $btn.prop('disabled', false).text('Reject Survey');
+        }).fail(function () {
+            alert('Server error. Please refresh and try again.');
+            $btn.prop('disabled', false).text('Reject Survey');
         });
 });
 </script>

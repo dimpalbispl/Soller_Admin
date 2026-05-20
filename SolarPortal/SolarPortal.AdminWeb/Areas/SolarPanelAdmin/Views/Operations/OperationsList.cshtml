@@ -61,6 +61,18 @@
 
     @if (Model.Any())
     {
+        // History mode: show extra "Details" column with the data admin filled
+        // during the dispatch action. Pulled from ViewBag dictionaries that the
+        // controller populated based on `op`.
+        // Note: we're already inside a Razor C# block here (because of @if{...})
+        // so plain `var` declarations work — no need for @{ } which is the
+        // *transition* syntax from HTML to C#.
+        var isHistoryMode = string.Equals((string)ViewBag.Filter, "all", StringComparison.OrdinalIgnoreCase);
+        var meterMap     = ViewBag.MeterDetails        as Dictionary<int, SolarPortal.Domain.Entities.MeterDispatch>;
+        var materialMap  = ViewBag.MaterialDetails     as Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>;
+        var installMap   = ViewBag.InstallationDetails as Dictionary<int, SolarPortal.Domain.Entities.Installation>;
+        var dcrMap       = ViewBag.DCRDetails          as Dictionary<int, SolarPortal.Domain.Entities.DCRDocument>;
+
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>@ViewBag.Title Queue (@Model.Count())</div>
             <div class="tbl-wrap">
@@ -68,11 +80,16 @@
                     <thead>
                         <tr>
                             <th>Request</th>
+                            <th>Member ID</th>
                             <th>Applicant</th>
                             <th>Type</th>
                             <th>Capacity</th>
                             <th>City / State</th>
                             <th>Stage</th>
+                            @if (isHistoryMode)
+                            {
+                                <th>Details</th>
+                            }
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -84,13 +101,84 @@
                                     <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Details"
                                        asp-route-id="@r.Id" style="color:var(--sun)">@r.RequestNumber</a>
                                 </td>
-                                <td>@r.ApplicantName<div style="font-size:11px;color:var(--text3)">@r.MobileNumber</div></td>
+                                <td><code style="font-size:11px;color:#0d9488">@r.UserId</code></td>
+                                <td>
+                                    @* Live m_membermaster name when admin controller has enriched it,
+                                       otherwise stored ApplicantName. *@
+                                    @(string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName)
+                                    <div style="font-size:11px;color:var(--text3)">@r.MobileNumber</div>
+                                </td>
                                 <td>@r.ConnectionType</td>
                                 <td>@r.KVCapacity kV</td>
                                 <td>@r.City<div style="font-size:11px;color:var(--text3)">@r.State</div></td>
                                 <td>
                                     <span class="sts sts-disp">@r.CurrentStage.ToString().Replace("_", " ")</span>
                                 </td>
+                                @if (isHistoryMode)
+                                {
+                                    <td style="font-size:12px;max-width:240px">
+                                        @* Render whatever dispatch record exists for this request, based on op. *@
+                                        @switch (op)
+                                        {
+                                            case "meter":
+                                                if (meterMap != null && meterMap.TryGetValue(r.Id, out var m))
+                                                {
+                                                    <div><strong>#</strong> @m.MeterNumber</div>
+                                                    if (!string.IsNullOrWhiteSpace(m.MeterType))   { <div><strong>Type:</strong> @m.MeterType</div> }
+                                                    if (m.DispatchDate.HasValue)                   { <div><strong>Date:</strong> @m.DispatchDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div> }
+                                                    if (!string.IsNullOrWhiteSpace(m.Remark))      { <div style="color:var(--text3)">@m.Remark</div> }
+                                                    if (!string.IsNullOrWhiteSpace(m.DispatchDocumentPath))
+                                                    {
+                                                        <div><a href="/@m.DispatchDocumentPath.Replace("\\","/").TrimStart('/')" target="_blank" style="color:var(--sun)">📄 Document</a></div>
+                                                    }
+                                                }
+                                                else { <span class="text-muted">—</span> }
+                                                break;
+                                            case "material":
+                                                if (materialMap != null && materialMap.TryGetValue(r.Id, out var mat))
+                                                {
+                                                    if (!string.IsNullOrWhiteSpace(mat.MaterialDetails)) { <div>@mat.MaterialDetails</div> }
+                                                    if (mat.DispatchDate.HasValue)                       { <div><strong>Date:</strong> @mat.DispatchDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div> }
+                                                    if (!string.IsNullOrWhiteSpace(mat.VehicleDetails))  { <div><strong>Vehicle:</strong> @mat.VehicleDetails</div> }
+                                                    if (mat.AssignedWorker != null)                      { <div><strong>Worker:</strong> @mat.AssignedWorker.Name</div> }
+                                                    if (!string.IsNullOrWhiteSpace(mat.Remark))          { <div style="color:var(--text3)">@mat.Remark</div> }
+                                                    if (!string.IsNullOrWhiteSpace(mat.DispatchDocumentPath))
+                                                    {
+                                                        <div><a href="/@mat.DispatchDocumentPath.Replace("\\","/").TrimStart('/')" target="_blank" style="color:var(--sun)">📄 Document</a></div>
+                                                    }
+                                                }
+                                                else { <span class="text-muted">—</span> }
+                                                break;
+                                            case "installation":
+                                                if (installMap != null && installMap.TryGetValue(r.Id, out var inst))
+                                                {
+                                                    if (inst.InstallationDate.HasValue)              { <div><strong>Date:</strong> @inst.InstallationDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div> }
+                                                    if (inst.AssignedWorker != null)                 { <div><strong>Worker:</strong> @inst.AssignedWorker.Name</div> }
+                                                    if (!string.IsNullOrWhiteSpace(inst.Notes))      { <div>@inst.Notes</div> }
+                                                    if (!string.IsNullOrWhiteSpace(inst.Remark))     { <div style="color:var(--text3)">@inst.Remark</div> }
+                                                    if (!string.IsNullOrWhiteSpace(inst.CompletionPhotoPath))
+                                                    {
+                                                        <div><a href="/@inst.CompletionPhotoPath.Replace("\\","/").TrimStart('/')" target="_blank" style="color:var(--sun)">📷 Photo</a></div>
+                                                    }
+                                                }
+                                                else { <span class="text-muted">—</span> }
+                                                break;
+                                            case "dcr":
+                                                if (dcrMap != null && dcrMap.TryGetValue(r.Id, out var dcr))
+                                                {
+                                                    if (!string.IsNullOrWhiteSpace(dcr.DCRNumber))  { <div><strong>#</strong> @dcr.DCRNumber</div> }
+                                                    if (dcr.DCRDate.HasValue)                       { <div><strong>Date:</strong> @dcr.DCRDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div> }
+                                                    if (!string.IsNullOrWhiteSpace(dcr.Remark))     { <div style="color:var(--text3)">@dcr.Remark</div> }
+                                                    if (!string.IsNullOrWhiteSpace(dcr.DocumentPath))
+                                                    {
+                                                        <div><a href="/@dcr.DocumentPath.Replace("\\","/").TrimStart('/')" target="_blank" style="color:var(--sun)">📄 Document</a></div>
+                                                    }
+                                                }
+                                                else { <span class="text-muted">—</span> }
+                                                break;
+                                        }
+                                    </td>
+                                }
                                 <td>
                                     @{
                                         // Map the page's "op" to the stage it acts on

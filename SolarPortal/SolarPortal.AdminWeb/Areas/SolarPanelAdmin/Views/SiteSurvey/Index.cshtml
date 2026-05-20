@@ -28,8 +28,11 @@
                 <thead>
                     <tr>
                         <th>Survey ID</th>
+                        <th>Member ID</th>
                         <th>Request #</th>
                         <th>Applicant</th>
+                        <th>Property / Roof</th>
+                        <th>DISCOM / Consumer</th>
                         <th>Submitted</th>
                         <th>Files</th>
                         <th></th>
@@ -39,13 +42,38 @@
                 @foreach (var s in surveys)
                 {
                     var req = Model.FirstOrDefault(r => r.Id == s.SolarRequestId);
-                    var files = (s.SurveyPhotoPath ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries).Length;
+                    // Count attached files across both new (separate) and legacy (combined) paths
+                    var fileCount = 0;
+                    if (!string.IsNullOrWhiteSpace(s.RoofPhotoPath)) fileCount++;
+                    if (!string.IsNullOrWhiteSpace(s.GpsPhotoPath)) fileCount++;
+                    fileCount += (s.SurveyPhotoPath ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries).Length;
                     <tr>
                         <td>#@s.Id</td>
+                        <td><code style="font-size:11px;color:#0d9488">@req?.UserId</code></td>
                         <td><strong>@req?.RequestNumber</strong></td>
                         <td>@req?.ApplicantName<br /><small class="text-muted">@req?.MobileNumber</small></td>
+                        <td style="font-size:12px">
+                            @if (!string.IsNullOrWhiteSpace(s.PropertyType))
+                            {
+                                <span>@s.PropertyType</span><br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(s.RoofType))
+                            {
+                                <small class="text-muted">@s.RoofType roof</small>
+                            }
+                        </td>
+                        <td style="font-size:12px">
+                            @if (!string.IsNullOrWhiteSpace(s.DiscomName))
+                            {
+                                <span>@s.DiscomName</span><br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(s.ConsumerNumber))
+                            {
+                                <small class="text-muted">@s.ConsumerNumber</small>
+                            }
+                        </td>
                         <td>@s.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
-                        <td><span class="badge bg-info">@files file(s)</span></td>
+                        <td><span class="badge bg-info">@fileCount file(s)</span></td>
                         <td>
                             <a class="btn btn-sm btn-primary" asp-action="Details" asp-route-id="@s.Id">Review</a>
                         </td>
@@ -53,7 +81,7 @@
                 }
                 @if (!surveys.Any())
                 {
-                    <tr><td colspan="6" class="text-center text-muted">No surveys awaiting approval.</td></tr>
+                    <tr><td colspan="9" class="text-center text-muted">No surveys awaiting approval.</td></tr>
                 }
                 </tbody>
             </table>

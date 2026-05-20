@@ -50,14 +50,64 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header bg-success text-white">Approve & Advance</div>
-                <div class="card-body">
-                    <p>Once all documents are valid, approve the whole batch and move the project to <strong>Meter Dispatch</strong>.</p>
-                    <textarea id="advanceNotes" class="form-control mb-2" placeholder="Optional notes"></textarea>
-                    <button id="btnAdvance" class="btn btn-success w-100">Approve All & Move to Meter Dispatch</button>
+            @{
+                // Per spec: agar saare documents approve ho gaye aur project
+                // stage PMSurvey ke aage badh chuka hai, to "Approve All" button
+                // nahi dikhna chahiye — sirf "Already Approved" status dikhe.
+                //
+                // Two conditions for "already advanced":
+                //   (a) Stage is past PMSurvey (MeterDispatch, SiteSurvey, etc.) — workflow moved on
+                //   (b) All uploaded docs are approved AND there's at least one doc — batch done
+                //
+                // If only some docs are approved (mixed pending), keep the
+                // Approve & Advance card visible so admin can finish the batch.
+                var stage = req.CurrentStage;
+                var advancedPastPMSurvey =
+                    stage == SolarPortal.Domain.Enums.ProjectStatus.MeterDispatch ||
+                    stage == SolarPortal.Domain.Enums.ProjectStatus.SiteSurvey ||
+                    stage == SolarPortal.Domain.Enums.ProjectStatus.MaterialDispatch ||
+                    stage == SolarPortal.Domain.Enums.ProjectStatus.Installation ||
+                    stage == SolarPortal.Domain.Enums.ProjectStatus.DCRUpdate ||
+                    stage == SolarPortal.Domain.Enums.ProjectStatus.Completed;
+
+                var allDocsApproved = docs.Any() &&
+                    docs.All(d => d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Approved);
+
+                var alreadyApproved = advancedPastPMSurvey || allDocsApproved;
+            }
+
+            @if (alreadyApproved)
+            {
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">✓ Already Approved</div>
+                    <div class="card-body">
+                        <p class="mb-2">
+                            All PM Surya Ghar documents are <strong>approved</strong>.
+                            @if (advancedPastPMSurvey)
+                            {
+                                <span>Project has advanced to <strong>@stage.ToString().Replace("_", " ")</strong>.</span>
+                            }
+                            else
+                            {
+                                <span>You can now move it to <strong>Meter Dispatch</strong> from the workflow.</span>
+                            }
+                        </p>
+                        <p class="text-muted small mb-2">No further action allowed on this page.</p>
+                        <a asp-action="Index" class="btn btn-outline-secondary w-100">← Back to PM Surya list</a>
+                    </div>
                 </div>
-            </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-header bg-success text-white">Approve &amp; Advance</div>
+                    <div class="card-body">
+                        <p>Once all documents are valid, approve the whole batch and move the project to <strong>Meter Dispatch</strong>.</p>
+                        <textarea id="advanceNotes" class="form-control mb-2" placeholder="Optional notes"></textarea>
+                        <button id="btnAdvance" class="btn btn-success w-100">Approve All &amp; Move to Meter Dispatch</button>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -84,12 +134,19 @@ $('.btn-reject').on('click', function () {
 });
 
 $('#btnAdvance').on('click', function () {
+    // Button only exists when alreadyApproved is false (see view). If it
+    // doesn't exist on the page, jQuery's .on no-ops silently — harmless.
     if (!confirm('Approve all PM Surya Ghar docs and move this project to Meter Dispatch?')) return;
+    $(this).prop('disabled', true).text('Approving…');
     $.post('@Url.Action("ApproveAndAdvance")',
         { requestId: @req.Id, notes: $('#advanceNotes').val(), __RequestVerificationToken: token },
         function (r) {
             alert(r.message);
             if (r.success) window.location.href = '@Url.Action("Index")';
+            else $('#btnAdvance').prop('disabled', false).text('Approve All & Move to Meter Dispatch');
+        }).fail(function () {
+            alert('Server error. Please refresh and try again.');
+            $('#btnAdvance').prop('disabled', false).text('Approve All & Move to Meter Dispatch');
         });
 });
 </script>

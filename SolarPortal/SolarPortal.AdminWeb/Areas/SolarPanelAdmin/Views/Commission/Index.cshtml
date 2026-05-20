@@ -1,13 +1,114 @@
 @model IEnumerable<SolarPortal.Domain.Entities.Commission>
 @{
     ViewData["Title"] = "INC Commission";
+    var filter = ViewBag.Filter as string ?? "all";
+    var totalPending = (decimal)(ViewBag.TotalPending ?? 0m);
+    var totalPaid    = (decimal)(ViewBag.TotalPaid ?? 0m);
+    var incWorkers = (ViewBag.IncWorkers as List<SolarPortal.Domain.Entities.Worker>)
+                     ?? new List<SolarPortal.Domain.Entities.Worker>();
+    var uncommissioned = (ViewBag.UncommissionedCompleted as List<SolarPortal.Domain.Entities.SolarRequest>)
+                         ?? new List<SolarPortal.Domain.Entities.SolarRequest>();
 }
 
 <div class="page active">
     <div class="ph">
         <div class="ph-bc">🛡️ Admin / <span>INC Commission</span></div>
-        <div class="ph-title">📈 Installer Commission</div>
-        <div class="ph-sub">Track and manage commissions for completed projects</div>
+        <div class="ph-title">📈 INC Commission Management</div>
+        <div class="ph-sub">Generate, assign and pay commissions for INC-type workers on completed projects</div>
+    </div>
+
+    <!-- Summary -->
+    <div class="g4" style="margin-bottom:14px">
+        <div class="sc">
+            <div class="sc-label">Total Records</div>
+            <div class="sc-val blue">@Model.Count()</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Pending Payout</div>
+            <div class="sc-val red">₹@totalPending.ToString("N0")</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Total Paid</div>
+            <div class="sc-val green">₹@totalPaid.ToString("N0")</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Uncommissioned Completed</div>
+            <div class="sc-val gold">@uncommissioned.Count</div>
+            <div class="sc-sub">Eligible for generation</div>
+        </div>
+    </div>
+
+    @Html.AntiForgeryToken()
+
+    <div class="mb-3" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+            <a class="btn @(filter == "all" ? "btn-primary" : "btn-outline-primary")" asp-route-filter="all">All</a>
+            <a class="btn @(filter == "pending" ? "btn-warning" : "btn-outline-warning")" asp-route-filter="pending">Pending</a>
+            <a class="btn @(filter == "paid" ? "btn-success" : "btn-outline-success")" asp-route-filter="paid">Paid</a>
+        </div>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createCommissionModal">
+            ➕ Generate Commission
+        </button>
+    </div>
+
+    <!-- Generate-commission modal -->
+    <div class="modal fade" id="createCommissionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="createCommissionForm">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header">
+                        <h5 class="modal-title">Generate Commission</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!uncommissioned.Any())
+                        {
+                            <div class="alert alert-info">
+                                No completed projects without commission records.
+                                Projects must be in <strong>Completed</strong> stage to generate a commission.
+                            </div>
+                        }
+                        <div class="mb-3">
+                            <label class="form-label">Completed Project <span class="text-danger">*</span></label>
+                            <select class="form-select" name="solarRequestId" required>
+                                <option value="">-- pick a project --</option>
+                                @foreach (var r in uncommissioned)
+                                {
+                                    <option value="@r.Id" data-amount="@r.PlanAmount">
+                                        @r.RequestNumber — @r.ApplicantName (₹@r.PlanAmount.ToString("N0"))
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">INC Worker</label>
+                            <select class="form-select" name="workerId">
+                                <option value="">-- unassigned (assign later) --</option>
+                                @foreach (var w in incWorkers)
+                                {
+                                    <option value="@w.Id">@w.Name (@(w.MobileNumber))</option>
+                                }
+                            </select>
+                            <small class="form-text text-muted">Only INC-type workers earn commission.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Commission %</label>
+                            <input type="number" class="form-control" name="percentage"
+                                   value="5" min="0.01" max="100" step="0.01" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">Generate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     @if (Model.Any())
@@ -15,36 +116,68 @@
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>Commission Records (@Model.Count())</div>
             <div class="tbl-wrap">
-                <table>
+                <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Request ID</th>
-                            <th>Project Amount</th>
+                            <th>Request</th>
+                            <th>Member ID</th>
+                            <th>INC Worker</th>
+                            <th style="text-align:right">Project Amount</th>
                             <th>%</th>
-                            <th>Commission</th>
+                            <th style="text-align:right">Commission</th>
                             <th>Status</th>
                             <th>Paid On</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var c in Model)
                         {
                             <tr>
-                                <td class="td-b">#@c.SolarRequestId</td>
-                                <td>₹@c.ProjectAmount.ToString("N0")</td>
-                                <td>@c.CommissionPercentage%</td>
-                                <td style="color:var(--sun)">₹@c.CommissionAmount.ToString("N0")</td>
+                                <td><strong>@(c.SolarRequest?.RequestNumber ?? ("#" + c.SolarRequestId))</strong></td>
+                                <td><code style="font-size:11px;color:#0d9488">@c.UserId</code></td>
                                 <td>
-                                    @if (c.IsPaid)
+                                    @if (c.Worker != null)
                                     {
-                                        <span class="sts sts-act">Paid</span>
+                                        @c.Worker.Name <small class="text-muted">(@c.Worker.MobileNumber)</small>
+                                    }
+                                    else if (!c.IsPaid)
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary btn-assign" data-id="@c.Id">
+                                            Assign...
+                                        </button>
                                     }
                                     else
                                     {
-                                        <span class="sts sts-pend">Pending</span>
+                                        <small class="text-muted">—</small>
                                     }
                                 </td>
-                                <td>@(c.PaidAt?.ToString("dd MMM yyyy") ?? "—")</td>
+                                <td style="text-align:right">₹@c.ProjectAmount.ToString("N0")</td>
+                                <td>@c.CommissionPercentage.ToString("0.##")%</td>
+                                <td style="text-align:right;color:var(--sun);font-weight:600">₹@c.CommissionAmount.ToString("N0")</td>
+                                <td>
+                                    @if (c.IsPaid)
+                                    {
+                                        <span class="badge bg-success">Paid</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">Pending</span>
+                                    }
+                                </td>
+                                <td>@(c.PaidAt?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</td>
+                                <td>
+                                    @if (!c.IsPaid)
+                                    {
+                                        <button class="btn btn-sm btn-success btn-mark-paid" data-id="@c.Id">
+                                            Mark Paid
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">Ref: @(c.PaymentReference ?? "—")</small>
+                                    }
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -59,8 +192,86 @@
             <div style="text-align:center;padding:40px;color:var(--text3)">
                 <div style="font-size:48px;margin-bottom:16px">📈</div>
                 <div style="font-size:18px;margin-bottom:8px">No commissions to display</div>
-                <div>Commissions will appear here once projects are completed.</div>
+                <div>Generate a commission from a completed project using the button above.</div>
             </div>
         </div>
     }
 </div>
+
+@* Assign worker modal — opened on demand by .btn-assign *@
+<div class="modal fade" id="assignWorkerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="assignWorkerForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="assignCommissionId" />
+                <div class="modal-header">
+                    <h5 class="modal-title">Assign INC Worker</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label">INC Worker <span class="text-danger">*</span></label>
+                    <select class="form-select" name="workerId" required>
+                        <option value="">-- pick a worker --</option>
+                        @foreach (var w in incWorkers)
+                        {
+                            <option value="@w.Id">@w.Name (@(w.MobileNumber))</option>
+                        }
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Assign</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const token = $('input[name="__RequestVerificationToken"]').first().val();
+
+function postJson(url, data, cb) {
+    $.post(url, $.extend({ __RequestVerificationToken: token }, data), cb)
+     .fail(() => cb({ success: false, message: 'Network error.' }));
+}
+
+// Generate
+$('#createCommissionForm').on('submit', function (e) {
+    e.preventDefault();
+    const fd = $(this).serializeArray().reduce((a, x) => (a[x.name] = x.value, a), {});
+    postJson('@Url.Action("Create")', fd, function (r) {
+        alert(r.message);
+        if (r.success) location.reload();
+    });
+});
+
+// Mark paid
+$('.btn-mark-paid').on('click', function () {
+    const id = $(this).data('id');
+    const ref = prompt('Payment reference / UTR? (optional)') ?? '';
+    if (!confirm('Mark this commission as paid? This cannot be undone.')) return;
+    $(this).prop('disabled', true).text('Saving...');
+    postJson('@Url.Action("MarkPaid")', { id: id, reference: ref }, function (r) {
+        alert(r.message);
+        location.reload();
+    });
+});
+
+// Assign worker (re-assign)
+$(document).on('click', '.btn-assign', function () {
+    $('#assignCommissionId').val($(this).data('id'));
+    new bootstrap.Modal(document.getElementById('assignWorkerModal')).show();
+});
+
+$('#assignWorkerForm').on('submit', function (e) {
+    e.preventDefault();
+    const fd = $(this).serializeArray().reduce((a, x) => (a[x.name] = x.value, a), {});
+    postJson('@Url.Action("AssignWorker")', fd, function (r) {
+        alert(r.message);
+        if (r.success) location.reload();
+    });
+});
+</script>
+}

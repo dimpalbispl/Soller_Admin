@@ -109,7 +109,7 @@ public class SiteSurveyController : Controller
             });
         }
 
-        return Json(new { success = true, message = "Site survey approved. Project moved to Meter Dispatch." });
+        return Json(new { success = true, message = "Site survey approved. Project moved to Material Dispatch." });
     }
 
     // POST: /Admin/SiteSurvey/Reject

@@ -98,9 +98,31 @@ public class SolarRequestService : ISolarRequestService
         if (entity == null)
             return ServiceResult<bool>.Failure("Request not found");
 
+        // ===== Idempotency guard =====
+        // Repeated Approve/Reject calls on the same request used to silently toggle
+        // state, which caused the IDNo-SE86372259 issue (admin clicked twice and the
+        // record bounced between Approved/Rejected). Now we hard-fail any non-Pending
+        // re-decision so the action is one-way until an admin explicitly resets it.
+        if (entity.ApprovalStatus == ApprovalStatus.Approved)
+            return ServiceResult<bool>.Failure(
+                $"Request {entity.RequestNumber} is already approved. Duplicate approval not allowed.");
+
+        if (entity.ApprovalStatus == ApprovalStatus.Rejected)
+            return ServiceResult<bool>.Failure(
+                $"Request {entity.RequestNumber} was rejected previously. " +
+                "It cannot be approved again from this screen. Ask the user to re-submit.");
+
+        // Per spec: pre-approval here only releases the request out of "Pending Request"
+        // into the payment workflow. FINAL approval is gated by Payment Verification
+        // and only happens when verified payments total ≥ ₹20,000 (handled in
+        // PaymentsController.Verify). So we move CurrentStage to Payment, not all the
+        // way to ProductSelection like before.
         entity.ApprovalStatus = ApprovalStatus.Approved;
         entity.AdminNotes = notes;
-        entity.CurrentStage = ProjectStatus.ProductSelection;
+        if (entity.CurrentStage == ProjectStatus.Registration)
+            entity.CurrentStage = ProjectStatus.Payment;
+        entity.UpdatedAt = DateTime.UtcNow;
+
         _uow.SolarRequests.Update(entity);
         await _uow.SaveChangesAsync();
 
@@ -109,21 +131,36 @@ public class SolarRequestService : ISolarRequestService
             UserId = entity.UserId,
             SolarRequestId = entity.Id,
             Title = "Application Approved! ✅",
-            Message = $"Your request {entity.RequestNumber} has been approved. Please proceed with product selection.",
+            Message = $"Your request {entity.RequestNumber} has been approved. " +
+                      "Please complete the payment to move to PM Surya Ghar.",
             NotificationType = "StatusUpdate"
         });
 
-        return ServiceResult<bool>.Success(true, "Request approved");
+        return ServiceResult<bool>.Success(true, "Request approved. User can now make payment.");
     }
 
     public async Task<ServiceResult<bool>> RejectAsync(int id, string adminId, string reason)
     {
+        if (string.IsNullOrWhiteSpace(reason))
+            return ServiceResult<bool>.Failure("Rejection reason is required.");
+
         var entity = await _uow.SolarRequests.GetByIdAsync(id);
         if (entity == null)
             return ServiceResult<bool>.Failure("Request not found");
 
+        // ===== Idempotency guard (same rationale as ApproveAsync above) =====
+        if (entity.ApprovalStatus == ApprovalStatus.Rejected)
+            return ServiceResult<bool>.Failure(
+                $"Request {entity.RequestNumber} is already rejected. Duplicate rejection not allowed.");
+
+        if (entity.ApprovalStatus == ApprovalStatus.Approved)
+            return ServiceResult<bool>.Failure(
+                $"Request {entity.RequestNumber} was already approved. " +
+                "Cannot reject an approved request from this screen.");
+
         entity.ApprovalStatus = ApprovalStatus.Rejected;
         entity.RejectionReason = reason;
+        entity.UpdatedAt = DateTime.UtcNow;
         _uow.SolarRequests.Update(entity);
         await _uow.SaveChangesAsync();
 

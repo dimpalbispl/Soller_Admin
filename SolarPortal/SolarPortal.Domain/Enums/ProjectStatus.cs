@@ -31,7 +31,8 @@ public enum PaymentStatus
 {
     Pending = 1,
     Partial = 2,
-    Completed = 3
+    Completed = 3,
+    Rejected = 4   // Admin rejected this submission; user must submit a fresh one.
 }
 
 public enum DocumentType

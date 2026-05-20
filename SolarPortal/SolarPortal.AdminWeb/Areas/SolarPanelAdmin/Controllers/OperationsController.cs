@@ -66,6 +66,50 @@ public class OperationsController : Controller
             .OrderBy(w => w.Name).ToList();
     }
 
+    // Load the dispatch-detail rows for the given operation type and expose them
+    // on ViewBag so the OperationsList view can render them in "All (history)" mode.
+    // Per spec: "history mein dispatch details bhi show honi chahiye" — the
+    // queue list shows only request-level info by default; the matching detail
+    // (meter number, dispatch date, document path, remark, etc.) lives in the
+    // separate MeterDispatch/MaterialDispatch/Installation/DCRDocument tables.
+    //
+    // The view checks `ViewBag.Filter == "all"` and renders an extra "Details"
+    // column populated from these dictionaries (keyed by SolarRequestId, picking
+    // the latest row when multiple exist).
+    private async Task PopulateOperationDetailsAsync(string op, IEnumerable<SolarRequest> rows)
+    {
+        var ids = rows.Select(r => r.Id).ToHashSet();
+        if (!ids.Any()) return;
+
+        switch (op)
+        {
+            case "meter":
+                var meters = (await _uow.MeterDispatches.FindAsync(m => ids.Contains(m.SolarRequestId)))
+                             .GroupBy(m => m.SolarRequestId)
+                             .ToDictionary(g => g.Key, g => g.OrderByDescending(m => m.CreatedAt).First());
+                ViewBag.MeterDetails = meters;
+                break;
+            case "material":
+                var materials = (await _uow.MaterialDispatches.FindAsync(m => ids.Contains(m.SolarRequestId)))
+                                .GroupBy(m => m.SolarRequestId)
+                                .ToDictionary(g => g.Key, g => g.OrderByDescending(m => m.CreatedAt).First());
+                ViewBag.MaterialDetails = materials;
+                break;
+            case "installation":
+                var installs = (await _uow.Installations.FindAsync(i => ids.Contains(i.SolarRequestId)))
+                               .GroupBy(i => i.SolarRequestId)
+                               .ToDictionary(g => g.Key, g => g.OrderByDescending(i => i.CreatedAt).First());
+                ViewBag.InstallationDetails = installs;
+                break;
+            case "dcr":
+                var dcrs = (await _uow.DCRDocuments.FindAsync(d => ids.Contains(d.SolarRequestId)))
+                           .GroupBy(d => d.SolarRequestId)
+                           .ToDictionary(g => g.Key, g => g.OrderByDescending(d => d.CreatedAt).First());
+                ViewBag.DCRDetails = dcrs;
+                break;
+        }
+    }
+
     // --- Meter Dispatch ---
     // Spec flow: PM Surya Ghar → Meter Dispatch → Site Survey → Material Dispatch.
     // After admin approves PM Surya Ghar, the project's CurrentStage becomes MeterDispatch.
@@ -77,6 +121,7 @@ public class OperationsController : Controller
         await PopulateFilterViewBags(state, city, requests);
         ViewBag.Title = "Meter Dispatch";
         ViewBag.Op = "meter";
+        await PopulateOperationDetailsAsync("meter", requests);
         return View("OperationsList", requests);
     }
 
@@ -139,6 +184,7 @@ public class OperationsController : Controller
         await PopulateFilterViewBags(state, city, requests);
         ViewBag.Title = "Material Dispatch";
         ViewBag.Op = "material";
+        await PopulateOperationDetailsAsync("material", requests);
         return View("OperationsList", requests);
     }
 
@@ -201,6 +247,7 @@ public class OperationsController : Controller
         await PopulateFilterViewBags(state, city, requests);
         ViewBag.Title = "Installation";
         ViewBag.Op = "installation";
+        await PopulateOperationDetailsAsync("installation", requests);
         return View("OperationsList", requests);
     }
 
@@ -290,6 +337,7 @@ public class OperationsController : Controller
         await PopulateFilterViewBags(state, city, requests);
         ViewBag.Title = "DCR Update";
         ViewBag.Op = "dcr";
+        await PopulateOperationDetailsAsync("dcr", requests);
         return View("OperationsList", requests);
     }
 

@@ -53,7 +53,14 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 var app = builder.Build();
 
-if (!app.Environment.IsDevelopment())
+// Per-environment exception handling. See User Panel Program.cs for full notes.
+// In Development → DeveloperExceptionPage (full stack trace, source code).
+// In Production  → custom ExceptionHandlingMiddleware (friendly page).
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
@@ -61,13 +68,74 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+// ─────────────────────────────────────────────────────────────────────
+//  Cross-panel uploads serving
+//  ----------------------------------------------------------------
+//  Files (payment receipts, PM Surya docs, dispatch documents, site
+//  survey photos, DCR docs) are physically saved into the USER panel's
+//  wwwroot/uploads folder. When admin renders <img src="/uploads/...">
+//  it looks in the ADMIN panel's wwwroot, where the file doesn't exist
+//  → broken image.
+//
+//  Fix: map the user panel's uploads folder as an additional static
+//  file root under the same URL prefix. Admin can keep using paths like
+//  "/uploads/payments/abc.jpg" and they resolve to the shared folder.
+//
+//  The path is configurable via appsettings "SharedUploadsPath". If not
+//  set, we fall back to a relative path that works for the standard
+//  side-by-side layout used by this solution (admin and user panels
+//  living under sibling folders).
+// ─────────────────────────────────────────────────────────────────────
+var sharedUploads = builder.Configuration["SharedUploadsPath"];
+if (string.IsNullOrWhiteSpace(sharedUploads))
+{
+    // Default: look two levels up from admin's content root and find
+    // the user panel's wwwroot. Layout:
+    //   <root>/AdminPanel/Soller_Admin/Soller_Admin/SolarPortal/SolarPortal.AdminWeb
+    //   <root>/UserPanel/SolarPortal/SolarPortal/SolarPortal.Web/wwwroot/uploads
+    // We try a couple of likely relative paths and use whichever exists.
+    string[] candidates = {
+        Path.Combine(app.Environment.ContentRootPath, "..", "..", "..", "..", "..",
+                     "UserPanel", "SolarPortal", "SolarPortal", "SolarPortal.Web", "wwwroot", "uploads"),
+        Path.Combine(app.Environment.ContentRootPath, "..", "..", "..", "..",
+                     "SolarPortal", "SolarPortal", "SolarPortal.Web", "wwwroot", "uploads"),
+        Path.Combine(app.Environment.ContentRootPath, "..", "SolarPortal.Web", "wwwroot", "uploads"),
+    };
+    foreach (var c in candidates)
+    {
+        var full = Path.GetFullPath(c);
+        if (Directory.Exists(full)) { sharedUploads = full; break; }
+    }
+}
+
+if (!string.IsNullOrWhiteSpace(sharedUploads) && Directory.Exists(sharedUploads))
+{
+    app.UseStaticFiles(new Microsoft.AspNetCore.Builder.StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(sharedUploads),
+        RequestPath = "/uploads"
+    });
+    // Log for diagnostics
+    Console.WriteLine($"[Admin] Mapped shared uploads from: {sharedUploads}");
+}
+else
+{
+    Console.WriteLine("[Admin] WARNING: SharedUploadsPath not configured and no candidate folder found. " +
+                      "Uploaded user files (payment receipts, PM Surya docs, dispatch images) may not display.");
+}
+
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSession();
 
-app.UseMiddleware<SolarPortal.AdminWeb.Middleware.ExceptionHandlingMiddleware>();
+// Custom error handling middleware — only in Production.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseMiddleware<SolarPortal.AdminWeb.Middleware.ExceptionHandlingMiddleware>();
+}
 
 app.MapControllerRoute(
     name: "areas",

@@ -26,9 +26,16 @@ public class WorkersController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CreateWorkerDto dto)
     {
+        // Specialization & IsAvailable were removed from the form per spec.
+        // Default them here so ModelState validation passes and DB defaults are sensible.
+        if (string.IsNullOrWhiteSpace(dto.Specialization))
+            dto.Specialization = "General";
+        // dto.IsAvailable is already `true` by default in the DTO.
+        ModelState.Remove(nameof(dto.Specialization));
+
         if (!ModelState.IsValid) return View(dto);
         await _workerService.CreateAsync(dto);
-        TempData["Success"] = "Worker added successfully";
+        TempData["Success"] = "Member added successfully";
         return RedirectToAction(nameof(Index));
     }
 
