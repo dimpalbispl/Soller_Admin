@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolarPortal.Application.DTOs;
 using SolarPortal.Application.Interfaces.Services;
+using SolarPortal.Application.Services;
 
 namespace SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers;
 
@@ -10,8 +11,13 @@ namespace SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers;
 public class WorkersController : Controller
 {
     private readonly IWorkerService _workerService;
+    private readonly IStateService _states;
 
-    public WorkersController(IWorkerService workerService) => _workerService = workerService;
+    public WorkersController(IWorkerService workerService, IStateService states)
+    {
+        _workerService = workerService;
+        _states = states;
+    }
 
     public async Task<IActionResult> Index()
     {
@@ -20,7 +26,12 @@ public class WorkersController : Controller
     }
 
     [HttpGet]
-    public IActionResult Create() => View();
+    public async Task<IActionResult> Create()
+    {
+        // States from legacy M_StateDivMaster — same source as the user panel.
+        ViewBag.States = await _states.GetActiveAsync();
+        return View();
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -33,7 +44,12 @@ public class WorkersController : Controller
         // dto.IsAvailable is already `true` by default in the DTO.
         ModelState.Remove(nameof(dto.Specialization));
 
-        if (!ModelState.IsValid) return View(dto);
+        if (!ModelState.IsValid)
+        {
+            // Re-populate states so the dropdown isn't empty on validation re-render.
+            ViewBag.States = await _states.GetActiveAsync();
+            return View(dto);
+        }
         await _workerService.CreateAsync(dto);
         TempData["Success"] = "Member added successfully";
         return RedirectToAction(nameof(Index));

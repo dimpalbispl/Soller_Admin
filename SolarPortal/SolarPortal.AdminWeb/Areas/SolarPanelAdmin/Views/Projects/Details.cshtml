@@ -24,7 +24,16 @@
                     <div class="detail-item">
                         <span class="detail-label">Status</span>
                         <span class="detail-value">
-                            <span class="sts @GetStatusClass(Model.ApprovalStatus)">@Model.ApprovalStatus</span>
+                            @{
+                                // Per spec: jab project Completed stage pe pahunch jaaye, status
+                                // "Approved" dikhna chahiye — "Pending" nahi. Workflow ke last step
+                                // (Domestic = DCR, Commercial = Installation) ke baad project
+                                // automatically complete + approved maana jaata hai.
+                                var effApproval = Model.CurrentStage == Domain.Enums.ProjectStatus.Completed
+                                    ? Domain.Enums.ApprovalStatus.Approved
+                                    : Model.ApprovalStatus;
+                            }
+                            <span class="sts @GetStatusClass(effApproval)">@effApproval</span>
                         </span>
                     </div>
                     <div class="detail-item">
@@ -99,7 +108,7 @@
                                         <div style="font-size:12px">@doc.DocumentType</div>
                                         <div style="color:var(--text2);font-size:11px">@doc.FileName</div>
                                     </div>
-                                    <a href="@doc.FilePath" target="_blank" class="btn btn-s btn-sm">
+                                    <a href="javascript:void(0)" onclick="openFileModal('@doc.FilePath')" class="btn btn-s btn-sm">
                                         📥 View
                                     </a>
                                 </div>
@@ -112,15 +121,36 @@
             <div class="card">
                 <div class="ct"><span class="ct-dot"></span>Actions</div>
                 <div class="btn-row">
-                    @if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Pending)
+                    @if (Model.CurrentStage == Domain.Enums.ProjectStatus.Completed)
                     {
-                        <button class="btn btn-g" onclick="approveProject(@Model.Id)">✓ Approve</button>
-                        <button class="btn btn-d" onclick="rejectProject(@Model.Id)" style="margin-left:4px">✕ Reject</button>
+                        @* Project workflow ka last step ho chuka hai
+                           (Domestic = DCR Update, Commercial = Installation).
+                           Ab koi manual approve/reject nahi — project automatically
+                           complete + approved hai. Sirf status dikhao. *@
+                        <div class="alert alert-s" style="margin:0;width:100%">
+                            <span class="ai">✅</span>
+                            Project complete — all workflow steps finished. No further action needed.
+                        </div>
                     }
-                    @if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Approved && 
-                         Model.CurrentStage != Domain.Enums.ProjectStatus.Completed)
+                    else if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Rejected)
                     {
-                        <button class="btn btn-p" onclick="updateStage(@Model.Id)">📊 Update Stage</button>
+                        <div class="alert alert-d" style="margin:0;width:100%">
+                            <span class="ai">❌</span>
+                            This project was rejected. The user must re-submit.
+                        </div>
+                    }
+                    else
+                    {
+                        @if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Pending)
+                        {
+                            <button class="btn btn-g" onclick="approveProject(@Model.Id)">✓ Approve</button>
+                            <button class="btn btn-d" onclick="rejectProject(@Model.Id)" style="margin-left:4px">✕ Reject</button>
+                        }
+                        @if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Approved &&
+                             Model.CurrentStage != Domain.Enums.ProjectStatus.Completed)
+                        {
+                            <button class="btn btn-p" onclick="updateStage(@Model.Id)">📊 Update Stage</button>
+                        }
                     }
                 </div>
             </div>
@@ -314,3 +344,6 @@
         }
     </script>
 }
+
+@* In-page file preview modal (no new tab) *@
+@await Html.PartialAsync("_FileModal")

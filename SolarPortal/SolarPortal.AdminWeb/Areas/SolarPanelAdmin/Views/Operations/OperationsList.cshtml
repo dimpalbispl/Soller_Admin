@@ -19,14 +19,13 @@
     @{
         var opFilter = (ViewBag.Filter as string) ?? "pending";
     }
-    <div class="mb-3" style="margin-bottom:10px">
-        <a class="btn @(opFilter == "pending" ? "btn-p btn-sm" : "btn-s btn-sm")"
-           asp-action="@op.Replace("meter","MeterDispatch").Replace("material","MaterialDispatch").Replace("installation","Installation").Replace("dcr","DCRUpdate")"
-           asp-route-state="@filterState" asp-route-city="@filterCity" asp-route-filter="pending">⏳ Pending</a>
-        <a class="btn @(opFilter == "all" ? "btn-p btn-sm" : "btn-s btn-sm")"
-           asp-action="@op.Replace("meter","MeterDispatch").Replace("material","MaterialDispatch").Replace("installation","Installation").Replace("dcr","DCRUpdate")"
-           asp-route-state="@filterState" asp-route-city="@filterCity" asp-route-filter="all">📋 All (history)</a>
-    </div>
+    @* 4-tab status filter — Pending / Approved / Rejected / All.
+       Per spec ("approve karta hu to pending se ht jata hai wha sb show
+       karwao pending approve reject all") we now expose every state per
+       operations queue. Approved here means "moved past this stage";
+       Rejected only applies to DCR Verify (other dispatch ops don't have
+       a reject step). *@
+    @await Html.PartialAsync("_StatusTabs", (object)opFilter)
 
     <!-- Filter card -->
     <div class="card" style="margin-bottom:14px">
@@ -129,7 +128,7 @@
                                                     if (!string.IsNullOrWhiteSpace(m.Remark))      { <div style="color:var(--text3)">@m.Remark</div> }
                                                     if (!string.IsNullOrWhiteSpace(m.DispatchDocumentPath))
                                                     {
-                                                        <div><a href="/@m.DispatchDocumentPath.Replace("\\","/").TrimStart('/')" target="_blank" style="color:var(--sun)">📄 Document</a></div>
+                                                        <div><a href="javascript:void(0)" onclick="openFileModal('@m.DispatchDocumentPath')" style="color:var(--sun)">📄 Document</a></div>
                                                     }
                                                 }
                                                 else { <span class="text-muted">—</span> }
@@ -144,7 +143,7 @@
                                                     if (!string.IsNullOrWhiteSpace(mat.Remark))          { <div style="color:var(--text3)">@mat.Remark</div> }
                                                     if (!string.IsNullOrWhiteSpace(mat.DispatchDocumentPath))
                                                     {
-                                                        <div><a href="/@mat.DispatchDocumentPath.Replace("\\","/").TrimStart('/')" target="_blank" style="color:var(--sun)">📄 Document</a></div>
+                                                        <div><a href="javascript:void(0)" onclick="openFileModal('@mat.DispatchDocumentPath')" style="color:var(--sun)">📄 Document</a></div>
                                                     }
                                                 }
                                                 else { <span class="text-muted">—</span> }
@@ -158,7 +157,7 @@
                                                     if (!string.IsNullOrWhiteSpace(inst.Remark))     { <div style="color:var(--text3)">@inst.Remark</div> }
                                                     if (!string.IsNullOrWhiteSpace(inst.CompletionPhotoPath))
                                                     {
-                                                        <div><a href="/@inst.CompletionPhotoPath.Replace("\\","/").TrimStart('/')" target="_blank" style="color:var(--sun)">📷 Photo</a></div>
+                                                        <div><a href="javascript:void(0)" onclick="openFileModal('@inst.CompletionPhotoPath')" style="color:var(--sun)">📷 Photo</a></div>
                                                     }
                                                 }
                                                 else { <span class="text-muted">—</span> }
@@ -171,7 +170,7 @@
                                                     if (!string.IsNullOrWhiteSpace(dcr.Remark))     { <div style="color:var(--text3)">@dcr.Remark</div> }
                                                     if (!string.IsNullOrWhiteSpace(dcr.DocumentPath))
                                                     {
-                                                        <div><a href="/@dcr.DocumentPath.Replace("\\","/").TrimStart('/')" target="_blank" style="color:var(--sun)">📄 Document</a></div>
+                                                        <div><a href="javascript:void(0)" onclick="openFileModal('@dcr.DocumentPath')" style="color:var(--sun)">📄 Document</a></div>
                                                     }
                                                 }
                                                 else { <span class="text-muted">—</span> }
@@ -442,3 +441,6 @@
         }
     </script>
 }
+
+@* In-page file preview modal (no new tab) *@
+@await Html.PartialAsync("_FileModal")

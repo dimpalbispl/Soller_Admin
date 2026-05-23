@@ -1,0 +1,58 @@
+@*
+   Status tabs partial — Pending / Approved / Rejected / All
+   --------------------------------------------------------
+   Shared by every admin index page (Payments, PM Surya, Site Survey,
+   Meter, Material, Installation, DCR Verify). Active tab highlighted,
+   others outlined.
+
+   Usage:
+     @await Html.PartialAsync("_StatusTabs", (object)Model.Filter)
+
+   The partial uses the CURRENT action so each module's index handler
+   decides which subset to fetch — no per-module duplication of tab UI.
+   It also preserves any extra route values (state, city) already on
+   the URL via the route-data context.
+
+   Per spec ("approve karta hu to pending list se ht jata hai wha
+   sab show karwao pending approve reject all") — Rejected tab is
+   present everywhere even when the module has no reject concept, so
+   the UX is uniform.
+*@
+@model string
+
+@{
+    var current = string.IsNullOrWhiteSpace(Model) ? "pending" : Model.ToLowerInvariant();
+
+    // Resolve current action/controller/area so links stay on the same page.
+    // ViewContext.RouteData.Values has whatever the routing system matched.
+    var rd = ViewContext.RouteData.Values;
+    var currentAction     = rd["action"]?.ToString()     ?? "Index";
+    var currentController = rd["controller"]?.ToString() ?? "";
+    var currentArea       = rd["area"]?.ToString()       ?? "";
+
+    // Preserve state/city if they're on the query string (operations queues).
+    var qs = ViewContext.HttpContext.Request.Query;
+    var preserveState = qs.ContainsKey("state") ? qs["state"].ToString() : null;
+    var preserveCity  = qs.ContainsKey("city")  ? qs["city"].ToString()  : null;
+
+    string Cls(string name) => current == name ? "btn btn-p" : "btn btn-outline";
+}
+
+<div class="status-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+    <a class="@Cls("pending")"
+       asp-area="@currentArea" asp-controller="@currentController" asp-action="@currentAction"
+       asp-route-state="@preserveState" asp-route-city="@preserveCity"
+       asp-route-filter="pending">⏳ Pending</a>
+    <a class="@Cls("approved")"
+       asp-area="@currentArea" asp-controller="@currentController" asp-action="@currentAction"
+       asp-route-state="@preserveState" asp-route-city="@preserveCity"
+       asp-route-filter="approved">✅ Approved</a>
+    <a class="@Cls("rejected")"
+       asp-area="@currentArea" asp-controller="@currentController" asp-action="@currentAction"
+       asp-route-state="@preserveState" asp-route-city="@preserveCity"
+       asp-route-filter="rejected">❌ Rejected</a>
+    <a class="@Cls("all")"
+       asp-area="@currentArea" asp-controller="@currentController" asp-action="@currentAction"
+       asp-route-state="@preserveState" asp-route-city="@preserveCity"
+       asp-route-filter="all">📋 All</a>
+</div>

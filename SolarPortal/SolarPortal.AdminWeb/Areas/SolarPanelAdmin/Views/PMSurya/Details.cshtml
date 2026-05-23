@@ -28,7 +28,7 @@
                         {
                             <tr id="row-@d.Id">
                                 <td>@d.DocumentType</td>
-                                <td><a href="~/@d.FilePath" target="_blank">@d.FileName</a></td>
+                                <td><a href="javascript:void(0)" onclick="openFileModal('@d.FilePath')" style="color:#0d9488">@d.FileName</a></td>
                                 <td>
                                     <span class="badge bg-@(d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Approved ? "success" : d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Rejected ? "danger" : "warning")">
                                         @d.Status
@@ -151,3 +151,6 @@ $('#btnAdvance').on('click', function () {
 });
 </script>
 }
+
+@* In-page file preview modal (no new tab) *@
+@await Html.PartialAsync("_FileModal")

@@ -39,8 +39,9 @@ public class PMSuryaController : Controller
 
     // GET: /Admin/PMSurya/Index
     // Default view shows only requests pending verification (stage = PMSurvey).
-    // ?filter=all shows the full history — including already approved/advanced
-    // requests — so admins can audit past actions without losing data.
+    // ?filter=approved → already-advanced (past PMSurvey)
+    // ?filter=rejected → requests whose PM Surya documents were rejected
+    // ?filter=all      → full history (everything ever in PMSurya+)
     public async Task<IActionResult> Index(string? filter)
     {
         var f = (filter ?? "pending").ToLowerInvariant();
@@ -68,6 +69,18 @@ public class PMSuryaController : Controller
                 x.CurrentStage == ProjectStatus.Installation ||
                 x.CurrentStage == ProjectStatus.DCRUpdate ||
                 x.CurrentStage == ProjectStatus.Completed);
+        }
+        else if (f == "rejected")
+        {
+            // Rejected = requests at PMSurvey stage that have at least one
+            // document with ApprovalStatus = Rejected. The user can re-upload
+            // and the row moves back into "pending" once they do.
+            var atStage  = await _uow.SolarRequests.FindAsync(x => x.CurrentStage == ProjectStatus.PMSurvey);
+            var rejected = (await _uow.PMDocuments.GetAllAsync())
+                           .Where(d => d.Status == ApprovalStatus.Rejected)
+                           .Select(d => d.SolarRequestId)
+                           .ToHashSet();
+            requests = atStage.Where(r => rejected.Contains(r.Id));
         }
         else // pending
         {

@@ -326,7 +326,6 @@
                 <!-- filled by JS -->
             </div>
             <div class="modal-footer">
-                <a id="receiptPreviewOpen" href="#" target="_blank" class="btn btn-outline-primary">Open in new tab</a>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -368,21 +367,30 @@ $('.btn-reject').on('click', function () {
 });
 
 // === Receipt preview ===
+// The stored URL (/uploads/payments/abc.jpg) points at the USER panel's
+// wwwroot, which the admin app can't serve directly. Route it through the
+// admin FileController instead — that resolves the file from whichever
+// panel's wwwroot actually has it and streams it back inline.
+function adminFileSrc(storedUrl) {
+    var p = (storedUrl || '').replace(/\\/g, '/');
+    return '/SolarPanelAdmin/File/View?path=' + encodeURIComponent(p);
+}
+
 $(document).on('click', '.receipt-preview', function () {
-    const url   = $(this).data('url');
-    const isPdf = String($(this).data('pdf')) === '1';
-    const utr   = $(this).data('utr') || '';
+    const rawUrl = $(this).data('url');
+    const url    = adminFileSrc(rawUrl);
+    const isPdf  = String($(this).data('pdf')) === '1';
+    const utr    = $(this).data('utr') || '';
     $('#receiptPreviewTitle').text('Receipt' + (utr ? ' — UTR ' + utr : ''));
-    $('#receiptPreviewOpen').attr('href', url);
     const $body = $('#receiptPreviewBody').empty();
     if (isPdf) {
         $body.append(
-            `<object data="${url}" type="application/pdf" width="100%" height="500">
-                <p>PDF preview not supported in this browser.
-                   <a href="${url}" target="_blank">Open in new tab</a>.</p>
-             </object>`);
+            `<iframe src="${url}" width="100%" height="500" style="border:0;background:#fff"></iframe>`);
     } else {
-        $body.append(`<img src="${url}" alt="Receipt" style="max-width:100%;max-height:550px;border:1px solid #ddd;border-radius:4px" />`);
+        $body.append(
+            `<img src="${url}" alt="Receipt"
+                  style="max-width:100%;max-height:550px;border:1px solid #ddd;border-radius:4px"
+                  onerror="this.parentNode.innerHTML='<div style=\\'padding:40px;color:#888\\'>⚠ Receipt file not found on the server.</div>'" />`);
     }
     new bootstrap.Modal(document.getElementById('receiptPreviewModal')).show();
 });

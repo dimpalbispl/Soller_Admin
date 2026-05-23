@@ -48,8 +48,10 @@
 
             <div class="fr">
                 <div class="fg">
-                    <label asp-for="BV">BV (Default 100)</label>
-                    <input asp-for="BV" type="number" value="100" />
+                    <label asp-for="BV">BV</label>
+                    @* No hardcoded value — admin enters BV manually (defaults to 0
+                       from the DTO). Placeholder hints the common value. *@
+                    <input asp-for="BV" type="number" placeholder="0" />
                 </div>
                 <div class="fg">
                     <label asp-for="FinalBV">Final BV <span class="req">*</span></label>

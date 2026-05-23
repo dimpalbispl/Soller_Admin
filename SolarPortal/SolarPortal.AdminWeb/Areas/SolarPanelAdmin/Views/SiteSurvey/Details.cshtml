@@ -177,6 +177,10 @@
                             if (rel.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
                                 rel = rel.Substring("wwwroot/".Length);
                             var url = "/" + rel;
+                            // Route the thumbnail through the admin FileController so files
+                            // written by the user panel still resolve (admin wwwroot doesn't
+                            // have them). Same endpoint the modal uses.
+                            var fileSrc = "/SolarPanelAdmin/File/View?path=" + Uri.EscapeDataString(rel);
                             var isImg = url.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
                                      || url.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
                                      || url.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
@@ -186,7 +190,9 @@
                                 <div class="card">
                                     @if (isImg)
                                     {
-                                        <img src="@url" class="card-img-top" style="height:200px; object-fit:cover" alt="@photo.Label" />
+                                        <img src="@fileSrc" class="card-img-top" style="height:200px; object-fit:cover; cursor:pointer" alt="@photo.Label"
+                                             onclick="openFileModal('@photo.Path')"
+                                             onerror="this.style.display='none'" />
                                     }
                                     else
                                     {
@@ -196,7 +202,7 @@
                                     }
                                     <div class="card-body p-2">
                                         <small class="text-muted d-block mb-1">@photo.Label</small>
-                                        <a href="@url" target="_blank" class="btn btn-sm btn-outline-primary w-100">Open</a>
+                                        <a href="javascript:void(0)" onclick="openFileModal('@photo.Path')" class="btn btn-sm btn-outline-primary w-100">Open</a>
                                     </div>
                                 </div>
                             </div>
@@ -295,3 +301,6 @@ $('#btnReject').on('click', function () {
 });
 </script>
 }
+
+@* In-page file preview modal (no new tab) *@
+@await Html.PartialAsync("_FileModal")

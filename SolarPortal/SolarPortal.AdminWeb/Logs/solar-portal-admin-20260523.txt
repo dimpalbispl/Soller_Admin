@@ -1,0 +1,796 @@
+2026-05-23 14:55:12.420 +05:30 [INF] DbSeeder: skipping all DB schema work (live DB managed externally).
+2026-05-23 14:55:12.975 +05:30 [INF] User profile is available. Using 'C:\Users\Claude1\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2026-05-23 14:55:14.375 +05:30 [INF] Now listening on: http://localhost:5039
+2026-05-23 14:55:14.884 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2026-05-23 14:55:14.892 +05:30 [INF] Hosting environment: Development
+2026-05-23 14:55:14.907 +05:30 [INF] Content root path: \\localhost\Sadhna\New folder (6)\files\SolarPortal_FINAL\AdminPanel\Soller_Admin\Soller_Admin\SolarPortal\SolarPortal.AdminWeb
+2026-05-23 14:55:30.045 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/ - null null
+2026-05-23 14:55:31.441 +05:30 [WRN] Failed to determine the https port for redirect.
+2026-05-23 14:55:31.700 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb)'
+2026-05-23 14:55:32.029 +05:30 [INF] Route matched with {action = "Login", controller = "Account", area = ""}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Login(System.String) on controller SolarPortal.AdminWeb.Controllers.AccountController (SolarPortal.AdminWeb).
+2026-05-23 14:56:55.684 +05:30 [INF] Executing ViewResult, running view Login.
+2026-05-23 14:57:03.038 +05:30 [INF] Executed ViewResult - view Login executed in 84021.1925ms.
+2026-05-23 14:57:03.068 +05:30 [INF] Executed action SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb) in 91035.3636ms
+2026-05-23 14:57:03.083 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb)'
+2026-05-23 14:57:03.206 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/ - 200 null text/html; charset=utf-8 93188.4516ms
+2026-05-23 14:57:03.405 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/css/solar-theme.css?v=LRQDWtq2Id7cK_vasVl_fa7a1M3FHFUudKhK2GY_nqM - null null
+2026-05-23 14:57:03.431 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/jquery-validation/dist/jquery.validate.min.js - null null
+2026-05-23 14:57:03.442 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 14:57:03.452 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js - null null
+2026-05-23 14:57:03.512 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 73.6015ms
+2026-05-23 14:57:03.512 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/jquery-validation/dist/jquery.validate.min.js - 404 0 null 80.6197ms
+2026-05-23 14:57:03.500 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 14:57:03.542 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js - 404 0 null 90.729ms
+2026-05-23 14:57:03.548 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/jquery-validation/dist/jquery.validate.min.js, Response status code: 404
+2026-05-23 14:57:03.558 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js, Response status code: 404
+2026-05-23 14:57:03.627 +05:30 [INF] Sending file. Request path: '/css/solar-theme.css'. Physical path: '\\localhost\Sadhna\New folder (6)\files\SolarPortal_FINAL\AdminPanel\Soller_Admin\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\wwwroot\css\solar-theme.css'
+2026-05-23 14:57:03.665 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/css/solar-theme.css?v=LRQDWtq2Id7cK_vasVl_fa7a1M3FHFUudKhK2GY_nqM - 200 26359 text/css 261.797ms
+2026-05-23 14:57:03.923 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 423.768ms
+2026-05-23 14:57:06.397 +05:30 [INF] Request starting HTTP/1.1 POST http://localhost:5039/ - application/x-www-form-urlencoded 245
+2026-05-23 14:57:08.127 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb)'
+2026-05-23 14:57:08.202 +05:30 [INF] Route matched with {action = "Login", controller = "Account", area = ""}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Login(SolarPortal.AdminWeb.ViewModels.LoginViewModel, System.String) on controller SolarPortal.AdminWeb.Controllers.AccountController (SolarPortal.AdminWeb).
+2026-05-23 14:57:11.488 +05:30 [WRN] Entity 'SolarRequest' has a global query filter defined and is the required end of a relationship with the entity 'DCRDocument'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-05-23 14:57:11.492 +05:30 [WRN] Entity 'SolarRequest' has a global query filter defined and is the required end of a relationship with the entity 'Installation'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-05-23 14:57:11.496 +05:30 [WRN] Entity 'SolarRequest' has a global query filter defined and is the required end of a relationship with the entity 'MaterialDispatch'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-05-23 14:57:11.499 +05:30 [WRN] Entity 'SolarRequest' has a global query filter defined and is the required end of a relationship with the entity 'MeterDispatch'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-05-23 14:57:11.502 +05:30 [WRN] Entity 'SolarRequest' has a global query filter defined and is the required end of a relationship with the entity 'SiteSurvey'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-05-23 14:57:11.616 +05:30 [WRN] The foreign key property 'SolarAccount.SolarRequestId1' was created in shadow state because a conflicting property with the simple name 'SolarRequestId' exists in the entity type, but is either not mapped, is already used for another relationship, or is incompatible with the associated primary key type. See https://aka.ms/efcore-relationships for information on mapping relationships in EF Core.
+2026-05-23 14:57:11.621 +05:30 [WRN] The foreign key property 'WalletTransaction.SolarAccountId1' was created in shadow state because a conflicting property with the simple name 'SolarAccountId' exists in the entity type, but is either not mapped, is already used for another relationship, or is incompatible with the associated primary key type. See https://aka.ms/efcore-relationships for information on mapping relationships in EF Core.
+2026-05-23 14:57:11.718 +05:30 [WRN] No store type was specified for the decimal property 'MId' on entity type 'MMemberMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-05-23 14:57:11.723 +05:30 [WRN] The decimal property 'MId' is part of a key on entity type 'MMemberMaster'. If the configured precision and scale don't match the column type in the database, this will cause values to be silently truncated if they do not fit in the default precision and scale. Consider using a different property as the key, or make sure that the database column type matches the model configuration and enable decimal rounding warnings using 'SET NUMERIC_ROUNDABORT ON'.
+2026-05-23 14:57:11.726 +05:30 [WRN] No store type was specified for the decimal property 'BV' on entity type 'MMemberMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-05-23 14:57:11.729 +05:30 [WRN] No store type was specified for the decimal property 'Mobl' on entity type 'MMemberMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-05-23 14:57:11.732 +05:30 [WRN] No store type was specified for the decimal property 'StateCode' on entity type 'MMemberMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-05-23 14:57:11.735 +05:30 [WRN] No store type was specified for the decimal property 'StateCode' on entity type 'MStateDivMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-05-23 14:57:11.737 +05:30 [WRN] The decimal property 'StateCode' is part of a key on entity type 'MStateDivMaster'. If the configured precision and scale don't match the column type in the database, this will cause values to be silently truncated if they do not fit in the default precision and scale. Consider using a different property as the key, or make sure that the database column type matches the model configuration and enable decimal rounding warnings using 'SET NUMERIC_ROUNDABORT ON'.
+2026-05-23 14:57:11.739 +05:30 [WRN] No store type was specified for the decimal property 'CountryCode' on entity type 'MStateDivMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-05-23 14:57:11.743 +05:30 [WRN] No store type was specified for the decimal property 'UId' on entity type 'MUserMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-05-23 14:57:11.746 +05:30 [WRN] The decimal property 'UId' is part of a key on entity type 'MUserMaster'. If the configured precision and scale don't match the column type in the database, this will cause values to be silently truncated if they do not fit in the default precision and scale. Consider using a different property as the key, or make sure that the database column type matches the model configuration and enable decimal rounding warnings using 'SET NUMERIC_ROUNDABORT ON'.
+2026-05-23 14:57:11.749 +05:30 [WRN] No store type was specified for the decimal property 'GroupId' on entity type 'MUserMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-05-23 14:57:11.752 +05:30 [WRN] No store type was specified for the decimal property 'MobileNo' on entity type 'MUserMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-05-23 14:57:11.754 +05:30 [WRN] No store type was specified for the decimal property 'RoofTotalAreaSqft' on entity type 'SiteSurvey'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-05-23 14:57:11.756 +05:30 [WRN] No store type was specified for the decimal property 'ProjectAmount' on entity type 'SolarProject'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-05-23 14:57:18.002 +05:30 [INF] Executed DbCommand (1,683ms) [Parameters=[@__trimmedName_0='?' (Size = 4000), @__8__locals1_password_1='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [m].[UId], [m].[ActiveStatus], [m].[CreateDate], [m].[Email], [m].[GroupId], [m].[IsCustomerCare], [m].[MobileNo], [m].[Passw], [m].[UserName]
+FROM [m_usermaster] AS [m]
+WHERE [m].[UserName] IS NOT NULL AND [m].[Passw] IS NOT NULL AND LTRIM(RTRIM([m].[UserName])) = @__trimmedName_0 AND LTRIM(RTRIM([m].[Passw])) = @__8__locals1_password_1
+2026-05-23 14:57:19.848 +05:30 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-05-23 14:57:20.229 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[p0='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [t].[Value]
+FROM (
+    SELECT COUNT(1) AS Value FROM Roles WHERE NormalizedName = @p0
+) AS [t]
+2026-05-23 14:57:20.248 +05:30 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-05-23 14:57:20.510 +05:30 [INF] Executed DbCommand (61ms) [Parameters=[p0='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [t].[Value]
+FROM (
+    SELECT TOP 1 Id AS Value FROM Users WHERE NormalizedEmail = @p0
+) AS [t]
+2026-05-23 14:57:22.450 +05:30 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-05-23 14:57:23.058 +05:30 [INF] Executed DbCommand (54ms) [Parameters=[p0='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [t].[Value]
+FROM (
+    SELECT TOP 1 Id AS Value FROM Roles WHERE NormalizedName = @p0
+) AS [t]
+2026-05-23 14:57:23.083 +05:30 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-05-23 14:57:23.745 +05:30 [INF] Executed DbCommand (177ms) [Parameters=[p0='?' (Size = 4000), p1='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [t].[Value]
+FROM (
+    SELECT COUNT(1) AS Value FROM UserRoles WHERE UserId = @p0 AND RoleId = @p1
+) AS [t]
+2026-05-23 14:57:28.896 +05:30 [INF] Executed DbCommand (1,021ms) [Parameters=[@__user_Id_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[Id], [u].[ClaimType], [u].[ClaimValue], [u].[UserId]
+FROM [UserClaims] AS [u]
+WHERE [u].[UserId] = @__user_Id_0
+2026-05-23 14:57:30.267 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[@__userId_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT [r].[Name]
+FROM [UserRoles] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[Id]
+WHERE [u].[UserId] = @__userId_0
+2026-05-23 14:57:30.317 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[@__normalizedName_0='?' (Size = 256)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [r].[Id], [r].[ConcurrencyStamp], [r].[Name], [r].[NormalizedName]
+FROM [Roles] AS [r]
+WHERE [r].[NormalizedName] = @__normalizedName_0
+2026-05-23 14:57:30.600 +05:30 [INF] Executed DbCommand (34ms) [Parameters=[@__role_Id_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT [r].[ClaimType], [r].[ClaimValue]
+FROM [RoleClaims] AS [r]
+WHERE [r].[RoleId] = @__role_Id_0
+2026-05-23 14:57:31.491 +05:30 [INF] AuthenticationScheme: Identity.Application signed in.
+2026-05-23 14:57:31.495 +05:30 [INF] Admin Admin logged in via live DB bridge.
+2026-05-23 14:57:31.554 +05:30 [INF] Executing RedirectResult, redirecting to /SolarPanelAdmin.
+2026-05-23 14:57:31.558 +05:30 [INF] Executed action SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb) in 23352.273ms
+2026-05-23 14:57:31.564 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb)'
+2026-05-23 14:57:31.584 +05:30 [INF] Request finished HTTP/1.1 POST http://localhost:5039/ - 302 null null 25187.0311ms
+2026-05-23 14:57:31.601 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin - null null
+2026-05-23 14:57:31.689 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController.Index (SolarPortal.AdminWeb)'
+2026-05-23 14:57:31.703 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "Dashboard"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index() on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController (SolarPortal.AdminWeb).
+2026-05-23 14:57:32.379 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 14:57:32.768 +05:30 [INF] Executed DbCommand (40ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 14:57:33.012 +05:30 [INF] Executed DbCommand (36ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+2026-05-23 14:57:33.453 +05:30 [INF] Executed DbCommand (55ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[CurrentStage], [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+ORDER BY [s].[CurrentStage]
+2026-05-23 14:57:33.796 +05:30 [INF] Executed DbCommand (70ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 14:57:35.126 +05:30 [INF] Executed DbCommand (699ms) [Parameters=[@__p_0='?' (DbType = Int32), @__p_1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[AadharNumber], [t].[Address], [t].[AdminNotes], [t].[AlternateMobile], [t].[ApplicantName], [t].[ApprovalStatus], [t].[City], [t].[ConnectionType], [t].[CreatedAt], [t].[CreatedBy], [t].[CurrentStage], [t].[Email], [t].[ExternalProductId], [t].[IsDeleted], [t].[KVCapacity], [t].[MobileNumber], [t].[PANNumber], [t].[PinCode], [t].[PlanAmount], [t].[RejectionReason], [t].[RequestNumber], [t].[RequestType], [t].[SelectedPlan], [t].[SolarProjectId], [t].[State], [t].[UpdatedAt], [t].[UpdatedBy], [t].[UserId], [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName], [t0].[Id], [t0].[Amount], [t0].[CreatedAt], [t0].[CreatedBy], [t0].[IsDeleted], [t0].[IsVerified], [t0].[Notes], [t0].[PaymentDate], [t0].[PaymentMethod], [t0].[ReceiptImagePath], [t0].[ReceiptNumber], [t0].[ReferenceNumber], [t0].[SolarRequestId], [t0].[Status], [t0].[UTRNumber], [t0].[UpdatedAt], [t0].[UpdatedBy], [t0].[UserId], [t0].[VerifiedAt], [t0].[VerifiedBy]
+FROM (
+    SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+    FROM [SolarRequests] AS [s]
+    WHERE [s].[IsDeleted] = CAST(0 AS bit)
+    ORDER BY [s].[CreatedAt] DESC
+    OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+) AS [t]
+INNER JOIN [Users] AS [u] ON [t].[UserId] = [u].[Id]
+LEFT JOIN (
+    SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+    FROM [Payments] AS [p]
+    WHERE [p].[IsDeleted] = CAST(0 AS bit)
+) AS [t0] ON [t].[Id] = [t0].[SolarRequestId]
+ORDER BY [t].[CreatedAt] DESC, [t].[Id], [u].[Id]
+2026-05-23 14:57:37.235 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 14:57:38.262 +05:30 [INF] Executed DbCommand (40ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 14:57:39.168 +05:30 [INF] Executed ViewResult - view Index executed in 3789.2265ms.
+2026-05-23 14:57:39.183 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController.Index (SolarPortal.AdminWeb) in 7468.4977ms
+2026-05-23 14:57:39.193 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController.Index (SolarPortal.AdminWeb)'
+2026-05-23 14:57:39.197 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin - 200 null text/html; charset=utf-8 7596.4241ms
+2026-05-23 14:57:39.248 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 14:57:39.261 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 14:57:39.263 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 14:57:39.264 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/js/solar-portal.js?v=8oFjt1XLJKE2e3FXTTOPZAtBavVlIR6rT0esSq3P3Ts - null null
+2026-05-23 14:57:39.265 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 14:57:39.281 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 32.9958ms
+2026-05-23 14:57:39.300 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 37.1477ms
+2026-05-23 14:57:39.296 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 35.0961ms
+2026-05-23 14:57:39.359 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 14:57:39.364 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 14:57:39.392 +05:30 [INF] Sending file. Request path: '/js/solar-portal.js'. Physical path: '\\localhost\Sadhna\New folder (6)\files\SolarPortal_FINAL\AdminPanel\Soller_Admin\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\wwwroot\js\solar-portal.js'
+2026-05-23 14:57:39.397 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/js/solar-portal.js?v=8oFjt1XLJKE2e3FXTTOPZAtBavVlIR6rT0esSq3P3Ts - 200 9563 text/javascript 132.8122ms
+2026-05-23 14:57:39.426 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 160.6418ms
+2026-05-23 15:04:36.074 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Projects - null null
+2026-05-23 15:04:36.130 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.ProjectsController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:04:36.149 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "Projects"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index() on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.ProjectsController (SolarPortal.AdminWeb).
+2026-05-23 15:04:36.409 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:04:36.603 +05:30 [INF] Executed DbCommand (48ms) [Parameters=[@__p_0='?' (DbType = Int32), @__p_1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[AadharNumber], [t].[Address], [t].[AdminNotes], [t].[AlternateMobile], [t].[ApplicantName], [t].[ApprovalStatus], [t].[City], [t].[ConnectionType], [t].[CreatedAt], [t].[CreatedBy], [t].[CurrentStage], [t].[Email], [t].[ExternalProductId], [t].[IsDeleted], [t].[KVCapacity], [t].[MobileNumber], [t].[PANNumber], [t].[PinCode], [t].[PlanAmount], [t].[RejectionReason], [t].[RequestNumber], [t].[RequestType], [t].[SelectedPlan], [t].[SolarProjectId], [t].[State], [t].[UpdatedAt], [t].[UpdatedBy], [t].[UserId], [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName], [t0].[Id], [t0].[Amount], [t0].[CreatedAt], [t0].[CreatedBy], [t0].[IsDeleted], [t0].[IsVerified], [t0].[Notes], [t0].[PaymentDate], [t0].[PaymentMethod], [t0].[ReceiptImagePath], [t0].[ReceiptNumber], [t0].[ReferenceNumber], [t0].[SolarRequestId], [t0].[Status], [t0].[UTRNumber], [t0].[UpdatedAt], [t0].[UpdatedBy], [t0].[UserId], [t0].[VerifiedAt], [t0].[VerifiedBy]
+FROM (
+    SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+    FROM [SolarRequests] AS [s]
+    WHERE [s].[IsDeleted] = CAST(0 AS bit)
+    ORDER BY [s].[CreatedAt] DESC
+    OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+) AS [t]
+INNER JOIN [Users] AS [u] ON [t].[UserId] = [u].[Id]
+LEFT JOIN (
+    SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+    FROM [Payments] AS [p]
+    WHERE [p].[IsDeleted] = CAST(0 AS bit)
+) AS [t0] ON [t].[Id] = [t0].[SolarRequestId]
+ORDER BY [t].[CreatedAt] DESC, [t].[Id], [u].[Id]
+2026-05-23 15:04:37.094 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:04:37.322 +05:30 [INF] Executed DbCommand (60ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:04:37.420 +05:30 [INF] Executed ViewResult - view Index executed in 708.5606ms.
+2026-05-23 15:04:37.422 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.ProjectsController.Index (SolarPortal.AdminWeb) in 1269.3872ms
+2026-05-23 15:04:37.425 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.ProjectsController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:04:37.430 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Projects - 200 null text/html; charset=utf-8 1356.0683ms
+2026-05-23 15:04:37.455 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:04:37.476 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/js/solar-portal.js?v=8oFjt1XLJKE2e3FXTTOPZAtBavVlIR6rT0esSq3P3Ts - null null
+2026-05-23 15:04:37.469 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/css/solar-theme.css?v=LRQDWtq2Id7cK_vasVl_fa7a1M3FHFUudKhK2GY_nqM - null null
+2026-05-23 15:04:37.455 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:04:37.488 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 32.4362ms
+2026-05-23 15:04:37.476 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:04:37.488 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:04:37.522 +05:30 [INF] The file /js/solar-portal.js was not modified
+2026-05-23 15:04:37.526 +05:30 [INF] The file /css/solar-theme.css was not modified
+2026-05-23 15:04:37.545 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/js/solar-portal.js?v=8oFjt1XLJKE2e3FXTTOPZAtBavVlIR6rT0esSq3P3Ts - 304 null text/javascript 69.1173ms
+2026-05-23 15:04:37.549 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/css/solar-theme.css?v=LRQDWtq2Id7cK_vasVl_fa7a1M3FHFUudKhK2GY_nqM - 304 null text/css 80.1542ms
+2026-05-23 15:04:37.531 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 75.0805ms
+2026-05-23 15:04:37.540 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 63.8079ms
+2026-05-23 15:04:37.553 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 65.6113ms
+2026-05-23 15:04:37.581 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:04:37.589 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:04:38.618 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/PMSurya - null null
+2026-05-23 15:04:38.629 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PMSuryaController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:04:38.637 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "PMSurya"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index(System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PMSuryaController (SolarPortal.AdminWeb).
+2026-05-23 15:04:38.862 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[CurrentStage] = 4
+2026-05-23 15:04:39.070 +05:30 [INF] Executed DbCommand (48ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[ContentType], [p].[CreatedAt], [p].[CreatedBy], [p].[DocumentType], [p].[FileName], [p].[FilePath], [p].[FileSize], [p].[IsDeleted], [p].[Remarks], [p].[SolarRequestId], [p].[Status], [p].[UpdatedAt], [p].[UpdatedBy]
+FROM [PMDocuments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:04:39.404 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:04:39.824 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:04:39.957 +05:30 [INF] Executed ViewResult - view Index executed in 865.7403ms.
+2026-05-23 15:04:39.962 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PMSuryaController.Index (SolarPortal.AdminWeb) in 1322.2149ms
+2026-05-23 15:04:39.991 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:04:39.991 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:04:39.984 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:04:39.991 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:04:39.997 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PMSuryaController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:04:40.002 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 11.0259ms
+2026-05-23 15:04:40.019 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/PMSurya - 200 null text/html; charset=utf-8 1401.4532ms
+2026-05-23 15:04:40.025 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:04:40.007 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 18.3973ms
+2026-05-23 15:04:40.014 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 30.0134ms
+2026-05-23 15:04:40.043 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:04:40.046 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 54.3643ms
+2026-05-23 15:04:42.024 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/MeterDispatch - null null
+2026-05-23 15:04:42.032 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MeterDispatch (SolarPortal.AdminWeb)'
+2026-05-23 15:04:42.044 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "MeterDispatch", controller = "Operations"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] MeterDispatch(System.String, System.String, System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController (SolarPortal.AdminWeb).
+2026-05-23 15:04:42.269 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[@__stage_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[CurrentStage] = @__stage_0
+2026-05-23 15:04:42.755 +05:30 [INF] Executed DbCommand (38ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+WHERE [w].[IsAvailable] = CAST(1 AS bit)
+2026-05-23 15:04:43.315 +05:30 [INF] Executing ViewResult, running view OperationsList.
+2026-05-23 15:04:43.765 +05:30 [INF] Executed DbCommand (55ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:04:43.865 +05:30 [INF] Executed ViewResult - view OperationsList executed in 1092.1109ms.
+2026-05-23 15:04:43.867 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MeterDispatch (SolarPortal.AdminWeb) in 1817.7344ms
+2026-05-23 15:04:43.870 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MeterDispatch (SolarPortal.AdminWeb)'
+2026-05-23 15:04:43.885 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:04:43.886 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:04:43.887 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:04:43.890 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:04:43.899 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/MeterDispatch - 200 null text/html; charset=utf-8 1873.5131ms
+2026-05-23 15:04:43.900 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 15.2654ms
+2026-05-23 15:04:43.913 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 26.2694ms
+2026-05-23 15:04:43.908 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 22.1227ms
+2026-05-23 15:04:43.946 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 56.0293ms
+2026-05-23 15:04:43.995 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:04:44.007 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:07:59.494 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/SiteSurvey - null null
+2026-05-23 15:07:59.585 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:07:59.641 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "SiteSurvey"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index(System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController (SolarPortal.AdminWeb).
+2026-05-23 15:08:00.580 +05:30 [INF] Executed DbCommand (589ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[ApprovalStatus], [s].[AssignedToId], [s].[AssignedToUserId], [s].[CompletedAt], [s].[ConsumerNumber], [s].[CreatedAt], [s].[CreatedBy], [s].[DiscomName], [s].[EarthingAvailable], [s].[GpsPhotoPath], [s].[GridType], [s].[InternetAvailable], [s].[IsCompleted], [s].[IsDeleted], [s].[MeterType], [s].[Obstructions], [s].[OperationsRemark], [s].[PropertyType], [s].[RejectedAt], [s].[RejectedBy], [s].[RejectionReason], [s].[RoofAvailable], [s].[RoofDirection], [s].[RoofDirectionOther], [s].[RoofPhotoPath], [s].[RoofTotalAreaSqft], [s].[RoofType], [s].[RoofTypeOther], [s].[ShadowOnRoof], [s].[SolarRequestId], [s].[SurveyDate], [s].[SurveyNotes], [s].[SurveyPhotoPath], [s].[UpdatedAt], [s].[UpdatedBy]
+FROM [SiteSurveys] AS [s]
+WHERE [s].[IsCompleted] = CAST(0 AS bit) AND [s].[ApprovalStatus] <> 3
+2026-05-23 15:08:00.947 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:08:01.783 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:08:02.042 +05:30 [INF] Executed DbCommand (43ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:08:02.290 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/SiteSurvey - null null
+2026-05-23 15:08:02.297 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:08:02.302 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "SiteSurvey"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index(System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController (SolarPortal.AdminWeb).
+2026-05-23 15:08:02.495 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[ApprovalStatus], [s].[AssignedToId], [s].[AssignedToUserId], [s].[CompletedAt], [s].[ConsumerNumber], [s].[CreatedAt], [s].[CreatedBy], [s].[DiscomName], [s].[EarthingAvailable], [s].[GpsPhotoPath], [s].[GridType], [s].[InternetAvailable], [s].[IsCompleted], [s].[IsDeleted], [s].[MeterType], [s].[Obstructions], [s].[OperationsRemark], [s].[PropertyType], [s].[RejectedAt], [s].[RejectedBy], [s].[RejectionReason], [s].[RoofAvailable], [s].[RoofDirection], [s].[RoofDirectionOther], [s].[RoofPhotoPath], [s].[RoofTotalAreaSqft], [s].[RoofType], [s].[RoofTypeOther], [s].[ShadowOnRoof], [s].[SolarRequestId], [s].[SurveyDate], [s].[SurveyNotes], [s].[SurveyPhotoPath], [s].[UpdatedAt], [s].[UpdatedBy]
+FROM [SiteSurveys] AS [s]
+WHERE [s].[IsCompleted] = CAST(0 AS bit) AND [s].[ApprovalStatus] <> 3
+2026-05-23 15:08:02.500 +05:30 [INF] Executed ViewResult - view Index executed in 1530.8931ms.
+2026-05-23 15:08:02.506 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController.Index (SolarPortal.AdminWeb) in 2859.1781ms
+2026-05-23 15:08:02.508 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:08:02.510 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/SiteSurvey - 200 null text/html; charset=utf-8 3023.6465ms
+2026-05-23 15:08:02.694 +05:30 [INF] Executed DbCommand (40ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:08:02.699 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:08:02.932 +05:30 [INF] Executed DbCommand (60ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:08:03.092 +05:30 [INF] Executed ViewResult - view Index executed in 393.1752ms.
+2026-05-23 15:08:03.097 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController.Index (SolarPortal.AdminWeb) in 788.8676ms
+2026-05-23 15:08:03.132 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:08:03.147 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:08:03.146 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/js/solar-portal.js?v=8oFjt1XLJKE2e3FXTTOPZAtBavVlIR6rT0esSq3P3Ts - null null
+2026-05-23 15:08:03.164 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/SiteSurvey - 200 null text/html; charset=utf-8 874.8219ms
+2026-05-23 15:08:03.164 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 32.1683ms
+2026-05-23 15:08:03.132 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:08:03.135 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/css/solar-theme.css?v=LRQDWtq2Id7cK_vasVl_fa7a1M3FHFUudKhK2GY_nqM - null null
+2026-05-23 15:08:03.151 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:08:03.198 +05:30 [INF] The file /js/solar-portal.js was not modified
+2026-05-23 15:08:03.202 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:08:03.209 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:08:03.223 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/js/solar-portal.js?v=8oFjt1XLJKE2e3FXTTOPZAtBavVlIR6rT0esSq3P3Ts - 304 null text/javascript 77.459ms
+2026-05-23 15:08:03.212 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 80.211ms
+2026-05-23 15:08:03.221 +05:30 [INF] The file /css/solar-theme.css was not modified
+2026-05-23 15:08:03.224 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 73.0322ms
+2026-05-23 15:08:03.250 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 47.9722ms
+2026-05-23 15:08:03.251 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/css/solar-theme.css?v=LRQDWtq2Id7cK_vasVl_fa7a1M3FHFUudKhK2GY_nqM - 304 null text/css 115.9474ms
+2026-05-23 15:08:03.256 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:08:06.397 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/MaterialDispatch - null null
+2026-05-23 15:08:06.424 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaterialDispatch (SolarPortal.AdminWeb)'
+2026-05-23 15:08:06.436 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "MaterialDispatch", controller = "Operations"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] MaterialDispatch(System.String, System.String, System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController (SolarPortal.AdminWeb).
+2026-05-23 15:08:06.637 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[@__stage_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[CurrentStage] = @__stage_0
+2026-05-23 15:08:07.007 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+WHERE [w].[IsAvailable] = CAST(1 AS bit)
+2026-05-23 15:08:07.017 +05:30 [INF] Executing ViewResult, running view OperationsList.
+2026-05-23 15:08:07.197 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:08:07.321 +05:30 [INF] Executed ViewResult - view OperationsList executed in 304.6006ms.
+2026-05-23 15:08:07.325 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaterialDispatch (SolarPortal.AdminWeb) in 884.8318ms
+2026-05-23 15:08:07.343 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:08:07.343 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:08:07.343 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:08:07.344 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:08:07.347 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaterialDispatch (SolarPortal.AdminWeb)'
+2026-05-23 15:08:07.356 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 13.0694ms
+2026-05-23 15:08:07.353 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 10.962ms
+2026-05-23 15:08:07.380 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/MaterialDispatch - 200 null text/html; charset=utf-8 983.6725ms
+2026-05-23 15:08:07.392 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:08:07.364 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 21.3598ms
+2026-05-23 15:08:07.422 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:08:07.418 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 73.264ms
+2026-05-23 15:08:09.409 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/SiteSurvey - null null
+2026-05-23 15:08:09.416 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:08:09.420 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "SiteSurvey"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index(System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController (SolarPortal.AdminWeb).
+2026-05-23 15:08:09.670 +05:30 [INF] Executed DbCommand (54ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[ApprovalStatus], [s].[AssignedToId], [s].[AssignedToUserId], [s].[CompletedAt], [s].[ConsumerNumber], [s].[CreatedAt], [s].[CreatedBy], [s].[DiscomName], [s].[EarthingAvailable], [s].[GpsPhotoPath], [s].[GridType], [s].[InternetAvailable], [s].[IsCompleted], [s].[IsDeleted], [s].[MeterType], [s].[Obstructions], [s].[OperationsRemark], [s].[PropertyType], [s].[RejectedAt], [s].[RejectedBy], [s].[RejectionReason], [s].[RoofAvailable], [s].[RoofDirection], [s].[RoofDirectionOther], [s].[RoofPhotoPath], [s].[RoofTotalAreaSqft], [s].[RoofType], [s].[RoofTypeOther], [s].[ShadowOnRoof], [s].[SolarRequestId], [s].[SurveyDate], [s].[SurveyNotes], [s].[SurveyPhotoPath], [s].[UpdatedAt], [s].[UpdatedBy]
+FROM [SiteSurveys] AS [s]
+WHERE [s].[IsCompleted] = CAST(0 AS bit) AND [s].[ApprovalStatus] <> 3
+2026-05-23 15:08:09.962 +05:30 [INF] Executed DbCommand (77ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:08:09.967 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:08:10.168 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:08:10.265 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/Installation - null null
+2026-05-23 15:08:10.273 +05:30 [INF] Executed ViewResult - view Index executed in 305.0899ms.
+2026-05-23 15:08:10.281 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.Installation (SolarPortal.AdminWeb)'
+2026-05-23 15:08:10.283 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController.Index (SolarPortal.AdminWeb) in 859.235ms
+2026-05-23 15:08:10.286 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SiteSurveyController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:08:10.290 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/SiteSurvey - 200 null text/html; charset=utf-8 881.1032ms
+2026-05-23 15:08:10.290 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Installation", controller = "Operations"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Installation(System.String, System.String, System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController (SolarPortal.AdminWeb).
+2026-05-23 15:08:10.500 +05:30 [INF] Executed DbCommand (41ms) [Parameters=[@__stage_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[CurrentStage] = @__stage_0
+2026-05-23 15:08:10.855 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+WHERE [w].[IsAvailable] = CAST(1 AS bit)
+2026-05-23 15:08:10.868 +05:30 [INF] Executing ViewResult, running view OperationsList.
+2026-05-23 15:08:11.054 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:08:11.145 +05:30 [INF] Executed ViewResult - view OperationsList executed in 277.677ms.
+2026-05-23 15:08:11.148 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.Installation (SolarPortal.AdminWeb) in 850.6978ms
+2026-05-23 15:08:11.168 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:08:11.173 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:08:11.177 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:08:11.184 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:08:11.187 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.Installation (SolarPortal.AdminWeb)'
+2026-05-23 15:08:11.190 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 21.339ms
+2026-05-23 15:08:11.195 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 22.6991ms
+2026-05-23 15:08:11.212 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 37.2756ms
+2026-05-23 15:08:11.212 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/Installation - 200 null text/html; charset=utf-8 947.385ms
+2026-05-23 15:08:11.225 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:08:11.221 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:08:11.255 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 70.9033ms
+2026-05-23 15:08:15.651 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/DCRUpdate - null null
+2026-05-23 15:08:15.659 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.DCRUpdate (SolarPortal.AdminWeb)'
+2026-05-23 15:08:15.667 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "DCRUpdate", controller = "Operations"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] DCRUpdate(System.String, System.String, System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController (SolarPortal.AdminWeb).
+2026-05-23 15:08:15.854 +05:30 [INF] Executed DbCommand (34ms) [Parameters=[@__stage_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[CurrentStage] = @__stage_0
+2026-05-23 15:08:16.209 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+WHERE [w].[IsAvailable] = CAST(1 AS bit)
+2026-05-23 15:08:16.218 +05:30 [INF] Executing ViewResult, running view OperationsList.
+2026-05-23 15:08:16.406 +05:30 [INF] Executed DbCommand (38ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:08:16.500 +05:30 [INF] Executed ViewResult - view OperationsList executed in 282.5966ms.
+2026-05-23 15:08:16.503 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.DCRUpdate (SolarPortal.AdminWeb) in 832.2918ms
+2026-05-23 15:08:16.507 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.DCRUpdate (SolarPortal.AdminWeb)'
+2026-05-23 15:08:16.517 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:08:16.517 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:08:16.517 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:08:16.533 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:08:16.535 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/DCRUpdate - 200 null text/html; charset=utf-8 884.2183ms
+2026-05-23 15:08:16.537 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 20.5899ms
+2026-05-23 15:08:16.544 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 26.8893ms
+2026-05-23 15:08:16.567 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:08:16.561 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 27.884ms
+2026-05-23 15:08:16.553 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 36.2709ms
+2026-05-23 15:08:16.580 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:08:19.267 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/SolarProjects - null null
+2026-05-23 15:08:19.282 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SolarProjectsController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:08:19.292 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "SolarProjects"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index() on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SolarProjectsController (SolarPortal.AdminWeb).
+2026-05-23 15:08:19.517 +05:30 [INF] Executed DbCommand (36ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[BV], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[DealClose], [s].[DiscomWork], [s].[FinalBV], [s].[IsActive], [s].[IsDeleted], [s].[Name], [s].[ProjectAmount], [s].[SCZMenue], [s].[SolarTypeKV], [s].[SportainTeam], [s].[TotalAmount], [s].[UpdatedAt], [s].[UpdatedBy]
+FROM [SolarProjects] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:08:19.869 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:08:20.233 +05:30 [INF] Executed DbCommand (88ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:08:20.330 +05:30 [INF] Executed ViewResult - view Index executed in 719.6994ms.
+2026-05-23 15:08:20.337 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SolarProjectsController.Index (SolarPortal.AdminWeb) in 1035.0408ms
+2026-05-23 15:08:20.348 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.SolarProjectsController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:08:20.352 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/SolarProjects - 200 null text/html; charset=utf-8 1084.1704ms
+2026-05-23 15:08:20.660 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:08:20.665 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:08:20.669 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:08:20.676 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:08:20.687 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 26.7609ms
+2026-05-23 15:08:20.701 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 32.0091ms
+2026-05-23 15:08:20.694 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 28.833ms
+2026-05-23 15:08:20.739 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 62.9274ms
+2026-05-23 15:08:20.786 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:08:20.792 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:08:22.928 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Workers - null null
+2026-05-23 15:08:22.942 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.WorkersController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:08:22.951 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "Workers"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index() on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.WorkersController (SolarPortal.AdminWeb).
+2026-05-23 15:08:23.156 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+2026-05-23 15:08:23.575 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:08:23.763 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:08:23.879 +05:30 [INF] Executed ViewResult - view Index executed in 700.2383ms.
+2026-05-23 15:08:23.882 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.WorkersController.Index (SolarPortal.AdminWeb) in 925.8666ms
+2026-05-23 15:08:23.887 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.WorkersController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:08:23.897 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:08:23.898 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:08:23.898 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:08:23.899 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:08:23.900 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Workers - 200 null text/html; charset=utf-8 972.0822ms
+2026-05-23 15:08:23.910 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 12.0573ms
+2026-05-23 15:08:23.905 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 8.3291ms
+2026-05-23 15:08:23.938 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:08:23.926 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 27.0518ms
+2026-05-23 15:08:23.935 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:08:23.913 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 14.885ms
+2026-05-23 15:08:25.256 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Workers/Create - null null
+2026-05-23 15:08:25.264 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.WorkersController.Create (SolarPortal.AdminWeb)'
+2026-05-23 15:08:25.274 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Create", controller = "Workers"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Create() on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.WorkersController (SolarPortal.AdminWeb).
+2026-05-23 15:08:25.811 +05:30 [INF] Executing ViewResult, running view Create.
+2026-05-23 15:08:26.063 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:08:26.159 +05:30 [INF] Executed ViewResult - view Create executed in 689.8046ms.
+2026-05-23 15:08:26.161 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.WorkersController.Create (SolarPortal.AdminWeb) in 882.9948ms
+2026-05-23 15:08:26.164 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.WorkersController.Create (SolarPortal.AdminWeb)'
+2026-05-23 15:08:26.170 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Workers/Create - 200 null text/html; charset=utf-8 913.8339ms
+2026-05-23 15:08:26.185 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:08:26.187 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:08:26.187 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js - null null
+2026-05-23 15:08:26.187 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/jquery-validation/dist/jquery.validate.min.js - null null
+2026-05-23 15:08:26.188 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:08:26.193 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:08:26.197 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 11.2346ms
+2026-05-23 15:08:26.211 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/jquery-validation/dist/jquery.validate.min.js - 404 0 null 24.197ms
+2026-05-23 15:08:26.242 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/jquery-validation/dist/jquery.validate.min.js, Response status code: 404
+2026-05-23 15:08:26.232 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:08:26.221 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 28.5593ms
+2026-05-23 15:08:26.201 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 13.9788ms
+2026-05-23 15:08:26.204 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js - 404 0 null 17.666ms
+2026-05-23 15:08:26.252 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 64.2521ms
+2026-05-23 15:08:26.277 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:08:26.284 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js, Response status code: 404
+2026-05-23 15:08:32.097 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Commission - null null
+2026-05-23 15:08:32.107 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.CommissionController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:08:32.119 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "Commission"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index(System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.CommissionController (SolarPortal.AdminWeb).
+2026-05-23 15:08:32.372 +05:30 [INF] Executed DbCommand (33ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[Id], [c].[CommissionAmount], [c].[CommissionPercentage], [c].[CreatedAt], [c].[CreatedBy], [c].[IsDeleted], [c].[IsPaid], [c].[Notes], [c].[PaidAt], [c].[PaidBy], [c].[PaymentReference], [c].[ProjectAmount], [c].[SolarRequestId], [c].[UpdatedAt], [c].[UpdatedBy], [c].[UserId], [c].[WorkerId], [w].[Id], [w].[City], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy], [t].[Id], [t].[AadharNumber], [t].[Address], [t].[AdminNotes], [t].[AlternateMobile], [t].[ApplicantName], [t].[ApprovalStatus], [t].[City], [t].[ConnectionType], [t].[CreatedAt], [t].[CreatedBy], [t].[CurrentStage], [t].[Email], [t].[ExternalProductId], [t].[IsDeleted], [t].[KVCapacity], [t].[MobileNumber], [t].[PANNumber], [t].[PinCode], [t].[PlanAmount], [t].[RejectionReason], [t].[RequestNumber], [t].[RequestType], [t].[SelectedPlan], [t].[SolarProjectId], [t].[State], [t].[UpdatedAt], [t].[UpdatedBy], [t].[UserId]
+FROM [Commissions] AS [c]
+LEFT JOIN [Workers] AS [w] ON [c].[WorkerId] = [w].[Id]
+INNER JOIN (
+    SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+    FROM [SolarRequests] AS [s]
+    WHERE [s].[IsDeleted] = CAST(0 AS bit)
+) AS [t] ON [c].[SolarRequestId] = [t].[Id]
+WHERE [c].[IsDeleted] = CAST(0 AS bit)
+ORDER BY [c].[CreatedAt] DESC
+2026-05-23 15:08:32.593 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COALESCE(SUM([c].[CommissionAmount]), 0.0)
+FROM [Commissions] AS [c]
+WHERE [c].[IsDeleted] = CAST(0 AS bit) AND [c].[IsPaid] = CAST(0 AS bit)
+2026-05-23 15:08:32.821 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COALESCE(SUM([c].[CommissionAmount]), 0.0)
+FROM [Commissions] AS [c]
+WHERE [c].[IsDeleted] = CAST(0 AS bit) AND [c].[IsPaid] = CAST(1 AS bit)
+2026-05-23 15:08:33.036 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+WHERE [w].[Type] = 2
+2026-05-23 15:08:33.228 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [c].[SolarRequestId]
+FROM [Commissions] AS [c]
+WHERE [c].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:08:33.418 +05:30 [INF] Executed DbCommand (33ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[CurrentStage] = 10
+2026-05-23 15:08:33.935 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:08:34.159 +05:30 [INF] Executed DbCommand (39ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:08:34.250 +05:30 [INF] Executed ViewResult - view Index executed in 821.226ms.
+2026-05-23 15:08:34.253 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.CommissionController.Index (SolarPortal.AdminWeb) in 2129.8613ms
+2026-05-23 15:08:34.257 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.CommissionController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:08:34.274 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:08:34.279 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:08:34.279 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:08:34.279 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:08:34.286 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Commission - 200 null text/html; charset=utf-8 2189.6164ms
+2026-05-23 15:08:34.291 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 16.3369ms
+2026-05-23 15:08:34.318 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:08:34.295 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 16.3343ms
+2026-05-23 15:08:34.329 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:08:34.297 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 18.4123ms
+2026-05-23 15:08:34.314 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 34.2254ms
+2026-05-23 15:18:36.279 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin - null null
+2026-05-23 15:18:36.524 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:18:36.542 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "Dashboard"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index() on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController (SolarPortal.AdminWeb).
+2026-05-23 15:18:36.918 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:18:37.117 +05:30 [INF] Executed DbCommand (34ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:18:37.432 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+2026-05-23 15:18:37.617 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[CurrentStage], [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+ORDER BY [s].[CurrentStage]
+2026-05-23 15:18:37.821 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:18:38.534 +05:30 [INF] Executed DbCommand (507ms) [Parameters=[@__p_0='?' (DbType = Int32), @__p_1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[AadharNumber], [t].[Address], [t].[AdminNotes], [t].[AlternateMobile], [t].[ApplicantName], [t].[ApprovalStatus], [t].[City], [t].[ConnectionType], [t].[CreatedAt], [t].[CreatedBy], [t].[CurrentStage], [t].[Email], [t].[ExternalProductId], [t].[IsDeleted], [t].[KVCapacity], [t].[MobileNumber], [t].[PANNumber], [t].[PinCode], [t].[PlanAmount], [t].[RejectionReason], [t].[RequestNumber], [t].[RequestType], [t].[SelectedPlan], [t].[SolarProjectId], [t].[State], [t].[UpdatedAt], [t].[UpdatedBy], [t].[UserId], [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName], [t0].[Id], [t0].[Amount], [t0].[CreatedAt], [t0].[CreatedBy], [t0].[IsDeleted], [t0].[IsVerified], [t0].[Notes], [t0].[PaymentDate], [t0].[PaymentMethod], [t0].[ReceiptImagePath], [t0].[ReceiptNumber], [t0].[ReferenceNumber], [t0].[SolarRequestId], [t0].[Status], [t0].[UTRNumber], [t0].[UpdatedAt], [t0].[UpdatedBy], [t0].[UserId], [t0].[VerifiedAt], [t0].[VerifiedBy]
+FROM (
+    SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+    FROM [SolarRequests] AS [s]
+    WHERE [s].[IsDeleted] = CAST(0 AS bit)
+    ORDER BY [s].[CreatedAt] DESC
+    OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+) AS [t]
+INNER JOIN [Users] AS [u] ON [t].[UserId] = [u].[Id]
+LEFT JOIN (
+    SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+    FROM [Payments] AS [p]
+    WHERE [p].[IsDeleted] = CAST(0 AS bit)
+) AS [t0] ON [t].[Id] = [t0].[SolarRequestId]
+ORDER BY [t].[CreatedAt] DESC, [t].[Id], [u].[Id]
+2026-05-23 15:18:38.662 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:18:38.926 +05:30 [INF] Executed DbCommand (61ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:18:39.100 +05:30 [WRN] The temp data cookie .AspNetCore.Mvc.CookieTempDataProvider could not be loaded.
+System.Security.Cryptography.CryptographicException: The payload was invalid. For more information go to https://aka.ms/aspnet/dataprotectionwarning
+   at Microsoft.AspNetCore.DataProtection.Cng.CbcAuthenticatedEncryptor.DecryptImpl(Byte* pbCiphertext, UInt32 cbCiphertext, Byte* pbAdditionalAuthenticatedData, UInt32 cbAdditionalAuthenticatedData)
+   at Microsoft.AspNetCore.DataProtection.Cng.Internal.CngAuthenticatedEncryptorBase.Decrypt(ArraySegment`1 ciphertext, ArraySegment`1 additionalAuthenticatedData)
+   at Microsoft.AspNetCore.DataProtection.KeyManagement.KeyRingBasedDataProtector.UnprotectCore(Byte[] protectedData, Boolean allowOperationsOnRevokedKeys, UnprotectStatus& status)
+   at Microsoft.AspNetCore.DataProtection.KeyManagement.KeyRingBasedDataProtector.Unprotect(Byte[] protectedData)
+   at Microsoft.AspNetCore.Mvc.ViewFeatures.CookieTempDataProvider.LoadTempData(HttpContext context)
+2026-05-23 15:18:39.168 +05:30 [INF] Executed ViewResult - view Index executed in 513.6761ms.
+2026-05-23 15:18:39.173 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController.Index (SolarPortal.AdminWeb) in 2627.243ms
+2026-05-23 15:18:39.181 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:18:39.206 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin - 200 null text/html; charset=utf-8 2936.4375ms
+2026-05-23 15:18:39.248 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:18:39.256 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:18:39.262 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/css/solar-theme.css?v=LRQDWtq2Id7cK_vasVl_fa7a1M3FHFUudKhK2GY_nqM - null null
+2026-05-23 15:18:39.263 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:18:39.304 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:18:39.298 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/js/solar-portal.js?v=8oFjt1XLJKE2e3FXTTOPZAtBavVlIR6rT0esSq3P3Ts - null null
+2026-05-23 15:18:39.318 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 70.2191ms
+2026-05-23 15:18:39.335 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 79.701ms
+2026-05-23 15:18:39.337 +05:30 [INF] The file /css/solar-theme.css was not modified
+2026-05-23 15:18:39.341 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 77.6656ms
+2026-05-23 15:18:39.409 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:18:39.374 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 69.8941ms
+2026-05-23 15:18:39.393 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:18:39.395 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/css/solar-theme.css?v=LRQDWtq2Id7cK_vasVl_fa7a1M3FHFUudKhK2GY_nqM - 304 null text/css 134.0959ms
+2026-05-23 15:18:39.351 +05:30 [INF] The file /js/solar-portal.js was not modified
+2026-05-23 15:18:39.437 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/js/solar-portal.js?v=8oFjt1XLJKE2e3FXTTOPZAtBavVlIR6rT0esSq3P3Ts - 304 null text/javascript 138.2633ms
+2026-05-23 15:18:41.820 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Payments - null null
+2026-05-23 15:18:41.911 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:18:41.950 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "Payments"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index(System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController (SolarPortal.AdminWeb).
+2026-05-23 15:18:42.159 +05:30 [INF] Executed DbCommand (34ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:18:42.401 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-05-23 15:18:43.098 +05:30 [INF] Executed DbCommand (542ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:18:43.333 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:18:43.535 +05:30 [INF] Executed DbCommand (34ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0
+2026-05-23 15:18:45.229 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:18:45.697 +05:30 [INF] Executed DbCommand (32ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:18:45.808 +05:30 [INF] Executed ViewResult - view Index executed in 2243.4731ms.
+2026-05-23 15:18:45.815 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Index (SolarPortal.AdminWeb) in 3859.5199ms
+2026-05-23 15:18:45.831 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:18:45.831 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:18:45.835 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:18:45.837 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:18:45.845 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:18:45.848 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 17.4878ms
+2026-05-23 15:18:45.854 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 22.3082ms
+2026-05-23 15:18:45.864 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Payments - 200 null text/html; charset=utf-8 4044.0643ms
+2026-05-23 15:18:45.859 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 24.2377ms
+2026-05-23 15:18:45.878 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 41.0511ms
+2026-05-23 15:18:45.885 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:18:45.894 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:18:50.177 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/File/View?path=%2Fuploads%2FSCR-001%2Fpayments%2F08d3c9f6-37c1-481e-9287-cfb126439741.jpg - null null
+2026-05-23 15:18:50.189 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.FileController.View (SolarPortal.AdminWeb)'
+2026-05-23 15:18:50.198 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "View", controller = "File"}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult View(System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.FileController (SolarPortal.AdminWeb).
+2026-05-23 15:18:50.261 +05:30 [INF] Executing PhysicalFileResult, sending file '\\localhost\Sadhna\New folder (6)\files\SolarPortal_FINAL\UserPanel\SolarPortal\SolarPortal\SolarPortal.Web\wwwroot\uploads\SCR-001\payments\08d3c9f6-37c1-481e-9287-cfb126439741.jpg' with download name '' ...
+2026-05-23 15:18:50.299 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.FileController.View (SolarPortal.AdminWeb) in 92.3996ms
+2026-05-23 15:18:50.304 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.FileController.View (SolarPortal.AdminWeb)'
+2026-05-23 15:18:50.306 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/File/View?path=%2Fuploads%2FSCR-001%2Fpayments%2F08d3c9f6-37c1-481e-9287-cfb126439741.jpg - 200 19092 image/jpeg 129.3219ms
+2026-05-23 15:18:54.705 +05:30 [INF] Request starting HTTP/1.1 POST http://localhost:5039/SolarPanelAdmin/Payments/Verify - application/x-www-form-urlencoded; charset=UTF-8 230
+2026-05-23 15:18:54.717 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Verify (SolarPortal.AdminWeb)'
+2026-05-23 15:18:54.725 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Verify", controller = "Payments"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Verify(Int32) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController (SolarPortal.AdminWeb).
+2026-05-23 15:18:55.114 +05:30 [INF] Executed DbCommand (34ms) [Parameters=[@__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[Id] = @__p_0
+2026-05-23 15:18:55.845 +05:30 [INF] Executed DbCommand (38ms) [Parameters=[@p19='?' (DbType = Int32), @p0='?' (Precision = 18) (Scale = 2) (DbType = Decimal), @p1='?' (DbType = DateTime2), @p2='?' (Size = 4000), @p3='?' (DbType = Boolean), @p4='?' (DbType = Boolean), @p5='?' (Size = 4000), @p6='?' (DbType = DateTime2), @p7='?' (Size = 4000), @p8='?' (Size = 4000), @p9='?' (Size = 4000), @p10='?' (Size = 4000), @p11='?' (DbType = Int32), @p12='?' (DbType = Int32), @p13='?' (Size = 4000), @p14='?' (DbType = DateTime2), @p15='?' (Size = 4000), @p16='?' (Size = 4000), @p17='?' (DbType = DateTime2), @p18='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SET IMPLICIT_TRANSACTIONS OFF;
+SET NOCOUNT ON;
+UPDATE [Payments] SET [Amount] = @p0, [CreatedAt] = @p1, [CreatedBy] = @p2, [IsDeleted] = @p3, [IsVerified] = @p4, [Notes] = @p5, [PaymentDate] = @p6, [PaymentMethod] = @p7, [ReceiptImagePath] = @p8, [ReceiptNumber] = @p9, [ReferenceNumber] = @p10, [SolarRequestId] = @p11, [Status] = @p12, [UTRNumber] = @p13, [UpdatedAt] = @p14, [UpdatedBy] = @p15, [UserId] = @p16, [VerifiedAt] = @p17, [VerifiedBy] = @p18
+OUTPUT 1
+WHERE [Id] = @p19;
+2026-05-23 15:18:56.579 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[@p0='?' (DbType = DateTime2), @p1='?' (Size = 4000), @p2='?' (DbType = Boolean), @p3='?' (DbType = Boolean), @p4='?' (Size = 4000), @p5='?' (Size = 4000), @p6='?' (DbType = DateTime2), @p7='?' (DbType = Int32), @p8='?' (Size = 4000), @p9='?' (DbType = DateTime2), @p10='?' (Size = 4000), @p11='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SET IMPLICIT_TRANSACTIONS OFF;
+SET NOCOUNT ON;
+INSERT INTO [Notifications] ([CreatedAt], [CreatedBy], [IsDeleted], [IsRead], [Message], [NotificationType], [ReadAt], [SolarRequestId], [Title], [UpdatedAt], [UpdatedBy], [UserId])
+OUTPUT INSERTED.[Id]
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11);
+2026-05-23 15:18:56.795 +05:30 [INF] Executed DbCommand (33ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-05-23 15:18:56.988 +05:30 [INF] Executed DbCommand (33ms) [Parameters=[@__p_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[Id] = @__p_0
+2026-05-23 15:18:57.002 +05:30 [INF] Executing JsonResult, writing value of type '<>f__AnonymousType4`6[[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Decimal, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Decimal, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.Boolean, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'.
+2026-05-23 15:18:57.039 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Verify (SolarPortal.AdminWeb) in 2309.2843ms
+2026-05-23 15:18:57.042 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Verify (SolarPortal.AdminWeb)'
+2026-05-23 15:18:57.047 +05:30 [INF] Request finished HTTP/1.1 POST http://localhost:5039/SolarPanelAdmin/Payments/Verify - 200 null application/json; charset=utf-8 2342.1415ms
+2026-05-23 15:18:58.849 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Payments - null null
+2026-05-23 15:18:58.862 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:18:58.864 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "Payments"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index(System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController (SolarPortal.AdminWeb).
+2026-05-23 15:18:59.097 +05:30 [INF] Executed DbCommand (36ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:18:59.298 +05:30 [INF] Executed DbCommand (36ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-05-23 15:18:59.518 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:18:59.724 +05:30 [INF] Executed DbCommand (34ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:18:59.945 +05:30 [INF] Executed DbCommand (42ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0
+2026-05-23 15:18:59.951 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:19:00.136 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:19:00.253 +05:30 [INF] Executed ViewResult - view Index executed in 302.5183ms.
+2026-05-23 15:19:00.259 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Index (SolarPortal.AdminWeb) in 1351.2611ms
+2026-05-23 15:19:00.293 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:19:00.294 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:19:00.295 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:19:00.295 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:19:00.331 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 36.3356ms
+2026-05-23 15:19:00.309 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:19:00.326 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 32.1013ms
+2026-05-23 15:19:00.312 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 18.9412ms
+2026-05-23 15:19:00.338 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:19:00.341 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Payments - 200 null text/html; charset=utf-8 1492.1311ms
+2026-05-23 15:19:00.345 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:19:00.396 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 100.9272ms
+2026-05-23 15:19:00.416 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/favicon.ico - null null
+2026-05-23 15:19:00.505 +05:30 [INF] Sending file. Request path: '/favicon.ico'. Physical path: '\\localhost\Sadhna\New folder (6)\files\SolarPortal_FINAL\AdminPanel\Soller_Admin\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\wwwroot\favicon.ico'
+2026-05-23 15:19:00.507 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/favicon.ico - 200 5430 image/x-icon 91.2872ms
+2026-05-23 15:19:05.360 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/PMSurya - null null
+2026-05-23 15:19:05.371 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PMSuryaController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:19:05.374 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "PMSurya"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index(System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PMSuryaController (SolarPortal.AdminWeb).
+2026-05-23 15:19:05.585 +05:30 [INF] Executed DbCommand (46ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[CurrentStage] = 4
+2026-05-23 15:19:05.771 +05:30 [INF] Executed DbCommand (33ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[ContentType], [p].[CreatedAt], [p].[CreatedBy], [p].[DocumentType], [p].[FileName], [p].[FilePath], [p].[FileSize], [p].[IsDeleted], [p].[Remarks], [p].[SolarRequestId], [p].[Status], [p].[UpdatedAt], [p].[UpdatedBy]
+FROM [PMDocuments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit)
+2026-05-23 15:19:05.776 +05:30 [INF] Executing ViewResult, running view Index.
+2026-05-23 15:19:05.955 +05:30 [INF] Executed DbCommand (35ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-05-23 15:19:06.058 +05:30 [INF] Executed ViewResult - view Index executed in 282.0929ms.
+2026-05-23 15:19:06.061 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PMSuryaController.Index (SolarPortal.AdminWeb) in 683.1283ms
+2026-05-23 15:19:06.063 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PMSuryaController.Index (SolarPortal.AdminWeb)'
+2026-05-23 15:19:06.066 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/PMSurya - 200 null text/html; charset=utf-8 705.8633ms
+2026-05-23 15:19:06.097 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - null null
+2026-05-23 15:19:06.097 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - null null
+2026-05-23 15:19:06.123 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css - 404 0 null 25.9415ms
+2026-05-23 15:19:06.115 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-05-23 15:19:06.098 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-05-23 15:19:06.126 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js - 404 0 null 29.3901ms
+2026-05-23 15:19:06.128 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/css/bootstrap.min.css, Response status code: 404
+2026-05-23 15:19:06.131 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 16.3318ms
+2026-05-23 15:19:06.145 +05:30 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5039/lib/bootstrap/dist/js/bootstrap.bundle.min.js, Response status code: 404
+2026-05-23 15:19:06.157 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 59.6618ms

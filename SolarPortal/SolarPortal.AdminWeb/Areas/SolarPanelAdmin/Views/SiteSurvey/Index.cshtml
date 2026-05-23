@@ -13,14 +13,8 @@
     @{
         var ssFilter = (ViewBag.Filter as string) ?? "pending";
     }
-    <div class="mb-3">
-        <a class="btn @(ssFilter == "pending" ? "btn-warning" : "btn-outline-warning")"
-           asp-action="Index" asp-route-filter="pending">⏳ Pending</a>
-        <a class="btn @(ssFilter == "approved" ? "btn-success" : "btn-outline-success")"
-           asp-action="Index" asp-route-filter="approved">✅ Approved (history)</a>
-        <a class="btn @(ssFilter == "all" ? "btn-primary" : "btn-outline-primary")"
-           asp-action="Index" asp-route-filter="all">📋 All</a>
-    </div>
+    @* 4-tab status filter — see _StatusTabs partial for explanation *@
+    @await Html.PartialAsync("_StatusTabs", (object)ssFilter)
 
     <div class="card">
         <div class="card-body">

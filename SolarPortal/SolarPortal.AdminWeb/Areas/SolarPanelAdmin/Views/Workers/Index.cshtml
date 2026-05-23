@@ -4,6 +4,7 @@
 }
 
 <div class="page active">
+    @Html.AntiForgeryToken()
     <div class="ph">
         <div class="ph-bc">🛡️ Admin / <span>Workers</span></div>
         <div class="ph-title">👷 Workers Management</div>
@@ -89,15 +90,21 @@
 
 @section Scripts {
     <script>
+        // Antiforgery token may or may not be present on the page; read it safely
+        // so a missing token never throws and silently kills the request.
+        function antiForgeryHeaders() {
+            var el = document.querySelector('input[name="__RequestVerificationToken"]');
+            return el ? { 'RequestVerificationToken': el.value } : {};
+        }
+
         function toggleAvailability(workerId, currentStatus) {
-            const newStatus = !JSON.parse(currentStatus);
-            fetch('/SolarPanelAdmin/Workers/ToggleAvailability', {
+            // NOTE: the controller actions take a plain `int id`, which ASP.NET
+            // binds from the QUERY STRING / form — NOT from a JSON body. Sending
+            // {id:...} as a JSON body left id = 0, so nothing happened. We pass id
+            // in the URL query instead.
+            fetch('/SolarPanelAdmin/Workers/ToggleAvailability?id=' + encodeURIComponent(workerId), {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                },
-                body: JSON.stringify({ id: workerId })
+                headers: antiForgeryHeaders()
             }).then(r => r.json())
                 .then(d => {
                     if (d.success) {
@@ -105,7 +112,8 @@
                     } else {
                         Swal.fire('Error', 'Failed to update availability', 'error');
                     }
-                });
+                })
+                .catch(() => Swal.fire('Error', 'Request failed', 'error'));
         }
 
         function deleteWorker(workerId) {
@@ -118,13 +126,9 @@
                 cancelButtonText: 'Cancel'
             }).then(result => {
                 if (result.isConfirmed) {
-                    fetch('/SolarPanelAdmin/Workers/Delete', {
+                    fetch('/SolarPanelAdmin/Workers/Delete?id=' + encodeURIComponent(workerId), {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
-                        },
-                        body: JSON.stringify({ id: workerId })
+                        headers: antiForgeryHeaders()
                     }).then(r => r.json())
                         .then(d => {
                             if (d.success) {
@@ -132,7 +136,8 @@
                             } else {
                                 Swal.fire('Error', 'Failed to delete worker', 'error');
                             }
-                        });
+                        })
+                        .catch(() => Swal.fire('Error', 'Request failed', 'error'));
                 }
             });
         }

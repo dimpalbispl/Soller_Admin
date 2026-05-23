@@ -50,6 +50,23 @@ public class ProjectsController : Controller
     {
         var result = await _solarRequestService.GetWithDetailsAsync(id);
         if (!result.IsSuccess) return NotFound();
+
+        // Per spec: agar yeh sirf auto-stub hai (user ne abhi kuch submit nahi
+        // kiya), to admin ko bhi Details + Approve/Reject mat dikhao — All
+        // Projects list pe wapas bhej do.
+        var d = result.Data;
+        if (d != null &&
+            !d.SolarProjectId.HasValue &&
+            !d.ExternalProductId.HasValue &&
+            d.KVCapacity == 0m &&
+            d.PlanAmount == 0m &&
+            d.RequestedAmount == 0m &&
+            d.CurrentStage != SolarPortal.Domain.Enums.ProjectStatus.Completed)
+        {
+            TempData["Info"] = "This request hasn't been submitted by the user yet.";
+            return RedirectToAction(nameof(Index));
+        }
+
         return View(result.Data);
     }
 

@@ -1,0 +1,76 @@
+@*
+   Reusable file-preview modal (admin).
+   ─────────────────────────────────────
+   Drop this partial ONCE per page (near the bottom, before scripts):
+       @await Html.PartialAsync("_FileModal")
+
+   Then make any "View" trigger call:
+       <a href="javascript:void(0)" onclick="openFileModal('/uploads/payments/abc.jpg')">📷 View</a>
+
+   It routes the path through the admin FileController (/SolarPanelAdmin/File/View)
+   so files written by the USER panel resolve correctly, then shows them in an
+   in-page modal — images as <img>, PDFs in an <iframe>. No new browser tab.
+*@
+
+<div id="filePreviewModal"
+     style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.75);
+            align-items:center;justify-content:center;padding:24px"
+     onclick="if(event.target===this) closeFileModal()">
+    <div style="background:#fff;border-radius:12px;max-width:90vw;max-height:90vh;
+                display:flex;flex-direction:column;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.4)">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+                    padding:12px 16px;border-bottom:1px solid #e5e7eb;background:#f9fafb">
+            <span style="font-weight:600;font-size:14px;color:#111">Document Preview</span>
+            <div style="display:flex;gap:8px;align-items:center">
+                <a id="fileModalDownload" href="#" download
+                   style="font-size:12px;color:#2563eb;text-decoration:none">⬇ Download</a>
+                <button onclick="closeFileModal()"
+                        style="border:none;background:#ef4444;color:#fff;border-radius:6px;
+                               width:28px;height:28px;cursor:pointer;font-size:16px;line-height:1">×</button>
+            </div>
+        </div>
+        <div id="fileModalBody"
+             style="padding:0;overflow:auto;display:flex;align-items:center;justify-content:center;
+                    min-width:320px;min-height:240px;background:#1f2937">
+            <!-- img or iframe injected here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // Build the controller URL that resolves a stored relative path against
+    // either panel's wwwroot. Encodes the path as a query param.
+    function fileModalSrc(storedPath) {
+        var p = (storedPath || '').replace(/\\/g, '/');
+        return '/SolarPanelAdmin/File/View?path=' + encodeURIComponent(p);
+    }
+
+    function openFileModal(storedPath) {
+        if (!storedPath) return;
+        var src = fileModalSrc(storedPath);
+        var body = document.getElementById('fileModalBody');
+        var isPdf = /\.pdf(\?|$)/i.test(storedPath);
+
+        if (isPdf) {
+            body.innerHTML = '<iframe src="' + src + '" ' +
+                'style="width:80vw;height:80vh;border:0;background:#fff"></iframe>';
+        } else {
+            body.innerHTML = '<img src="' + src + '" ' +
+                'style="max-width:88vw;max-height:80vh;display:block" ' +
+                'onerror="this.parentNode.innerHTML=\'<div style=\\\'color:#fff;padding:40px;text-align:center\\\'>⚠ File not found on the server.<br><span style=\\\'font-size:12px;opacity:.7\\\'>' +
+                (storedPath.replace(/'/g, '')) + '</span></div>\'" />';
+        }
+        document.getElementById('fileModalDownload').href = src;
+        document.getElementById('filePreviewModal').style.display = 'flex';
+    }
+
+    function closeFileModal() {
+        document.getElementById('filePreviewModal').style.display = 'none';
+        document.getElementById('fileModalBody').innerHTML = '';
+    }
+
+    // Esc closes the modal
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeFileModal();
+    });
+</script>

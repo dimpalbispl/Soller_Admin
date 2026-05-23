@@ -51,7 +51,20 @@
                 </div>
                 <div class="fg">
                     <label asp-for="State">State <span class="req">*</span></label>
-                    <input asp-for="State" placeholder="Rajasthan" required />
+                    @{
+                        // States from legacy M_StateDivMaster (loaded by controller),
+                        // same as the user panel. Value = StateName, data-code = StateCode.
+                        var stateList = ViewBag.States
+                            as List<SolarPortal.Application.Services.StateDto>
+                            ?? new List<SolarPortal.Application.Services.StateDto>();
+                    }
+                    <select asp-for="State" required>
+                        <option value="">Select</option>
+                        @foreach (var st in stateList)
+                        {
+                            <option value="@st.StateName" data-code="@st.StateCode">@st.StateName</option>
+                        }
+                    </select>
                     <span asp-validation-for="State" class="text-danger hint"></span>
                 </div>
             </div>

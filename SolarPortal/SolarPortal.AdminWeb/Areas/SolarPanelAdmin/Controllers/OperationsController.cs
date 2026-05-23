@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SolarPortal.Application.DTOs;
 using SolarPortal.Application.Interfaces;
 using SolarPortal.Application.Interfaces.Services;
+using SolarPortal.Application.Services;
 using SolarPortal.Domain.Entities;
 using SolarPortal.Domain.Enums;
 
@@ -17,33 +18,72 @@ public class OperationsController : Controller
     private readonly ISolarRequestService _requestService;
     private readonly IFileUploadService _fileUploadService;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IStateService _states;
 
     public OperationsController(IUnitOfWork uow, ISolarRequestService requestService,
-        IFileUploadService fileUploadService, UserManager<ApplicationUser> userManager)
+        IFileUploadService fileUploadService, UserManager<ApplicationUser> userManager,
+        IStateService states)
     {
         _uow = uow;
         _requestService = requestService;
         _fileUploadService = fileUploadService;
         _userManager = userManager;
+        _states = states;
     }
 
     // Helper: apply state/city/status filters on top of stage filter.
-    // When showHistory = true, also include requests that have already moved past
-    // this stage, so admins can audit previously-processed entries.
+    //
+    // Filter semantics for operations queues (per spec — admin needs to see
+    // every record after action, not just the pending queue):
+    //   pending  → requests AT the given stage (the actionable queue)
+    //   approved → requests that have moved PAST this stage (i.e. action done)
+    //   rejected → DCR has approve/reject; rejected = stage at DCRUpdate with
+    //              latest DCRDocument.ApprovalStatus == Rejected. Other
+    //              operations (dispatch) don't have a reject concept, so we
+    //              return an empty set for those (the UI still shows the tab
+    //              for consistency).
+    //   all      → everything at-or-past the stage (history)
     private async Task<IEnumerable<SolarRequest>> FilterAsync(
         ProjectStatus stage, string? state, string? city,
-        ConnectionType? connType = null, bool showHistory = false)
+        ConnectionType? connType = null, bool showHistory = false,
+        string filterMode = "pending", string? op = null)
     {
         IEnumerable<SolarRequest> all;
-        if (showHistory)
+
+        var mode = (filterMode ?? "pending").ToLowerInvariant();
+        if (mode == "all" || showHistory)
         {
-            // Include all requests at-or-past this stage
             all = await _uow.SolarRequests.FindAsync(x => (int)x.CurrentStage >= (int)stage);
         }
-        else
+        else if (mode == "approved")
+        {
+            // Past this stage = the operation completed for these requests.
+            all = await _uow.SolarRequests.FindAsync(x => (int)x.CurrentStage > (int)stage);
+        }
+        else if (mode == "rejected")
+        {
+            // DCR is the only operation with an admin approve/reject. Other
+            // dispatch modes (meter/material/installation) don't have a
+            // rejection state — they're admin-driven actions, not approvals.
+            if (string.Equals(op, "dcr", StringComparison.OrdinalIgnoreCase))
+            {
+                var rejectedIds = (await _uow.DCRDocuments.FindAsync(
+                                    d => d.ApprovalStatus == ApprovalStatus.Rejected))
+                                 .Select(d => d.SolarRequestId)
+                                 .ToHashSet();
+                all = (await _uow.SolarRequests.GetAllAsync())
+                      .Where(r => rejectedIds.Contains(r.Id));
+            }
+            else
+            {
+                all = Enumerable.Empty<SolarRequest>();
+            }
+        }
+        else // pending
         {
             all = await _uow.SolarRequests.FindAsync(x => x.CurrentStage == stage);
         }
+
         IEnumerable<SolarRequest> q = all;
         if (!string.IsNullOrWhiteSpace(state))
             q = q.Where(x => x.State.Equals(state, StringComparison.OrdinalIgnoreCase));
@@ -58,9 +98,16 @@ public class OperationsController : Controller
     {
         ViewBag.FilterState = state;
         ViewBag.FilterCity = city;
-        // Distinct states from all requests so dropdown is populated
-        var allStates = (await _uow.SolarRequests.GetAllAsync())
-            .Select(x => x.State).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().OrderBy(s => s).ToList();
+        // State filter dropdown comes from the legacy M_StateDivMaster table
+        // (same source as every other state dropdown in the app) — not from the
+        // distinct states of existing requests. This way the filter always lists
+        // every real state even before any request from that state exists.
+        var allStates = (await _states.GetActiveAsync())
+            .Select(s => s.StateName)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct()
+            .OrderBy(s => s)
+            .ToList();
         ViewBag.States = allStates;
         ViewBag.Workers = (await _uow.Workers.FindAsync(w => w.IsAvailable))
             .OrderBy(w => w.Name).ToList();
@@ -115,9 +162,10 @@ public class OperationsController : Controller
     // After admin approves PM Surya Ghar, the project's CurrentStage becomes MeterDispatch.
     public async Task<IActionResult> MeterDispatch(string? state, string? city, string? filter)
     {
-        var showHistory = string.Equals(filter, "all", StringComparison.OrdinalIgnoreCase);
-        ViewBag.Filter = showHistory ? "all" : "pending";
-        var requests = await FilterAsync(ProjectStatus.MeterDispatch, state, city, showHistory: showHistory);
+        var f = (filter ?? "pending").ToLowerInvariant();
+        var showHistory = f == "all";
+        ViewBag.Filter = f;
+        var requests = await FilterAsync(ProjectStatus.MeterDispatch, state, city, showHistory: showHistory, filterMode: f, op: "meter");
         await PopulateFilterViewBags(state, city, requests);
         ViewBag.Title = "Meter Dispatch";
         ViewBag.Op = "meter";
@@ -178,9 +226,10 @@ public class OperationsController : Controller
     // --- Material Dispatch ---
     public async Task<IActionResult> MaterialDispatch(string? state, string? city, string? filter)
     {
-        var showHistory = string.Equals(filter, "all", StringComparison.OrdinalIgnoreCase);
-        ViewBag.Filter = showHistory ? "all" : "pending";
-        var requests = await FilterAsync(ProjectStatus.MaterialDispatch, state, city, showHistory: showHistory);
+        var f = (filter ?? "pending").ToLowerInvariant();
+        var showHistory = f == "all";
+        ViewBag.Filter = f;
+        var requests = await FilterAsync(ProjectStatus.MaterialDispatch, state, city, showHistory: showHistory, filterMode: f, op: "material");
         await PopulateFilterViewBags(state, city, requests);
         ViewBag.Title = "Material Dispatch";
         ViewBag.Op = "material";
@@ -241,9 +290,10 @@ public class OperationsController : Controller
     // --- Installation ---
     public async Task<IActionResult> Installation(string? state, string? city, string? filter)
     {
-        var showHistory = string.Equals(filter, "all", StringComparison.OrdinalIgnoreCase);
-        ViewBag.Filter = showHistory ? "all" : "pending";
-        var requests = await FilterAsync(ProjectStatus.Installation, state, city, showHistory: showHistory);
+        var f = (filter ?? "pending").ToLowerInvariant();
+        var showHistory = f == "all";
+        ViewBag.Filter = f;
+        var requests = await FilterAsync(ProjectStatus.Installation, state, city, showHistory: showHistory, filterMode: f, op: "installation");
         await PopulateFilterViewBags(state, city, requests);
         ViewBag.Title = "Installation";
         ViewBag.Op = "installation";
@@ -331,9 +381,10 @@ public class OperationsController : Controller
     // --- DCR Update (Domestic only) ---
     public async Task<IActionResult> DCRUpdate(string? state, string? city, string? filter)
     {
-        var showHistory = string.Equals(filter, "all", StringComparison.OrdinalIgnoreCase);
-        ViewBag.Filter = showHistory ? "all" : "pending";
-        var requests = await FilterAsync(ProjectStatus.DCRUpdate, state, city, ConnectionType.Domestic, showHistory: showHistory);
+        var f = (filter ?? "pending").ToLowerInvariant();
+        var showHistory = f == "all";
+        ViewBag.Filter = f;
+        var requests = await FilterAsync(ProjectStatus.DCRUpdate, state, city, ConnectionType.Domestic, showHistory: showHistory, filterMode: f, op: "dcr");
         await PopulateFilterViewBags(state, city, requests);
         ViewBag.Title = "DCR Update";
         ViewBag.Op = "dcr";

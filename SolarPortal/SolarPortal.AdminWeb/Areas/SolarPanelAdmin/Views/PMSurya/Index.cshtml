@@ -12,14 +12,11 @@
     @{
         var pmFilter = (ViewBag.Filter as string) ?? "pending";
     }
-    <div class="mb-3">
-        <a class="btn @(pmFilter == "pending" ? "btn-warning" : "btn-outline-warning")"
-           asp-action="Index" asp-route-filter="pending">⏳ Pending</a>
-        <a class="btn @(pmFilter == "approved" ? "btn-success" : "btn-outline-success")"
-           asp-action="Index" asp-route-filter="approved">✅ Approved (history)</a>
-        <a class="btn @(pmFilter == "all" ? "btn-primary" : "btn-outline-primary")"
-           asp-action="Index" asp-route-filter="all">📋 All</a>
-    </div>
+    @* 4-tab status filter — Pending / Approved / Rejected / All.
+       Replaced the previous 3-tab inline version so the Rejected list
+       is reachable (per spec: "approve karta hu to pending se ht jata hai
+       wha sb show karwao pending approve reject all"). *@
+    @await Html.PartialAsync("_StatusTabs", (object)pmFilter)
 
     <div class="card">
         <div class="card-body">

@@ -45,11 +45,19 @@ public class SiteSurveyController : Controller
         }
         else if (f == "approved")
         {
-            surveys = (await _uow.SiteSurveys.FindAsync(s => s.IsCompleted)).ToList();
+            surveys = (await _uow.SiteSurveys.FindAsync(s =>
+                s.ApprovalStatus == ApprovalStatus.Approved || s.IsCompleted)).ToList();
+        }
+        else if (f == "rejected")
+        {
+            surveys = (await _uow.SiteSurveys.FindAsync(s =>
+                s.ApprovalStatus == ApprovalStatus.Rejected)).ToList();
         }
         else // pending
         {
-            surveys = (await _uow.SiteSurveys.FindAsync(s => !s.IsCompleted)).ToList();
+            // Pending = not completed AND not rejected
+            surveys = (await _uow.SiteSurveys.FindAsync(s =>
+                !s.IsCompleted && s.ApprovalStatus != ApprovalStatus.Rejected)).ToList();
         }
 
         var surveyList = surveys.ToList();
@@ -83,6 +91,8 @@ public class SiteSurveyController : Controller
 
         survey.IsCompleted = true;
         survey.CompletedAt = DateTime.UtcNow;
+        survey.ApprovalStatus = ApprovalStatus.Approved;        // set status flag so filter tabs work
+        survey.RejectionReason = null;                          // clear any prior reject reason
         if (!string.IsNullOrWhiteSpace(notes))
             survey.SurveyNotes = (survey.SurveyNotes ?? "") + $"\n[Admin] {notes}";
         _uow.SiteSurveys.Update(survey);
@@ -120,7 +130,17 @@ public class SiteSurveyController : Controller
         var survey = await _uow.SiteSurveys.GetByIdAsync(surveyId);
         if (survey == null) return Json(new { success = false, message = "Survey not found" });
 
-        survey.SurveyNotes = (survey.SurveyNotes ?? "") + $"\n[Admin REJECTED] {reason}";
+        // Capture the rejection state on the entity so the new "Rejected" tab
+        // in the index view (and any future user-facing report) can filter on
+        // it cleanly. Free-text SurveyNotes still gets the timestamped entry
+        // for audit history.
+        var adminId = _userManager.GetUserId(User) ?? "system";
+        survey.ApprovalStatus  = ApprovalStatus.Rejected;
+        survey.RejectionReason = reason;
+        survey.RejectedAt      = DateTime.UtcNow;
+        survey.RejectedBy      = adminId;
+        survey.IsCompleted     = false;
+        survey.SurveyNotes     = (survey.SurveyNotes ?? "") + $"\n[Admin REJECTED] {reason}";
         _uow.SiteSurveys.Update(survey);
         await _uow.SaveChangesAsync();
 
