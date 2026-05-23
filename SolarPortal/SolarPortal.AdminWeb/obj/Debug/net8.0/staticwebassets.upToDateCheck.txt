@@ -3,7 +3,14 @@ wwwroot\css\solar-theme.css
 wwwroot\favicon.ico
 wwwroot\js\site.js
 wwwroot\js\solar-portal.js
+wwwroot\uploads\dcr\.gitkeep
 wwwroot\uploads\dcr\eaf637c6-fa0e-458d-9240-55b95864b39f.jpg
 wwwroot\uploads\dispatch\material\8fd5f5a1-2b74-46f3-8327-7b707d47fd85.jpg
 wwwroot\uploads\dispatch\meter\165516da-e72a-4671-aaa2-e0126cf81f53.jpg
+wwwroot\uploads\installation\.gitkeep
 wwwroot\uploads\installation\81cfdea6-57cf-438f-b9bf-c6c6eb56117b.jpg
+wwwroot\uploads\material\.gitkeep
+wwwroot\uploads\meter\.gitkeep
+wwwroot\uploads\payments\.gitkeep
+wwwroot\uploads\pmsurya\.gitkeep
+wwwroot\uploads\sitesurvey\.gitkeep

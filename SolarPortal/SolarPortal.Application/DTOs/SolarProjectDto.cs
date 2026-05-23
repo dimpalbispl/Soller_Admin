@@ -25,7 +25,7 @@ public class CreateSolarProjectDto
     public string Name { get; set; } = string.Empty;
     public decimal SolarTypeKV { get; set; }
     public ConnectionType ConnectionType { get; set; } = ConnectionType.Domestic;
-    public int BV { get; set; } = 100;
+    public int BV { get; set; } = 0;
     public int FinalBV { get; set; }
     public decimal DiscomWork { get; set; }
     public decimal DealClose { get; set; }

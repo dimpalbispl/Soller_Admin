@@ -92,6 +92,14 @@ public static class DependencyInjection
         services.AddScoped<IWithdrawalService, WithdrawalService>();
         // Legacy view reader for the With Activation product picker (V#SpProductDetail)
         services.AddScoped<IBasicProductService, BasicProductService>();
+        // Payment modes from legacy M_PayModeMaster — shown in the payment forms.
+        services.AddScoped<IPayModeService, PayModeService>();
+        // States from legacy M_StateDivMaster — shown in address State dropdowns.
+        services.AddScoped<IStateService, StateService>();
+        // Bridges new "With Activation" submissions into the legacy
+        // TrnProductorderDetail table — keeps the existing SolFit
+        // VB workflow (reports, activation processing) working.
+        services.AddScoped<ILegacyProductRequestService, LegacyProductRequestService>();
 
         return services;
     }

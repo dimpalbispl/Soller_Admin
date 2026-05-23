@@ -83,7 +83,20 @@ public class SolarRequestService : ISolarRequestService
         var (items, _) = await _uow.SolarRequests.GetPagedAsync(page, pageSize,
             orderBy: q => q.OrderByDescending(x => x.CreatedAt),
             includeProperties: "User,Payments");
-        return ServiceResult<IEnumerable<SolarRequestDto>>.Success(_mapper.Map<IEnumerable<SolarRequestDto>>(items));
+
+        // Per spec: jab tak user request actually submit na kare, uska auto-stub
+        // (first-login placeholder) admin ki kisi bhi list / report mein nahi
+        // dikhna chahiye. A stub has no plan/product, KV 0, amount 0, and isn't
+        // completed. Filtering here means EVERY admin screen that calls GetAllAsync
+        // (All Projects, workflow lists, dashboards) hides it automatically.
+        var real = items.Where(r =>
+            r.SolarProjectId != null ||
+            r.ExternalProductId != null ||
+            r.KVCapacity != 0m ||
+            r.PlanAmount != 0m ||
+            r.CurrentStage == ProjectStatus.Completed);
+
+        return ServiceResult<IEnumerable<SolarRequestDto>>.Success(_mapper.Map<IEnumerable<SolarRequestDto>>(real));
     }
 
     public async Task<ServiceResult<IEnumerable<SolarRequestDto>>> GetPendingApprovalsAsync()
@@ -184,6 +197,20 @@ public class SolarRequestService : ISolarRequestService
 
         entity.CurrentStage = dto.NewStage;
         if (dto.Notes != null) entity.AdminNotes = dto.Notes;
+
+        // When the workflow reaches its final step the project is, by definition,
+        // approved — there is no separate manual approval action at the end. The
+        // last stage differs by connection type:
+        //   Domestic   → DCRUpdate then Completed
+        //   Commercial → Installation then Completed
+        // Either way, once CurrentStage == Completed we lock ApprovalStatus to
+        // Approved so the admin Details / dashboard badges read correctly and the
+        // Approve/Reject buttons disappear. Persisting it (not just a view patch)
+        // keeps every screen consistent.
+        if (dto.NewStage == ProjectStatus.Completed)
+        {
+            entity.ApprovalStatus = ApprovalStatus.Approved;
+        }
 
         _uow.SolarRequests.Update(entity);
         await _uow.SaveChangesAsync();

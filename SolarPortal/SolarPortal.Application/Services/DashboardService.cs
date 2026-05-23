@@ -35,15 +35,21 @@ public class DashboardService : IDashboardService
         // TotalProjects since it represents an active account, but
         // PendingApprovals should reflect ACTUAL pending submissions.
         static bool IsUnfilledStub(SolarPortal.Domain.Entities.SolarRequest r) =>
-            (r.CurrentStage == ProjectStatus.Registration ||
-             r.CurrentStage == ProjectStatus.ProductSelection) &&
-            r.ApprovalStatus == ApprovalStatus.Pending &&
             r.SolarProjectId == null &&
             r.ExternalProductId == null &&
             r.KVCapacity == 0m &&
-            r.PlanAmount == 0m;
+            r.PlanAmount == 0m &&
+            r.CurrentStage != ProjectStatus.Completed;
 
         var realRequests = allRequests.Where(r => !IsUnfilledStub(r)).ToList();
+
+        // Recent applications + stage distribution must ALSO exclude the stub —
+        // otherwise an empty placeholder shows in "Recent Applications" and bumps
+        // the "ProductSelection: 1" bar even though no real request was submitted.
+        var realRecent = recent.Where(r => !IsUnfilledStub(r)).ToList();
+        var realStatusCounts = realRequests
+            .GroupBy(r => r.CurrentStage.ToString())
+            .ToDictionary(g => g.Key, g => g.Count());
 
         return new AdminDashboardDto
         {
@@ -54,8 +60,8 @@ public class DashboardService : IDashboardService
             TotalRevenue = payments.Where(p => p.IsVerified).Sum(p => p.Amount),
             PendingPayments = payments.Where(p => !p.IsVerified).Sum(p => p.Amount),
             TotalWorkers = workers.Count(),
-            RecentRequests = _mapper.Map<List<SolarRequestDto>>(recent),
-            StatusDistribution = statusCounts
+            RecentRequests = _mapper.Map<List<SolarRequestDto>>(realRecent),
+            StatusDistribution = realStatusCounts
         };
     }
 
@@ -81,13 +87,11 @@ public class DashboardService : IDashboardService
         // SolarProject, picked an ExternalProductId (basic product), set a
         // KV capacity, or entered a plan amount.
         static bool IsUnfilledStub(SolarPortal.Domain.Entities.SolarRequest r) =>
-            (r.CurrentStage == ProjectStatus.Registration ||
-             r.CurrentStage == ProjectStatus.ProductSelection) &&
-            r.ApprovalStatus == ApprovalStatus.Pending &&
             r.SolarProjectId == null &&
             r.ExternalProductId == null &&
             r.KVCapacity == 0m &&
-            r.PlanAmount == 0m;
+            r.PlanAmount == 0m &&
+            r.CurrentStage != ProjectStatus.Completed;
 
         var realProjects = projects.Where(p => !IsUnfilledStub(p)).ToList();
 
@@ -110,10 +114,12 @@ public class DashboardService : IDashboardService
                 p.CurrentStage   != ProjectStatus.Completed),
             TotalPaid = verifiedPaid,
             TotalDue = totalDue,
-            // MyProjects / LatestProject still includes the stub so the
-            // "Next Action" card on the dashboard can show "Fill your request"
-            // for new users. Counts above are what the user explicitly asked
-            // to show 0 for brand-new accounts.
+            // Per spec ("Dashboard pr dikhna chahiye"): the user HAS registered,
+            // so the dashboard shows their project CARD + timeline even when it's
+            // still an unfilled stub (Registration done, rest pending). The view
+            // hides the plan/amount details until a plan is picked. NOTE: the
+            // numeric COUNTS above (TotalProjects, PendingApprovals) deliberately
+            // stay on realProjects so a brand-new account still reads 0/0.
             MyProjects = _mapper.Map<List<SolarRequestDto>>(projects.Take(5)),
             LatestProject = projects.Any() ? _mapper.Map<SolarRequestDto>(projects.First()) : null,
             UnreadNotifications = _mapper.Map<List<NotificationDto>>(notifications.Take(5))

@@ -1,4 +1,5 @@
 using SolarPortal.Domain.Common;
+using SolarPortal.Domain.Enums;
 
 namespace SolarPortal.Domain.Entities;
 
@@ -39,6 +40,16 @@ public class SiteSurvey : BaseEntity
     // ──────── Status ────────
     public bool IsCompleted { get; set; } = false;
     public DateTime? CompletedAt { get; set; }
+
+    // ─── Approve/Reject workflow ─────────────────────────────────────────
+    // Added per spec ("pending / approved / rejected / all" tabs everywhere):
+    //   ApprovalStatus = Pending  → awaiting admin verification
+    //   ApprovalStatus = Approved → IsCompleted is also set true; project advances
+    //   ApprovalStatus = Rejected → user must re-submit the survey; RejectionReason captured
+    public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Pending;
+    public string? RejectionReason { get; set; }
+    public DateTime? RejectedAt { get; set; }
+    public string? RejectedBy { get; set; }
 
     public virtual SolarRequest? SolarRequest { get; set; }
     public virtual ApplicationUser? AssignedTo { get; set; }
