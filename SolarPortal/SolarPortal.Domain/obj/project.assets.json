@@ -14,11 +14,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "\\\\localhost\\Sadhna\\New folder (6)\\files\\SolarPortal_FINAL\\AdminPanel\\Soller_Admin\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj",
+      "projectUniqueName": "\\\\localhost\\Sadhna\\New folder (3)\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj",
       "projectName": "SolarPortal.Domain",
-      "projectPath": "\\\\localhost\\Sadhna\\New folder (6)\\files\\SolarPortal_FINAL\\AdminPanel\\Soller_Admin\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj",
+      "projectPath": "\\\\localhost\\Sadhna\\New folder (3)\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj",
       "packagesPath": "C:\\Users\\Claude1\\.nuget\\packages\\",
-      "outputPath": "\\\\localhost\\Sadhna\\New folder (6)\\files\\SolarPortal_FINAL\\AdminPanel\\Soller_Admin\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\obj\\",
+      "outputPath": "\\\\localhost\\Sadhna\\New folder (3)\\SolarPortal\\SolarPortal.Domain\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
