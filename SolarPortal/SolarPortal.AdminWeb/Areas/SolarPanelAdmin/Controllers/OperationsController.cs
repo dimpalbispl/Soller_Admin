@@ -244,6 +244,19 @@ public class OperationsController : Controller
     {
         try
         {
+            // ===== Worker assignment mandatory =====
+            // Per spec: "assign user choose nahi karta admin tab tak aage process
+            // nahi kar sakta — jaha jaha ye assign karne ka process hai waha."
+            // Worker assignment is now required to dispatch material. Client also
+            // blocks the Submit button until a worker is picked, but a tampered
+            // POST could still slip past — server is the source of truth.
+            if (!workerId.HasValue || workerId.Value <= 0)
+                return Json(new
+                {
+                    success = false,
+                    message = "Please assign a despatch worker before submitting. Worker assignment is required to dispatch material."
+                });
+
             string? docPath = null;
             if (dispatchDoc != null)
             {
@@ -308,6 +321,18 @@ public class OperationsController : Controller
     {
         try
         {
+            // ===== Worker assignment mandatory =====
+            // Per spec: "assign user choose nahi karta admin tab tak aage process
+            // nahi kar sakta." Installer assignment is now required to mark
+            // installation done. Client blocks the Submit button until a worker
+            // is picked; this is the server-side enforcement against tampered POSTs.
+            if (!workerId.HasValue || workerId.Value <= 0)
+                return Json(new
+                {
+                    success = false,
+                    message = "Please assign an installer (worker) before submitting. Worker assignment is required to mark installation."
+                });
+
             string? photoPath = null;
             if (completionPhoto != null)
             {
@@ -407,37 +432,149 @@ public class OperationsController : Controller
                 docPath = path;
             }
 
-            var dcr = new DCRDocument
-            {
-                SolarRequestId = requestId,
-                DCRNumber = dcrNumber,
-                DCRDate = dcrDate ?? DateTime.UtcNow,
-                DocumentPath = docPath,
-                Remark = remark,
-                ExtractedData = SimulateOCR(dcrNumber),
-                IsVerified = true
-            };
+            // ===== Look up an existing DCR record =====
+            // Bug fix (user complaint: "approve kar di hai but [user view] show this
+            // [Awaiting verification]"): admin's SubmitDCR used to ALWAYS create a
+            // brand-new DCRDocument and leave any user-uploaded DCR record stuck at
+            // ApprovalStatus = Pending. The user-side DCR/Upload view checks
+            // existing.ApprovalStatus, so it kept showing "Awaiting admin verification"
+            // even after the project moved to Completed.
+            //
+            // Correct behavior: if the user has already uploaded a DCR for this
+            // request, we UPDATE that record (mark it approved + verified) rather
+            // than create a sibling. Admin's auto-generated DCR Number overrides the
+            // user-entered one (per Round 9 spec — admin-side number is authoritative).
+            // User-uploaded document is preserved unless admin uploads a new one.
+            var existingDcrs = await _uow.DCRDocuments.FindAsync(d => d.SolarRequestId == requestId);
+            var existingDcr  = existingDcrs.OrderByDescending(d => d.CreatedAt).FirstOrDefault();
 
-            await _uow.DCRDocuments.AddAsync(dcr);
+            var adminUserId = _userManager.GetUserId(User);
+
+            // ===== Authoritative DCR Number =====
+            // Per spec: "DCR Number ye fill hokar hi aana chahiye admin update nahi
+            // kar sakta". The view shows the number as readonly, but a tampered
+            // POST could still send a different value. We re-generate the number
+            // here on the server and ignore whatever the client sent, so admin
+            // genuinely cannot override it.
+            //
+            // Edge case: if we're updating an existing record that already has an
+            // admin-style DCR-YYYY-NNNN number (e.g. admin re-submits), keep that
+            // number rather than burning a new sequence value.
+            string serverDcrNumber;
+            if (existingDcr != null
+                && !string.IsNullOrWhiteSpace(existingDcr.DCRNumber)
+                && existingDcr.DCRNumber!.StartsWith("DCR-", StringComparison.OrdinalIgnoreCase))
+            {
+                serverDcrNumber = existingDcr.DCRNumber!;
+            }
+            else
+            {
+                serverDcrNumber = await GenerateNextDcrNumberAsync();
+            }
+
+            DCRDocument dcr;
+            if (existingDcr != null)
+            {
+                // === Update existing user DCR ===
+                existingDcr.DCRNumber       = serverDcrNumber;
+                existingDcr.DCRDate         = dcrDate ?? existingDcr.DCRDate ?? DateTime.UtcNow;
+                // Admin's uploaded document overrides; otherwise preserve user's.
+                if (!string.IsNullOrWhiteSpace(docPath))
+                    existingDcr.DocumentPath = docPath;
+                // Merge remarks: admin's note is appended to keep the user's intent on record.
+                if (!string.IsNullOrWhiteSpace(remark))
+                    existingDcr.Remark = string.IsNullOrWhiteSpace(existingDcr.Remark)
+                        ? remark
+                        : $"{existingDcr.Remark}\n— Admin: {remark}";
+                existingDcr.ExtractedData   = SimulateOCR(serverDcrNumber);
+                existingDcr.IsVerified      = true;
+                existingDcr.ApprovalStatus  = ApprovalStatus.Approved;
+                existingDcr.ApprovedAt      = DateTime.UtcNow;
+                existingDcr.ApprovedBy      = adminUserId;
+                existingDcr.RejectionReason = null;   // clear any prior rejection
+                _uow.DCRDocuments.Update(existingDcr);
+                dcr = existingDcr;
+            }
+            else
+            {
+                // === No prior submission — create fresh ===
+                dcr = new DCRDocument
+                {
+                    SolarRequestId  = requestId,
+                    DCRNumber       = serverDcrNumber,
+                    DCRDate         = dcrDate ?? DateTime.UtcNow,
+                    DocumentPath    = docPath,
+                    Remark          = remark,
+                    ExtractedData   = SimulateOCR(serverDcrNumber),
+                    IsVerified      = true,
+                    ApprovalStatus  = ApprovalStatus.Approved,
+                    ApprovedAt      = DateTime.UtcNow,
+                    ApprovedBy      = adminUserId
+                };
+                await _uow.DCRDocuments.AddAsync(dcr);
+            }
             await _uow.SaveChangesAsync();
 
             var stageResult = await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
             {
                 Id = requestId,
                 NewStage = ProjectStatus.Completed,
-                Notes = $"DCR {dcrNumber} submitted on {dcr.DCRDate:dd/MM/yyyy}"
-            }, _userManager.GetUserId(User)!);
+                Notes = $"DCR {serverDcrNumber} submitted on {dcr.DCRDate:dd/MM/yyyy}"
+            }, adminUserId!);
 
             if (!stageResult.IsSuccess)
                 return Json(new { success = false, message = $"Stage update failed: {stageResult.Message ?? string.Join("; ", stageResult.Errors)}" });
 
-            return Json(new { success = true, message = $"DCR {dcrNumber} submitted. Project completed!" });
+            return Json(new { success = true, dcrNumber = serverDcrNumber, message = $"DCR {serverDcrNumber} submitted. Project completed!" });
         }
         catch (Exception ex)
         {
             var detail = ex.InnerException?.Message ?? ex.Message;
             return Json(new { success = false, message = $"DCR submit failed: {detail}" });
         }
+    }
+
+    // GET: /Admin/Operations/GetNextDcrNumber
+    // Returns the next DCR Number for the admin's DCR Update form. The view
+    // calls this just before showing the modal, pre-fills the readonly input
+    // so the admin sees the same value that will be persisted. The actual
+    // authoritative number is still re-generated server-side in SubmitDCR.
+    [HttpGet]
+    public async Task<IActionResult> GetNextDcrNumber()
+    {
+        var next = await GenerateNextDcrNumberAsync();
+        return Json(new { success = true, dcrNumber = next });
+    }
+
+    /// <summary>
+    /// Generates the next DCR Number in the sequence "DCR-YYYY-NNNN".
+    /// Year is derived from current UTC year, sequence is one-up over the
+    /// max existing number for the same year. Never re-used.
+    ///
+    /// Sample sequence: DCR-2026-0001, DCR-2026-0002, ...
+    /// </summary>
+    private async Task<string> GenerateNextDcrNumberAsync()
+    {
+        var year = DateTime.UtcNow.Year;
+        var prefix = $"DCR-{year}-";
+        // Pull every existing DCR record. The dataset is small (one row per
+        // completed project) so an in-memory scan is fine here. Optimization
+        // path if it ever grows: dedicated max-id query.
+        var existing = await _uow.DCRDocuments.GetAllAsync();
+        var maxSeq = existing
+            .Where(d => !string.IsNullOrWhiteSpace(d.DCRNumber)
+                        && d.DCRNumber!.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .Select(d =>
+            {
+                // Parse the numeric tail after the prefix. Anything we can't
+                // parse is treated as 0 so it doesn't blow up the sequence.
+                var tail = d.DCRNumber!.Substring(prefix.Length);
+                return int.TryParse(tail, out var n) ? n : 0;
+            })
+            .DefaultIfEmpty(0)
+            .Max();
+
+        return $"{prefix}{(maxSeq + 1):D4}";
     }
 
     private static string SimulateOCR(string dcrNumber) =>

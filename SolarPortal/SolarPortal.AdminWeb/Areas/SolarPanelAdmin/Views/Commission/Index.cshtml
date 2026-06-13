@@ -115,17 +115,28 @@
     {
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>Commission Records (@Model.Count())</div>
+
+            @{
+                ViewData["FilterTableId"]     = "comm-table";
+                ViewData["FilterPlaceholder"] = "Search by Member ID, request #, INC worker name, city, state...";
+            }
+            @await Html.PartialAsync("_ReportFilterToolbar")
+
             <div class="tbl-wrap">
-                <table class="table table-hover">
+                <table id="comm-table" class="table table-hover report-table">
                     <thead>
                         <tr>
                             <th>Request</th>
                             <th>Member ID</th>
+                            <th>Request Type</th>
+                            <th>Package</th>
+                            <th>City / State</th>
                             <th>INC Worker</th>
                             <th style="text-align:right">Project Amount</th>
                             <th>%</th>
                             <th style="text-align:right">Commission</th>
                             <th>Status</th>
+                            <th>Date</th>
                             <th>Paid On</th>
                             <th>Actions</th>
                         </tr>
@@ -133,10 +144,31 @@
                     <tbody>
                         @foreach (var c in Model)
                         {
-                            <tr>
-                                <td><strong>@(c.SolarRequest?.RequestNumber ?? ("#" + c.SolarRequestId))</strong></td>
-                                <td><code style="font-size:11px;color:#0d9488">@c.UserId</code></td>
-                                <td>
+                            var reqTypeLabel = c.SolarRequest?.RequestType switch
+                            {
+                                SolarPortal.Domain.Enums.RequestType.WithActivation              => "🔌 With Activation",
+                                SolarPortal.Domain.Enums.RequestType.OnlySolarWithoutActivation  => "⚡ Without Activation",
+                                SolarPortal.Domain.Enums.RequestType.AlreadyActiveOnlyRequest    => "✅ Already Active",
+                                _ => c.SolarRequest?.RequestType.ToString() ?? "—"
+                            };
+                            var searchHaystack = $"{c.UserId} {c.SolarRequest?.ApplicantName} {c.SolarRequest?.City} {c.SolarRequest?.State} {c.SolarRequest?.RequestNumber} {c.SolarRequest?.SelectedPlan} {c.Worker?.Name}".ToLower();
+                            var dateIso = c.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd");
+                            <tr data-search="@searchHaystack" data-date="@dateIso">
+                                <td data-label="Request"><strong>@(c.SolarRequest?.RequestNumber ?? ("#" + c.SolarRequestId))</strong></td>
+                                <td data-label="Member ID"><code style="font-size:11px;color:#0d9488">@c.UserId</code></td>
+                                <td data-label="Request Type" style="font-size:12px">@reqTypeLabel</td>
+                                <td data-label="Package" style="font-size:12px;max-width:140px" title="@c.SolarRequest?.SelectedPlan">
+                                    @(string.IsNullOrWhiteSpace(c.SolarRequest?.SelectedPlan) ? "—" : c.SolarRequest.SelectedPlan)
+                                </td>
+                                <td data-label="City / State" style="font-size:12px">
+                                    @if (!string.IsNullOrWhiteSpace(c.SolarRequest?.City) || !string.IsNullOrWhiteSpace(c.SolarRequest?.State))
+                                    {
+                                        <div>@c.SolarRequest.City</div>
+                                        <div style="color:var(--text2);font-size:11px">@c.SolarRequest.State</div>
+                                    }
+                                    else { <span class="text-muted">—</span> }
+                                </td>
+                                <td data-label="INC Worker">
                                     @if (c.Worker != null)
                                     {
                                         @c.Worker.Name <small class="text-muted">(@c.Worker.MobileNumber)</small>
@@ -152,10 +184,10 @@
                                         <small class="text-muted">—</small>
                                     }
                                 </td>
-                                <td style="text-align:right">₹@c.ProjectAmount.ToString("N0")</td>
-                                <td>@c.CommissionPercentage.ToString("0.##")%</td>
-                                <td style="text-align:right;color:var(--sun);font-weight:600">₹@c.CommissionAmount.ToString("N0")</td>
-                                <td>
+                                <td data-label="Project Amount" style="text-align:right">₹@c.ProjectAmount.ToString("N0")</td>
+                                <td data-label="%">@c.CommissionPercentage.ToString("0.##")%</td>
+                                <td data-label="Commission" style="text-align:right;color:var(--sun);font-weight:600">₹@c.CommissionAmount.ToString("N0")</td>
+                                <td data-label="Status">
                                     @if (c.IsPaid)
                                     {
                                         <span class="badge bg-success">Paid</span>
@@ -165,8 +197,9 @@
                                         <span class="badge bg-warning">Pending</span>
                                     }
                                 </td>
-                                <td>@(c.PaidAt?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</td>
-                                <td>
+                                <td data-label="Date" style="font-size:12px">@c.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                                <td data-label="Paid On">@(c.PaidAt?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</td>
+                                <td data-label="Actions">
                                     @if (!c.IsPaid)
                                     {
                                         <button class="btn btn-sm btn-success btn-mark-paid" data-id="@c.Id">

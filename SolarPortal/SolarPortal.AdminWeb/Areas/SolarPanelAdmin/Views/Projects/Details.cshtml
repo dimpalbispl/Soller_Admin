@@ -117,42 +117,56 @@
                 </div>
             }
 
-            <!-- Actions -->
+            @* === Approve / Reject buttons REMOVED per spec ===
+               "is page se approve reject remove kr do approve reject only payment
+                verification se honga project ka"
+               Approve / Reject buttons are gone from Project Details. The single
+               approval entry-point is the Payment Verification screen — that is
+               where admin verifies each user payment, and stage advances to
+               PM Surya Ghar only when verified total reaches the project amount.
+
+               We keep an "Update Stage" affordance only for already-approved
+               projects mid-flight (e.g. ops admin needs to flip Meter Dispatch
+               manually). When a project is Rejected we just show a status banner.
+            *@
             <div class="card">
-                <div class="ct"><span class="ct-dot"></span>Actions</div>
-                <div class="btn-row">
-                    @if (Model.CurrentStage == Domain.Enums.ProjectStatus.Completed)
-                    {
-                        @* Project workflow ka last step ho chuka hai
-                           (Domestic = DCR Update, Commercial = Installation).
-                           Ab koi manual approve/reject nahi — project automatically
-                           complete + approved hai. Sirf status dikhao. *@
-                        <div class="alert alert-s" style="margin:0;width:100%">
-                            <span class="ai">✅</span>
-                            Project complete — all workflow steps finished. No further action needed.
-                        </div>
-                    }
-                    else if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Rejected)
-                    {
-                        <div class="alert alert-d" style="margin:0;width:100%">
-                            <span class="ai">❌</span>
-                            This project was rejected. The user must re-submit.
-                        </div>
-                    }
-                    else
-                    {
-                        @if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Pending)
-                        {
-                            <button class="btn btn-g" onclick="approveProject(@Model.Id)">✓ Approve</button>
-                            <button class="btn btn-d" onclick="rejectProject(@Model.Id)" style="margin-left:4px">✕ Reject</button>
-                        }
-                        @if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Approved &&
-                             Model.CurrentStage != Domain.Enums.ProjectStatus.Completed)
-                        {
-                            <button class="btn btn-p" onclick="updateStage(@Model.Id)">📊 Update Stage</button>
-                        }
-                    }
-                </div>
+                <div class="ct"><span class="ct-dot"></span>Status</div>
+                @if (Model.CurrentStage == Domain.Enums.ProjectStatus.Completed)
+                {
+                    <div class="alert alert-s" style="margin:0">
+                        <span class="ai">✅</span>
+                        Project complete — all workflow steps finished. No further action needed.
+                    </div>
+                }
+                else if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Rejected)
+                {
+                    <div class="alert alert-d" style="margin:0">
+                        <span class="ai">❌</span>
+                        This project was rejected. The user must re-submit.
+                    </div>
+                }
+                else if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Approved &&
+                         Model.CurrentStage != Domain.Enums.ProjectStatus.Completed)
+                {
+                    <div class="alert alert-i" style="margin:0 0 8px 0">
+                        <span class="ai">✓</span>
+                        Project approved (via Payment Verification). Currently at stage <strong>@Model.CurrentStage.ToString().Replace("_", " ")</strong>.
+                    </div>
+                    <div class="btn-row">
+                        <button class="btn btn-p" onclick="updateStage(@Model.Id)">📊 Update Stage</button>
+                    </div>
+                    <div class="hint" style="margin-top:8px;color:var(--text2);font-size:12px">
+                        Use Payment Verification to approve / reject payments. Stage override is for operations corrections only.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-w" style="margin:0">
+                        <span class="ai">💰</span>
+                        This request will be approved automatically once the user submits payment and admin verifies it in
+                        <a asp-controller="Payments" asp-action="Index" style="color:var(--accent);font-weight:600">Payment Verification</a>.
+                    </div>
+                }
             </div>
         </div>
 
@@ -233,74 +247,10 @@
 
 @section Scripts {
     <script>
-        function approveProject(id) {
-            Swal.fire({
-                title: 'Approve Project?',
-                text: 'This will approve the solar connection request',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Approve',
-                cancelButtonText: 'Cancel',
-                background: '#ffffff',
-                color: '#1f2937'
-            }).then(result => {
-                if (result.isConfirmed) {
-                    const fd = new FormData();
-                    fd.append('id', id);
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
-                    if (token) fd.append('__RequestVerificationToken', token.value);
-
-                    fetch('/SolarPanelAdmin/Projects/Approve', { method: 'POST', body: fd })
-                        .then(r => r.json())
-                        .then(d => {
-                            if (d.success) {
-                                Swal.fire('Approved', d.message || 'Approved', 'success').then(() => location.reload());
-                            } else {
-                                Swal.fire('Error', d.message || 'Failed', 'error');
-                            }
-                        });
-                }
-            });
-        }
-
-        function rejectProject(id) {
-            Swal.fire({
-                title: 'Reject Project?',
-                text: 'Enter rejection reason',
-                icon: 'warning',
-                input: 'textarea',
-                inputPlaceholder: 'Reason for rejection...',
-                showCancelButton: true,
-                confirmButtonText: 'Reject',
-                background: '#ffffff',
-                color: '#1f2937',
-                preConfirm: (reason) => {
-                    if (!reason) {
-                        Swal.showValidationMessage('Please enter a reason');
-                        return false;
-                    }
-                    return reason;
-                }
-            }).then(result => {
-                if (result.isConfirmed) {
-                    const fd = new FormData();
-                    fd.append('id', id);
-                    fd.append('reason', result.value);
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
-                    if (token) fd.append('__RequestVerificationToken', token.value);
-
-                    fetch('/SolarPanelAdmin/Projects/Reject', { method: 'POST', body: fd })
-                        .then(r => r.json())
-                        .then(d => {
-                            if (d.success) {
-                                Swal.fire('Rejected', d.message || 'Rejected', 'success').then(() => location.reload());
-                            } else {
-                                Swal.fire('Error', d.message || 'Failed', 'error');
-                            }
-                        });
-                }
-            });
-        }
+        // approveProject() and rejectProject() removed in Round 4 — the only
+        // approval entry-point is now the Payment Verification screen
+        // (PaymentsController.Verify / .Reject). Solar request approval
+        // auto-derives from cumulative verified payment reaching the project amount.
 
         function updateStage(id) {
             Swal.fire({

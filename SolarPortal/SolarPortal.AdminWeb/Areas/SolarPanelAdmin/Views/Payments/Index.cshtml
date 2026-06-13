@@ -103,8 +103,12 @@
                                        value="@DateTime.Now.ToString("yyyy-MM-dd")" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Receipt (Image / PDF)</label>
+                                <label class="form-label">
+                                    Receipt (Image / PDF)
+                                    <span class="text-muted" style="font-weight:normal;font-size:11px">— optional</span>
+                                </label>
                                 <input type="file" class="form-control" name="receiptImage" accept="image/*,.pdf" />
+                                <small class="text-muted">Skip this if you don't have the receipt file. Payment will still be recorded.</small>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Notes</label>
@@ -162,7 +166,15 @@
 
     <div class="card">
         <div class="card-body">
-            <table class="table table-hover">
+            @{
+                // Filter toolbar config — wires to the table id below.
+                ViewData["FilterTableId"]     = "pay-table";
+                ViewData["FilterPlaceholder"] = "Search by Member ID, name, city, state, UTR, request #...";
+            }
+            @await Html.PartialAsync("_ReportFilterToolbar")
+
+            <div class="tbl-wrap">
+            <table id="pay-table" class="table table-hover report-table">
                 <thead>
                     <tr>
                         <th>Receipt #</th>
@@ -170,7 +182,9 @@
                         <th>Request ID</th>
                         <th>Member Name</th>
                         <th>Mobile</th>
-                        <th>Address</th>
+                        <th>City / State</th>
+                        <th>Request Type</th>
+                        <th>Package</th>
                         <th style="text-align:right">Project Amount</th>
                         <th style="text-align:right">Paid (Total)</th>
                         <th style="text-align:right">Due</th>
@@ -206,50 +220,60 @@
                         receiptUrl = "/" + rel;
                     }
                     var receiptIsPdf = receiptUrl != null && receiptUrl.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
-                    <tr>
-                        <td><small>@p.ReceiptNumber</small></td>
-                        <td><code style="font-size:11px;color:#0d9488">@p.UserId</code></td>
-                        <td><strong>@req?.RequestNumber</strong></td>
-                        <td>@req?.ApplicantName</td>
-                        <td>
+
+                    // Activation-mode label pulled from the linked solar request. Same emoji/text
+                    // the user panel uses so the wording is consistent everywhere.
+                    var reqTypeLabel = req?.RequestType switch
+                    {
+                        SolarPortal.Domain.Enums.RequestType.WithActivation              => "🔌 With Activation",
+                        SolarPortal.Domain.Enums.RequestType.OnlySolarWithoutActivation  => "⚡ Without Activation",
+                        SolarPortal.Domain.Enums.RequestType.AlreadyActiveOnlyRequest    => "✅ Already Active",
+                        _ => req?.RequestType.ToString() ?? "—"
+                    };
+
+                    // data-search bundles every value the filter should be able to match.
+                    // We use the payment date here (admin filters by when payment came in,
+                    // not when the underlying request was created).
+                    var searchHaystack = $"{p.UserId} {req?.ApplicantName} {req?.City} {req?.State} {req?.RequestNumber} {req?.SelectedPlan} {p.UTRNumber}".ToLower();
+                    var dateIso = p.PaymentDate.ToLocalTime().ToString("yyyy-MM-dd");
+                    <tr data-search="@searchHaystack" data-date="@dateIso">
+                        <td data-label="Receipt #"><small>@p.ReceiptNumber</small></td>
+                        <td data-label="Member ID"><code style="font-size:11px;color:#0d9488">@p.UserId</code></td>
+                        <td data-label="Request ID"><strong>@req?.RequestNumber</strong></td>
+                        <td data-label="Member Name">@req?.ApplicantName</td>
+                        <td data-label="Mobile">
                             @if (!string.IsNullOrWhiteSpace(req?.MobileNumber))
                             {
                                 <a href="tel:@req.MobileNumber" style="color:#0d9488;font-size:12px">@req.MobileNumber</a>
                             }
                             else { <span class="text-muted" style="font-size:11px">—</span> }
                         </td>
-                        <td style="max-width:180px;font-size:12px" title="@req?.Address">
-                            @{
-                                // Compact address: combine City + State for the cell, with full
-                                // Address in tooltip so wide cards stay readable.
-                                var addr = string.Join(", ",
-                                    new[] { req?.City, req?.State, req?.PinCode }
-                                    .Where(s => !string.IsNullOrWhiteSpace(s)));
-                            }
-                            @if (!string.IsNullOrWhiteSpace(addr))
+                        <td data-label="City / State" style="font-size:12px" title="@req?.Address">
+                            @if (!string.IsNullOrWhiteSpace(req?.City) || !string.IsNullOrWhiteSpace(req?.State))
                             {
-                                <span>@addr</span>
-                            }
-                            else if (!string.IsNullOrWhiteSpace(req?.Address))
-                            {
-                                <span>@(req.Address.Length > 40 ? req.Address.Substring(0, 40) + "…" : req.Address)</span>
+                                <div>@req?.City</div>
+                                <div style="color:var(--text2);font-size:11px">@req?.State</div>
                             }
                             else { <span class="text-muted" style="font-size:11px">—</span> }
                         </td>
-                        <td style="text-align:right;color:#16a34a;font-weight:600">₹@projectAmt.ToString("N0")</td>
-                        <td style="text-align:right;color:#0d9488;font-weight:600">₹@paidTotal.ToString("N0")</td>
-                        <td style="text-align:right;color:@(due > 0 ? "#dc2626" : "#16a34a");font-weight:600">
+                        <td data-label="Request Type" style="font-size:12px">@reqTypeLabel</td>
+                        <td data-label="Package" style="font-size:12px;max-width:160px" title="@req?.SelectedPlan">
+                            @(string.IsNullOrWhiteSpace(req?.SelectedPlan) ? "—" : req.SelectedPlan)
+                        </td>
+                        <td data-label="Project Amount" style="text-align:right;color:#16a34a;font-weight:600">₹@projectAmt.ToString("N0")</td>
+                        <td data-label="Paid (Total)" style="text-align:right;color:#0d9488;font-weight:600">₹@paidTotal.ToString("N0")</td>
+                        <td data-label="Due" style="text-align:right;color:@(due > 0 ? "#dc2626" : "#16a34a");font-weight:600">
                             ₹@due.ToString("N0")
                             @if (due == 0 && projectAmt > 0)
                             {
                                 <small style="display:block;font-size:10px;color:#16a34a">✓ Fully Paid</small>
                             }
                         </td>
-                        <td style="text-align:right">₹@p.Amount.ToString("N0")</td>
-                        <td><code>@p.UTRNumber</code></td>
-                        <td>@p.PaymentMethod</td>
-                        <td>@p.PaymentDate.ToLocalTime().ToString("dd MMM yyyy")</td>
-                        <td>
+                        <td data-label="This Payment" style="text-align:right">₹@p.Amount.ToString("N0")</td>
+                        <td data-label="UTR"><code>@p.UTRNumber</code></td>
+                        <td data-label="Method">@p.PaymentMethod</td>
+                        <td data-label="Date">@p.PaymentDate.ToLocalTime().ToString("dd MMM yyyy")</td>
+                        <td data-label="Uploaded By">
                             @if (isAdminEntry)
                             {
                                 <span class="badge bg-info">Admin</span>
@@ -259,7 +283,7 @@
                                 <span class="badge bg-secondary">User</span>
                             }
                         </td>
-                        <td>
+                        <td data-label="Receipt">
                             @if (receiptUrl != null)
                             {
                                 <a href="javascript:void(0)" class="receipt-preview"
@@ -270,7 +294,7 @@
                             }
                             else { <small class="text-muted">—</small> }
                         </td>
-                        <td>
+                        <td data-label="Status">
                             @if (p.IsVerified)
                             {
                                 <span class="badge bg-success">Verified</span>
@@ -284,7 +308,7 @@
                                 <span class="badge bg-warning">Pending</span>
                             }
                         </td>
-                        <td>
+                        <td data-label="Actions">
                             @* === Buttons hide once a decision is made (verified OR rejected) === *@
                             @* This satisfies: "Payment reject/approve hone ke baad buttons hide/disable karo" *@
                             @* AND "Duplicate approval/reject allow mat karo" (server-side guard backs this up). *@
@@ -302,10 +326,11 @@
                 }
                 @if (!Model.Any())
                 {
-                    <tr><td colspan="17" class="text-center text-muted py-3">No payments.</td></tr>
+                    <tr><td colspan="19" class="text-center text-muted py-3">No payments.</td></tr>
                 }
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 </div>
@@ -437,6 +462,19 @@ $(document).on('click', '.receipt-preview', function () {
 
 $('#adminAddPaymentForm').on('submit', function (e) {
     e.preventDefault();
+
+    // ===== Client-side multi-click guard =====
+    // Admin double-clicked Save → fetch() ran twice → two ledger entries.
+    // We disable the submit button until response, plus track an in-flight flag.
+    // Server side also blocks duplicates by (SolarRequestId + UTR).
+    const $form = $(this);
+    if ($form.data('submitting') === true) return;
+    $form.data('submitting', true);
+
+    const $btn = $form.find('button[type="submit"]');
+    const origLabel = $btn.html();
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Saving...');
+
     const fd = new FormData(this);
     fetch('@Url.Action("AddByAdmin")', { method: 'POST', body: fd })
         .then(r => r.json())
@@ -452,8 +490,17 @@ $('#adminAddPaymentForm').on('submit', function (e) {
                 alert(d.message || (d.success ? 'Saved' : 'Failed'));
                 if (d.success) location.reload();
             }
+            // Re-enable for retry only on failure (success reloads page).
+            if (!d.success) {
+                $form.data('submitting', false);
+                $btn.prop('disabled', false).html(origLabel);
+            }
         })
-        .catch(err => alert('Network error: ' + err.message));
+        .catch(err => {
+            alert('Network error: ' + err.message);
+            $form.data('submitting', false);
+            $btn.prop('disabled', false).html(origLabel);
+        });
 });
 </script>
 }

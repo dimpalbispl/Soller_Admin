@@ -100,6 +100,10 @@ public static class DependencyInjection
         // TrnProductorderDetail table — keeps the existing SolFit
         // VB workflow (reports, activation processing) working.
         services.AddScoped<ILegacyProductRequestService, LegacyProductRequestService>();
+        // Legacy MLM approval bridge — fires VB AprvAction chain (Sp_ActivateMember_New,
+        // Repurchincome, TrnOrder, TrnPaymentConfirmation) when admin verifies a payment
+        // for a With Activation solar request.
+        services.AddScoped<ILegacyMlmApprovalService, LegacyMlmApprovalService>();
 
         return services;
     }

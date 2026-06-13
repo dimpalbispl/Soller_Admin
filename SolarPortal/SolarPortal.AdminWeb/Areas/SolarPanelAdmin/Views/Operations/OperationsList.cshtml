@@ -74,16 +74,26 @@
 
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>@ViewBag.Title Queue (@Model.Count())</div>
+
+            @{
+                ViewData["FilterTableId"]     = "ops-table";
+                ViewData["FilterPlaceholder"] = "Search by Member ID, name, city, state, request #...";
+            }
+            @await Html.PartialAsync("_ReportFilterToolbar")
+
             <div class="tbl-wrap">
-                <table>
+                <table id="ops-table" class="report-table">
                     <thead>
                         <tr>
                             <th>Request</th>
                             <th>Member ID</th>
                             <th>Applicant</th>
+                            <th>Request Type</th>
+                            <th>Package</th>
                             <th>Type</th>
                             <th>Capacity</th>
                             <th>City / State</th>
+                            <th>Date</th>
                             <th>Stage</th>
                             @if (isHistoryMode)
                             {
@@ -95,27 +105,42 @@
                     <tbody>
                         @foreach (var r in Model)
                         {
-                            <tr>
-                                <td class="td-b">
+                            var reqTypeLabel = r.RequestType switch
+                            {
+                                SolarPortal.Domain.Enums.RequestType.WithActivation              => "🔌 With Activation",
+                                SolarPortal.Domain.Enums.RequestType.OnlySolarWithoutActivation  => "⚡ Without Activation",
+                                SolarPortal.Domain.Enums.RequestType.AlreadyActiveOnlyRequest    => "✅ Already Active",
+                                _ => r.RequestType.ToString()
+                            };
+                            var displayName = string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName;
+                            var searchHaystack = $"{r.UserId} {displayName} {r.City} {r.State} {r.RequestNumber} {r.SelectedPlan}".ToLower();
+                            var dateIso = r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd");
+                            <tr data-search="@searchHaystack" data-date="@dateIso">
+                                <td data-label="Request" class="td-b">
                                     <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Details"
                                        asp-route-id="@r.Id" style="color:var(--sun)">@r.RequestNumber</a>
                                 </td>
-                                <td><code style="font-size:11px;color:#0d9488">@r.UserId</code></td>
-                                <td>
+                                <td data-label="Member ID"><code style="font-size:11px;color:#0d9488">@r.UserId</code></td>
+                                <td data-label="Applicant">
                                     @* Live m_membermaster name when admin controller has enriched it,
                                        otherwise stored ApplicantName. *@
-                                    @(string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName)
+                                    @displayName
                                     <div style="font-size:11px;color:var(--text3)">@r.MobileNumber</div>
                                 </td>
-                                <td>@r.ConnectionType</td>
-                                <td>@r.KVCapacity kV</td>
-                                <td>@r.City<div style="font-size:11px;color:var(--text3)">@r.State</div></td>
-                                <td>
+                                <td data-label="Request Type" style="font-size:12px">@reqTypeLabel</td>
+                                <td data-label="Package" style="font-size:12px;max-width:140px" title="@r.SelectedPlan">
+                                    @(string.IsNullOrWhiteSpace(r.SelectedPlan) ? "—" : r.SelectedPlan)
+                                </td>
+                                <td data-label="Type">@r.ConnectionType</td>
+                                <td data-label="Capacity">@r.KVCapacity kV</td>
+                                <td data-label="City / State">@r.City<div style="font-size:11px;color:var(--text3)">@r.State</div></td>
+                                <td data-label="Date" style="font-size:12px">@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                                <td data-label="Stage">
                                     <span class="sts sts-disp">@r.CurrentStage.ToString().Replace("_", " ")</span>
                                 </td>
                                 @if (isHistoryMode)
                                 {
-                                    <td style="font-size:12px;max-width:240px">
+                                    <td data-label="Details" style="font-size:12px;max-width:240px">
                                         @* Render whatever dispatch record exists for this request, based on op. *@
                                         @switch (op)
                                         {
@@ -178,7 +203,7 @@
                                         }
                                     </td>
                                 }
-                                <td>
+                                <td data-label="Action">
                                     @{
                                         // Map the page's "op" to the stage it acts on
                                         var actStage =
@@ -260,7 +285,11 @@
         const today = new Date().toISOString().split('T')[0];
 
         function workerOptionsHtml(includeBlank=true) {
-            const blank = includeBlank ? '<option value="">— Not assigned —</option>' : '';
+            // Per spec: assign user choose karna mandatory hai, isliye default
+            // option ka label "— Please select a worker —" kar diya so admin
+            // ko clear pata chale ki ye field zaroori hai. Empty value submission
+            // ko preConfirm + server dono jagah block karte hain.
+            const blank = includeBlank ? '<option value="">— Please select a worker —</option>' : '';
             return blank + workerData.map(w => `<option value="${w.id}">${w.name} (${w.type}, ${w.city || ''})</option>`).join('');
         }
 
@@ -330,8 +359,8 @@
                         <input id="f-mat-date" type="date" class="swal2-input" value="${today}">
                         <label>Vehicle / Courier</label>
                         <input id="f-mat-veh" type="text" class="swal2-input" placeholder="RJ-14-AB-1234 / DTDC AWB...">
-                        <label>Despatch Person (Worker)</label>
-                        <select id="f-mat-worker" class="swal2-input">${workerOptionsHtml()}</select>
+                        <label>Despatch Person (Worker) <span style="color:#dc2626">*</span></label>
+                        <select id="f-mat-worker" class="swal2-input" required>${workerOptionsHtml()}</select>
                         <label>Remark</label>
                         <textarea id="f-mat-remark" class="swal2-textarea"></textarea>
                         <label>Document (optional)</label>
@@ -341,14 +370,23 @@
                 showCancelButton: true,
                 confirmButtonText: 'Dispatch',
                 preConfirm: async () => {
+                    // ===== Worker assignment mandatory =====
+                    // Per spec: jab tak worker assign nahi karta admin, aage process
+                    // nahi ho sakta. We block the submission here before building
+                    // the FormData so the user sees a clear inline error message.
+                    // Server-side SubmitMaterialDispatch also enforces this.
+                    const w = document.getElementById('f-mat-worker').value;
+                    if (!w) {
+                        Swal.showValidationMessage('Please assign a despatch worker before submitting.');
+                        return false;
+                    }
                     const fd = new FormData();
                     fd.append('requestId', requestId);
                     fd.append('materialDetails', document.getElementById('f-mat-detail').value);
                     fd.append('dispatchDate', document.getElementById('f-mat-date').value);
                     fd.append('vehicleDetails', document.getElementById('f-mat-veh').value);
                     fd.append('remark', document.getElementById('f-mat-remark').value);
-                    const w = document.getElementById('f-mat-worker').value;
-                    if (w) fd.append('workerId', w);
+                    fd.append('workerId', w);
                     const file = document.getElementById('f-mat-doc').files[0];
                     if (file) fd.append('dispatchDoc', file);
                     return await postForm('/SolarPanelAdmin/Operations/SubmitMaterialDispatch', fd);
@@ -369,8 +407,8 @@
                     <div style="text-align:left;font-size:13px">
                         <label>Installation Date *</label>
                         <input id="f-ins-date" type="date" class="swal2-input" value="${today}">
-                        <label>Installer (Worker)</label>
-                        <select id="f-ins-worker" class="swal2-input">${workerOptionsHtml()}</select>
+                        <label>Installer (Worker) <span style="color:#dc2626">*</span></label>
+                        <select id="f-ins-worker" class="swal2-input" required>${workerOptionsHtml()}</select>
                         <label>Notes</label>
                         <textarea id="f-ins-notes" class="swal2-textarea" placeholder="Panels installed, inverter SN, meter reading..."></textarea>
                         <label>Remark</label>
@@ -382,13 +420,21 @@
                 showCancelButton: true,
                 confirmButtonText: 'Submit',
                 preConfirm: async () => {
+                    // ===== Installer assignment mandatory =====
+                    // Per spec: assign user choose karna mandatory hai. Same as
+                    // Material Dispatch — block submission inline if no worker
+                    // picked, server-side SubmitInstallation backs this up.
+                    const w = document.getElementById('f-ins-worker').value;
+                    if (!w) {
+                        Swal.showValidationMessage('Please assign an installer (worker) before submitting.');
+                        return false;
+                    }
                     const fd = new FormData();
                     fd.append('requestId', requestId);
                     fd.append('installationDate', document.getElementById('f-ins-date').value);
                     fd.append('notes', document.getElementById('f-ins-notes').value);
                     fd.append('remark', document.getElementById('f-ins-remark').value);
-                    const w = document.getElementById('f-ins-worker').value;
-                    if (w) fd.append('workerId', w);
+                    fd.append('workerId', w);
                     const file = document.getElementById('f-ins-photo').files[0];
                     if (file) fd.append('completionPhoto', file);
                     return await postForm('/SolarPanelAdmin/Operations/SubmitInstallation', fd);
@@ -402,13 +448,32 @@
             });
         }
 
-        function openDCRForm(requestId, requestNumber) {
+        async function openDCRForm(requestId, requestNumber) {
+            // ===== Pre-fetch the auto-generated DCR Number =====
+            // Per spec: "DCR Number ye fill hokar hi aana chahiye admin update
+            // nahi kar sakta". We hit the controller's GetNextDcrNumber endpoint
+            // BEFORE showing the modal so the input is pre-filled when it opens.
+            // The input is also marked readonly + styled grey so it's clear the
+            // admin can't edit it. Server-side SubmitDCR re-generates the number
+            // regardless of what the client sends, so tampering is futile too.
+            let nextDcrNum = '';
+            try {
+                const r = await fetch('/SolarPanelAdmin/Operations/GetNextDcrNumber');
+                const j = await r.json();
+                if (j && j.success && j.dcrNumber) nextDcrNum = j.dcrNumber;
+            } catch (e) {
+                console.warn('Failed to fetch next DCR number — falling back to server-side autogen', e);
+            }
+
             Swal.fire({
                 title: '📄 DCR Update — ' + requestNumber,
                 html: `
                     <div style="text-align:left;font-size:13px">
-                        <label>DCR Number *</label>
-                        <input id="f-dcr-num" type="text" class="swal2-input" required>
+                        <label>DCR Number * <small style="color:#6b7280;font-weight:normal">(auto-generated, not editable)</small></label>
+                        <input id="f-dcr-num" type="text" class="swal2-input"
+                               value="${nextDcrNum}"
+                               readonly
+                               style="background:#f3f4f6;color:#374151;cursor:not-allowed">
                         <label>DCR Date *</label>
                         <input id="f-dcr-date" type="date" class="swal2-input" value="${today}">
                         <label>Remark</label>
@@ -420,8 +485,14 @@
                 showCancelButton: true,
                 confirmButtonText: 'Submit DCR',
                 preConfirm: async () => {
+                    // Sanity check — if server didn't return a number for some
+                    // reason, abort rather than POST a blank field. SubmitDCR
+                    // would re-generate anyway, but failing fast surfaces issues.
                     const num = document.getElementById('f-dcr-num').value.trim();
-                    if (!num) { Swal.showValidationMessage('DCR number is required'); return false; }
+                    if (!num) {
+                        Swal.showValidationMessage('DCR number could not be generated. Please retry.');
+                        return false;
+                    }
                     const fd = new FormData();
                     fd.append('requestId', requestId);
                     fd.append('dcrNumber', num);

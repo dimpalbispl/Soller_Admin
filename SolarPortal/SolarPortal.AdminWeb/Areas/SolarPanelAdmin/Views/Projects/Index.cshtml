@@ -43,14 +43,26 @@
 
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>Projects List</div>
+
+            @{
+                // Wire up the reusable filter toolbar. Tells the partial which
+                // table to attach to and what placeholder to show in the search box.
+                ViewData["FilterTableId"]     = "prj-table";
+                ViewData["FilterPlaceholder"] = "Search by Member ID, name, city, state, request #...";
+            }
+            @await Html.PartialAsync("_ReportFilterToolbar")
+
             <div class="tbl-wrap">
-                <table>
+                <table id="prj-table" class="report-table">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Member ID</th>
                             <th>Member Name</th>
-                            <th>Type</th>
+                            <th>City / State</th>
+                            <th>Request Type</th>
+                            <th>Connection</th>
+                            <th>Package</th>
                             <th style="width:80px">Capacity</th>
                             <th>Stage</th>
                             <th>Approval</th>
@@ -66,36 +78,64 @@
                         {
                             var paid = paidMap.TryGetValue(project.Id, out var v) ? v : 0m;
                             var due  = Math.Max(0, project.RequestedAmount - paid);
-                            <tr>
-                                <td class="td-b">
+                            // Friendly activation-mode label (same emoji/text the user
+                            // panel uses, so admin and user wording stay consistent).
+                            var reqTypeLabel = project.RequestType switch
+                            {
+                                Domain.Enums.RequestType.WithActivation              => "🔌 With Activation",
+                                Domain.Enums.RequestType.OnlySolarWithoutActivation  => "⚡ Without Activation",
+                                Domain.Enums.RequestType.AlreadyActiveOnlyRequest    => "✅ Already Active",
+                                _ => project.RequestType.ToString()
+                            };
+                            var dateIso = project.CreatedAt.ToString("yyyy-MM-dd");
+                            // data-search packs every value the filter should match against.
+                            // Keep lowercased so JS substring check works without case juggling.
+                            <tr data-search="@($"{project.UserId} {project.ApplicantName} {project.City} {project.State} {project.RequestNumber} {project.SelectedPlan}".ToLower())"
+                                data-date="@dateIso">
+                                <td data-label="ID" class="td-b">
                                     <a asp-controller="Projects" asp-action="Details" asp-route-id="@project.Id"
                                        style="color:var(--accent)">@project.RequestNumber</a>
                                 </td>
-                                <td><code style="font-size:11px;color:#0d9488">@project.UserId</code></td>
-                                <td>@project.ApplicantName</td>
-                                <td>@project.ConnectionType</td>
-                                <td>@project.KVCapacity kV</td>
-                                <td>
+                                <td data-label="Member ID"><code style="font-size:11px;color:#0d9488">@project.UserId</code></td>
+                                <td data-label="Member Name">@project.ApplicantName</td>
+                                <td data-label="City / State" style="font-size:12px">
+                                    @if (!string.IsNullOrWhiteSpace(project.City) || !string.IsNullOrWhiteSpace(project.State))
+                                    {
+                                        <div>@project.City</div>
+                                        <div style="color:var(--text2);font-size:11px">@project.State</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td data-label="Request Type" style="font-size:12px">@reqTypeLabel</td>
+                                <td data-label="Connection">@project.ConnectionType</td>
+                                <td data-label="Package" style="font-size:12px;max-width:160px" title="@project.SelectedPlan">
+                                    @(string.IsNullOrWhiteSpace(project.SelectedPlan) ? "—" : project.SelectedPlan)
+                                </td>
+                                <td data-label="Capacity">@project.KVCapacity kV</td>
+                                <td data-label="Stage">
                                     <span class="sts @GetStageClass(project.CurrentStage)">
                                         @project.CurrentStage.ToString().Replace("_", " ")
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Approval">
                                     <span class="sts @GetStatusClass(project.ApprovalStatus)">
                                         @project.ApprovalStatus
                                     </span>
                                 </td>
-                                <td style="text-align:right;color:var(--accent);font-weight:600">₹@project.RequestedAmount.ToString("N0")</td>
-                                <td style="text-align:right;color:var(--green);font-weight:600">₹@paid.ToString("N0")</td>
-                                <td style="text-align:right;color:@(due > 0 ? "var(--danger)" : "var(--green)");font-weight:600">
+                                <td data-label="Total Amount" style="text-align:right;color:var(--accent);font-weight:600">₹@project.RequestedAmount.ToString("N0")</td>
+                                <td data-label="Paid" style="text-align:right;color:var(--green);font-weight:600">₹@paid.ToString("N0")</td>
+                                <td data-label="Due" style="text-align:right;color:@(due > 0 ? "var(--danger)" : "var(--green)");font-weight:600">
                                     ₹@due.ToString("N0")
                                     @if (due == 0 && project.RequestedAmount > 0)
                                     {
                                         <small style="display:block;font-size:10px;color:var(--green)">✓ Fully Paid</small>
                                     }
                                 </td>
-                                <td style="font-size:12px;color:var(--text2)">@project.CreatedAt.ToString("dd/MM/yyyy")</td>
-                                <td>
+                                <td data-label="Date" style="font-size:12px;color:var(--text2)">@project.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                <td data-label="Action">
                                     <a asp-controller="Projects" asp-action="Details" asp-route-id="@project.Id"
                                        class="btn btn-s btn-sm">View</a>
                                 </td>

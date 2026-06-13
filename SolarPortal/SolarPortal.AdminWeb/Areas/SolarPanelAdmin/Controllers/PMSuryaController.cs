@@ -137,8 +137,46 @@ public class PMSuryaController : Controller
         var req = await _uow.SolarRequests.GetByIdAsync(requestId);
         if (req == null) return Json(new { success = false, message = "Request not found" });
 
-        // Mark all PM docs approved
-        var docs = await _uow.PMDocuments.FindAsync(d => d.SolarRequestId == requestId);
+        // ===== Server-side guard =====
+        // Symptom: page showed "No documents uploaded yet" but the "Approve All &
+        // Move to Meter Dispatch" button was clickable. An accidental click would
+        // advance the project with zero supporting docs. The view also hides the
+        // button now, but this server check is authoritative — direct POSTs from
+        // curl, devtools replay or stale tabs are blocked here.
+        var docs = (await _uow.PMDocuments.FindAsync(d => d.SolarRequestId == requestId)).ToList();
+        if (!docs.Any())
+            return Json(new
+            {
+                success = false,
+                message = "Cannot approve — user has not uploaded any PM Surya Ghar documents yet. " +
+                          "Ask the user to upload required documents before advancing the project."
+            });
+
+        var anyUsable = docs.Any(d => d.Status != ApprovalStatus.Rejected);
+        if (!anyUsable)
+            return Json(new
+            {
+                success = false,
+                message = "Cannot approve — every uploaded document is rejected. " +
+                          "Ask the user to re-upload corrected documents."
+            });
+
+        // Idempotency: project already past PMSurvey — don't re-run side effects
+        if (req.CurrentStage == ProjectStatus.MeterDispatch ||
+            req.CurrentStage == ProjectStatus.SiteSurvey ||
+            req.CurrentStage == ProjectStatus.MaterialDispatch ||
+            req.CurrentStage == ProjectStatus.Installation ||
+            req.CurrentStage == ProjectStatus.DCRUpdate ||
+            req.CurrentStage == ProjectStatus.Completed)
+        {
+            return Json(new
+            {
+                success = false,
+                message = $"This project has already advanced past PM Surya Ghar (currently: {req.CurrentStage}). Duplicate advance blocked."
+            });
+        }
+
+        // Mark all pending PM docs approved (rejected ones are left as-is)
         foreach (var d in docs)
         {
             if (d.Status == ApprovalStatus.Pending)

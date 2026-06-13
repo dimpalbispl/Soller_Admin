@@ -1,0 +1,112 @@
+@*
+    === Reusable Report Filter Toolbar ===
+
+    Drop-in filter toolbar for any admin report table. Provides:
+        • Free-text search (matches against each row's `data-search` attribute)
+        • From Date / To Date filter (matches each row's `data-date` attribute, YYYY-MM-DD)
+        • Clear button + live row count
+
+    USAGE — in your view, do TWO things:
+
+      1. Put the toolbar partial just above the table:
+            @{
+                ViewData["FilterTableId"] = "myUniqueTableId";
+                ViewData["FilterPlaceholder"] = "Search by Member ID, name, city...";
+            }
+            @await Html.PartialAsync("_ReportFilterToolbar")
+
+      2. On the table, set id="myUniqueTableId" and on each row add:
+            <tr data-search="@($"{member.IdNo} {member.Name} {req.City} {req.State} {req.RequestNumber}".ToLower())"
+                data-date="@req.CreatedAt.ToString("yyyy-MM-dd")">
+
+    `data-search` should be a lowercased space-separated string of every value
+    you want the search box to match. `data-date` is the row's primary date in
+    YYYY-MM-DD form (so string comparison works for ranges).
+
+    The JS is fully self-contained — wires itself up to the table id and runs
+    on DOMContentLoaded. Multiple toolbars on the same page work as long as the
+    table ids are unique.
+*@
+@{
+    var tableId    = ViewData["FilterTableId"]    as string ?? "report-table";
+    var placeholder = ViewData["FilterPlaceholder"] as string ?? "Search by Member ID, name, city, state...";
+
+    // Unique element ids derived from the table id so multiple toolbars on
+    // the same page don't collide.
+    var idSearch = $"rf_{tableId}_search";
+    var idFrom   = $"rf_{tableId}_from";
+    var idTo     = $"rf_{tableId}_to";
+    var idClear  = $"rf_{tableId}_clear";
+    var idCount  = $"rf_{tableId}_count";
+}
+
+<div class="report-filter">
+    <div class="rf-field rf-field-grow">
+        <label class="rf-label">Search</label>
+        <input id="@idSearch" type="text" class="rf-input" placeholder="@placeholder" autocomplete="off" />
+    </div>
+    <div class="rf-field rf-field-narrow">
+        <label class="rf-label">From Date</label>
+        <input id="@idFrom" type="date" class="rf-input" />
+    </div>
+    <div class="rf-field rf-field-narrow">
+        <label class="rf-label">To Date</label>
+        <input id="@idTo" type="date" class="rf-input" />
+    </div>
+    <div class="rf-field">
+        <label class="rf-label">&nbsp;</label>
+        <button type="button" id="@idClear" class="rf-clear">✕ Clear</button>
+    </div>
+    <div class="rf-count" id="@idCount">—</div>
+</div>
+
+<script>
+(function () {
+    // Scope by table id so multiple filters on one page coexist.
+    const tableId  = '@tableId';
+    const $table   = document.getElementById(tableId);
+    if (!$table) {
+        console.warn('[ReportFilter] table not found: #' + tableId);
+        return;
+    }
+    const $search  = document.getElementById('@idSearch');
+    const $from    = document.getElementById('@idFrom');
+    const $to      = document.getElementById('@idTo');
+    const $clear   = document.getElementById('@idClear');
+    const $count   = document.getElementById('@idCount');
+    const $tbody   = $table.querySelector('tbody');
+    if (!$tbody) return;
+    const rows     = Array.from($tbody.querySelectorAll('tr'));
+
+    function apply() {
+        const q    = (($search && $search.value) || '').trim().toLowerCase();
+        const from = ($from && $from.value) || '';
+        const to   = ($to   && $to.value)   || '';
+        let shown  = 0;
+
+        for (const r of rows) {
+            const haystack = r.getAttribute('data-search') || '';
+            const date     = r.getAttribute('data-date')   || '';
+            let ok = true;
+            if (q && !haystack.includes(q)) ok = false;
+            if (ok && from && date && date < from) ok = false;
+            if (ok && to   && date && date > to)   ok = false;
+            r.style.display = ok ? '' : 'none';
+            if (ok) shown++;
+        }
+        if ($count) $count.textContent = shown + ' shown of ' + rows.length;
+    }
+
+    if ($search) $search.addEventListener('input',  apply);
+    if ($from)   $from.addEventListener('change',   apply);
+    if ($to)     $to.addEventListener('change',     apply);
+    if ($clear)  $clear.addEventListener('click', function () {
+        if ($search) $search.value = '';
+        if ($from)   $from.value   = '';
+        if ($to)     $to.value     = '';
+        apply();
+    });
+
+    apply();   // initial count
+})();
+</script>

@@ -111,7 +111,7 @@ SELECT
     @OrderNo, @FormNo, ProdId, @Qty, DP, DP * @Qty, GETDATE(),
     NULL, 'N', 0, @Qty, 0,
     MRP, DP, ProductName, '', 0, BV,
-    (SELECT ISNULL(MAX(FsessID), 1) FROM VedicInv..M_FiscalMaster),
+    (SELECT ISNULL(MAX(FsessID), 1) FROM solfitenergyinv..M_FiscalMaster),
     'P', PV, @TxnId, @TxnDate, @ImageFile,
     'A', @PayMode,
     @Addr, @City, @Dist, @Pin, @StateNm, @StateCd

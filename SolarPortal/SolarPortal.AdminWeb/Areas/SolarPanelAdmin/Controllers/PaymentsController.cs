@@ -24,6 +24,7 @@ public class PaymentsController : Controller
     private readonly ISolarRequestService _requestService;
     private readonly INotificationService _notifications;
     private readonly IFileUploadService _fileUploadService;
+    private readonly ILegacyMlmApprovalService _legacyMlm;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public PaymentsController(
@@ -32,6 +33,7 @@ public class PaymentsController : Controller
         ISolarRequestService requestService,
         INotificationService notifications,
         IFileUploadService fileUploadService,
+        ILegacyMlmApprovalService legacyMlm,
         UserManager<ApplicationUser> userManager)
     {
         _uow = uow;
@@ -39,6 +41,7 @@ public class PaymentsController : Controller
         _requestService = requestService;
         _notifications = notifications;
         _fileUploadService = fileUploadService;
+        _legacyMlm = legacyMlm;
         _userManager = userManager;
     }
 
@@ -252,6 +255,42 @@ public class PaymentsController : Controller
                         });
                     }
                 }
+
+                // ====== Legacy MLM approval chain (per spec) ======
+                // Per Hinglish spec: "package name With Activation usk liye hi
+                // ye approve reject pr lgana h other name jese without activation
+                // aready active aata h to ye call nhi krna h"
+                //
+                // For WithActivation requests, port the VB AprvAction(Y) chain:
+                //   Repurchincome insert + Sp_ActivateMember_New + TrnOrder +
+                //   TrnorderDetail + TrnPaymentConfirmation + UserHistory +
+                //   UPDATE TrnProductorderDetail SET IsApprove='Y'
+                //
+                // For OnlySolarWithoutActivation / AlreadyActiveOnlyRequest the
+                // legacy MLM workflow doesn't apply — skip silently.
+                //
+                // Failures here are NON-FATAL: payment stays verified, stage
+                // stays advanced. Admin gets a warning so they can reconcile
+                // in the legacy admin manually if needed.
+                if (req != null && req.RequestType == RequestType.WithActivation)
+                {
+                    var mlmRes = await _legacyMlm.ApproveActivationAsync(new LegacyMlmApprovalInput
+                    {
+                        MemberIdNo    = payment.UserId,
+                        Utr           = payment.UTRNumber,
+                        Amount        = payment.Amount,
+                        ApproveRemark = "Admin verified payment",
+                        PartyCode     = adminId,
+                        RequestNumber = req.RequestNumber
+                    });
+                    if (!mlmRes.Success)
+                    {
+                        TempData["Warning"] = "Payment verified, but legacy MLM approval failed: " +
+                                              (mlmRes.ErrorMessage ?? "unknown error") +
+                                              ". Reconcile via the legacy admin or retry.";
+                    }
+                    // If AlreadyProcessed == true: idempotent skip, nothing to do.
+                }
             }
 
             var msg = stageAdvanced
@@ -321,6 +360,32 @@ public class PaymentsController : Controller
                 NotificationType = "Payment"
             });
 
+            // ====== Legacy MLM reject (per spec — WithActivation only) ======
+            // Mirror of the approve gate above: legacy TrnProductorderDetail row
+            // gets marked IsApprove='R' so the legacy admin's Pending queue
+            // matches our new admin's state. Non-WithActivation modes never
+            // had a legacy row to begin with, so we skip them.
+            //
+            // Failures are NON-FATAL: payment is already rejected in our DB;
+            // admin gets a warning to manually reconcile the legacy row.
+            var rejReq = await _uow.SolarRequests.GetByIdAsync(payment.SolarRequestId);
+            if (rejReq != null && rejReq.RequestType == RequestType.WithActivation)
+            {
+                var mlmRes = await _legacyMlm.RejectActivationAsync(new LegacyMlmRejectInput
+                {
+                    MemberIdNo    = payment.UserId,
+                    Utr           = payment.UTRNumber,
+                    RejectRemark  = reason!,
+                    RequestNumber = rejReq.RequestNumber
+                });
+                if (!mlmRes.Success)
+                {
+                    TempData["Warning"] = "Payment rejected, but legacy MLM reject failed: " +
+                                          (mlmRes.ErrorMessage ?? "unknown error") +
+                                          ". Reconcile via the legacy admin manually.";
+                }
+            }
+
             return Json(new { success = true, message = "Payment rejected. User notified." });
         }
         catch (Exception ex)
@@ -350,6 +415,26 @@ public class PaymentsController : Controller
             if (req == null)
                 return Json(new { success = false, message = "Solar request not found." });
 
+            // ===== Double-submit / multi-click guard =====
+            // Symptom: "admin se payment kiya h jo multiclick ho rha h to double
+            // double entry ja rhi h". Modal's submit handler called fetch() but
+            // didn't disable the button, so a double-click produced two POSTs and
+            // two ledger entries. We defend on the server too — if the SAME
+            // (request, UTR) was already recorded, reject the second one.
+            var utrNormalized = utrNumber.Trim();
+            var existingDupe = (await _uow.Payments.GetAllAsync())
+                .Any(p =>
+                    p.SolarRequestId == solarRequestId &&
+                    !string.IsNullOrEmpty(p.UTRNumber) &&
+                    p.UTRNumber.Trim().Equals(utrNormalized, StringComparison.OrdinalIgnoreCase));
+            if (existingDupe)
+                return Json(new
+                {
+                    success = false,
+                    message = $"A payment for this request with UTR '{utrNormalized}' already exists. " +
+                              "Duplicate entry blocked. Refresh the page to see the existing record."
+                });
+
             string? receiptPath = null;
             if (receiptImage != null)
             {
@@ -368,7 +453,7 @@ public class PaymentsController : Controller
                 SolarRequestId   = solarRequestId,
                 UserId           = req.UserId,                 // attribute to project owner
                 Amount           = amount,
-                UTRNumber        = utrNumber.Trim(),
+                UTRNumber        = utrNormalized,
                 ReferenceNumber  = referenceNumber?.Trim(),
                 PaymentDate      = paymentDate ?? DateTime.UtcNow,
                 PaymentMethod    = "Admin Entry",
