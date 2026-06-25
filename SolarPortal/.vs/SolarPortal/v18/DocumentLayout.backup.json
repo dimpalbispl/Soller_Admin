@@ -1,12 +1,36 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "\\\\localhost\\Sadhna\\New folder (3)\\SolarPortal\\",
-  "Documents": [],
+  "WorkspaceRootPath": "\\\\localhost\\Sadhna\\New folder (2)\\Soller_Admin\\SolarPortal\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|SolarPortal.AdminWeb\\SolarPortal.AdminWeb.csproj|\\\\localhost\\sadhna\\new folder (2)\\soller_admin\\solarportal\\solarportal.adminweb\\areas\\solarpaneladmin\\views\\operations\\operationslist.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
       "VerticalTabListWidth": 256,
-      "DocumentGroups": []
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "OperationsList.cshtml",
+              "DocumentMoniker": "\\\\localhost\\Sadhna\\New folder (2)\\Soller_Admin\\SolarPortal\\SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Views\\Operations\\OperationsList.cshtml",
+              "RelativeDocumentMoniker": "SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Views\\Operations\\OperationsList.cshtml",
+              "ToolTip": "\\\\localhost\\Sadhna\\New folder (2)\\Soller_Admin\\SolarPortal\\SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Views\\Operations\\OperationsList.cshtml",
+              "RelativeToolTip": "SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Views\\Operations\\OperationsList.cshtml",
+              "ViewState": "AgIAAKgBAAAAAAAAAAAYwOABAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-06-25T07:15:34.398Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
     }
   ]
 }

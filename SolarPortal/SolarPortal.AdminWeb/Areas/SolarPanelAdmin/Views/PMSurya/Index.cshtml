@@ -20,71 +20,48 @@
 
     <div class="card">
         <div class="card-body">
-            @{
-                ViewData["FilterTableId"]     = "pmTable";
-                ViewData["FilterPlaceholder"] = "Search by Member ID, name, city, state, request #...";
-            }
-            @await Html.PartialAsync("_ReportFilterToolbar")
-
-            <div class="tbl-wrap">
-            <table class="table table-hover report-table" id="pmTable">
+            <table class="table table-hover" id="pmTable">
                 <thead>
                     <tr>
                         <th>Request #</th>
                         <th>Member ID</th>
                         <th>Applicant</th>
-                        <th>Request Type</th>
-                        <th>Plan / Package</th>
+                        <th>Plan</th>
                         <th>City / State</th>
                         <th>Connection</th>
                         <th>Submitted</th>
-                        <th>Action</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                 @foreach (var r in Model)
                 {
-                    var reqTypeLabel = r.RequestType switch
-                    {
-                        SolarPortal.Domain.Enums.RequestType.WithActivation              => "🔌 With Activation",
-                        SolarPortal.Domain.Enums.RequestType.OnlySolarWithoutActivation  => "⚡ Without Activation",
-                        SolarPortal.Domain.Enums.RequestType.AlreadyActiveOnlyRequest    => "✅ Already Active",
-                        _ => r.RequestType.ToString()
-                    };
-                    var displayName = string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName;
-                    var searchHaystack = $"{r.UserId} {displayName} {r.City} {r.State} {r.RequestNumber} {r.SelectedPlan}".ToLower();
-                    var dateIso = r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd");
-                    <tr data-search="@searchHaystack" data-date="@dateIso">
-                        <td data-label="Request #"><strong>@r.RequestNumber</strong></td>
-                        <td data-label="Member ID"><code style="font-size:11px;color:#0d9488">@r.UserId</code></td>
-                        <td data-label="Applicant">
+                    <tr>
+                        <td><strong>@r.RequestNumber</strong></td>
+                        <td><code style="font-size:11px;color:#0d9488">@r.UserId</code></td>
+                        <td>
                             @* Prefer the LIVE m_membermaster name (MemFullName from
                                MemFirstName + MemLastName) when admin controllers have
                                populated it via EnrichMemberNamesAsync. Falls back to
                                the stored ApplicantName on the SolarRequest itself. *@
-                            @displayName
+                            @(string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName)
                             <br /><small class="text-muted">@r.MobileNumber</small>
                         </td>
-                        <td data-label="Request Type" style="font-size:12px">@reqTypeLabel</td>
-                        <td data-label="Plan / Package">@r.SelectedPlan<br /><small class="text-muted">@r.KVCapacity kV</small></td>
-                        <td data-label="City / State">
-                            <div>@r.City</div>
-                            <div style="color:var(--text2);font-size:11px">@r.State</div>
-                        </td>
-                        <td data-label="Connection"><span class="badge bg-info">@r.ConnectionType</span></td>
-                        <td data-label="Submitted">@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
-                        <td data-label="Action">
+                        <td>@r.SelectedPlan<br /><small class="text-muted">@r.KVCapacity kV</small></td>
+                        <td>@r.City, @r.State</td>
+                        <td><span class="badge bg-info">@r.ConnectionType</span></td>
+                        <td>@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                        <td>
                             <a class="btn btn-sm btn-primary" asp-action="Details" asp-route-id="@r.Id">Review</a>
                         </td>
                     </tr>
                 }
                 @if (!Model.Any())
                 {
-                    <tr><td colspan="9" class="text-center text-muted">No requests pending PM Surya Ghar verification.</td></tr>
+                    <tr><td colspan="8" class="text-center text-muted">No requests pending PM Surya Ghar verification.</td></tr>
                 }
                 </tbody>
             </table>
-            </div>
         </div>
     </div>
 </div>

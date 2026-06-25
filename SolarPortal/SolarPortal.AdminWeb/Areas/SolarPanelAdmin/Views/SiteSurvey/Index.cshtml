@@ -18,28 +18,18 @@
 
     <div class="card">
         <div class="card-body">
-            @{
-                ViewData["FilterTableId"]     = "ss-table";
-                ViewData["FilterPlaceholder"] = "Search by Member ID, name, city, state, request #...";
-            }
-            @await Html.PartialAsync("_ReportFilterToolbar")
-
-            <div class="tbl-wrap">
-            <table id="ss-table" class="table table-hover report-table">
+            <table class="table table-hover">
                 <thead>
                     <tr>
                         <th>Survey ID</th>
                         <th>Member ID</th>
                         <th>Request #</th>
                         <th>Applicant</th>
-                        <th>Request Type</th>
-                        <th>Package</th>
-                        <th>City / State</th>
                         <th>Property / Roof</th>
                         <th>DISCOM / Consumer</th>
                         <th>Submitted</th>
                         <th>Files</th>
-                        <th>Action</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,31 +41,12 @@
                     if (!string.IsNullOrWhiteSpace(s.RoofPhotoPath)) fileCount++;
                     if (!string.IsNullOrWhiteSpace(s.GpsPhotoPath)) fileCount++;
                     fileCount += (s.SurveyPhotoPath ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries).Length;
-
-                    var reqTypeLabel = req?.RequestType switch
-                    {
-                        SolarPortal.Domain.Enums.RequestType.WithActivation              => "🔌 With Activation",
-                        SolarPortal.Domain.Enums.RequestType.OnlySolarWithoutActivation  => "⚡ Without Activation",
-                        SolarPortal.Domain.Enums.RequestType.AlreadyActiveOnlyRequest    => "✅ Already Active",
-                        _ => req?.RequestType.ToString() ?? "—"
-                    };
-                    var searchHaystack = $"{req?.UserId} {req?.ApplicantName} {req?.City} {req?.State} {req?.RequestNumber} {req?.SelectedPlan}".ToLower();
-                    var dateIso = s.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd");
-
-                    <tr data-search="@searchHaystack" data-date="@dateIso">
-                        <td data-label="Survey ID">#@s.Id</td>
-                        <td data-label="Member ID"><code style="font-size:11px;color:#0d9488">@req?.UserId</code></td>
-                        <td data-label="Request #"><strong>@req?.RequestNumber</strong></td>
-                        <td data-label="Applicant">@req?.ApplicantName<br /><small class="text-muted">@req?.MobileNumber</small></td>
-                        <td data-label="Request Type" style="font-size:12px">@reqTypeLabel</td>
-                        <td data-label="Package" style="font-size:12px;max-width:140px" title="@req?.SelectedPlan">
-                            @(string.IsNullOrWhiteSpace(req?.SelectedPlan) ? "—" : req.SelectedPlan)
-                        </td>
-                        <td data-label="City / State">
-                            <div>@req?.City</div>
-                            <div style="color:var(--text2);font-size:11px">@req?.State</div>
-                        </td>
-                        <td data-label="Property / Roof" style="font-size:12px">
+                    <tr>
+                        <td>#@s.Id</td>
+                        <td><code style="font-size:11px;color:#0d9488">@req?.UserId</code></td>
+                        <td><strong>@req?.RequestNumber</strong></td>
+                        <td>@req?.ApplicantName<br /><small class="text-muted">@req?.MobileNumber</small></td>
+                        <td style="font-size:12px">
                             @if (!string.IsNullOrWhiteSpace(s.PropertyType))
                             {
                                 <span>@s.PropertyType</span><br />
@@ -85,30 +56,26 @@
                                 <small class="text-muted">@s.RoofType roof</small>
                             }
                         </td>
-                        <td data-label="DISCOM / Consumer" style="font-size:12px">
+                        <td style="font-size:12px">
                             @if (!string.IsNullOrWhiteSpace(s.DiscomName))
                             {
-                                <span>@s.DiscomName</span><br />
+                                <span>@s.DiscomName</span>
                             }
-                            @if (!string.IsNullOrWhiteSpace(s.ConsumerNumber))
-                            {
-                                <small class="text-muted">@s.ConsumerNumber</small>
-                            }
+                            @* Task 13: Consumer Number (K No) removed from list. *@
                         </td>
-                        <td data-label="Submitted">@s.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
-                        <td data-label="Files"><span class="badge bg-info">@fileCount file(s)</span></td>
-                        <td data-label="Action">
+                        <td>@s.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                        <td><span class="badge bg-info">@fileCount file(s)</span></td>
+                        <td>
                             <a class="btn btn-sm btn-primary" asp-action="Details" asp-route-id="@s.Id">Review</a>
                         </td>
                     </tr>
                 }
                 @if (!surveys.Any())
                 {
-                    <tr><td colspan="12" class="text-center text-muted">No surveys awaiting approval.</td></tr>
+                    <tr><td colspan="9" class="text-center text-muted">No surveys awaiting approval.</td></tr>
                 }
                 </tbody>
             </table>
-            </div>
         </div>
     </div>
 </div>

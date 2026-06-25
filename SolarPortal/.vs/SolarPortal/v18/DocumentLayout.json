@@ -1,9 +1,9 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "\\\\localhost\\Sadhna\\New folder (3)\\SolarPortal\\",
+  "WorkspaceRootPath": "\\\\localhost\\Sadhna\\New folder (2)\\Soller_Admin\\SolarPortal\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|SolarPortal.AdminWeb\\SolarPortal.AdminWeb.csproj|\\\\localhost\\sadhna\\new folder (3)\\solarportal\\solarportal.adminweb\\areas\\solarpaneladmin\\controllers\\paymentscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{55555555-5555-5555-5555-555555555555}|SolarPortal.AdminWeb\\SolarPortal.AdminWeb.csproj|\\\\localhost\\sadhna\\new folder (2)\\soller_admin\\solarportal\\solarportal.adminweb\\areas\\solarpaneladmin\\views\\operations\\operationslist.cshtml||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,14 +18,14 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "PaymentsController.cs",
-              "DocumentMoniker": "\\\\localhost\\Sadhna\\New folder (3)\\SolarPortal\\SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Controllers\\PaymentsController.cs",
-              "RelativeDocumentMoniker": "SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Controllers\\PaymentsController.cs",
-              "ToolTip": "\\\\localhost\\Sadhna\\New folder (3)\\SolarPortal\\SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Controllers\\PaymentsController.cs",
-              "RelativeToolTip": "SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Controllers\\PaymentsController.cs",
-              "ViewState": "AgIAAGEBAAAAAAAAAAAIwHUBAAA/AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-06-13T12:28:22.973Z",
+              "Title": "OperationsList.cshtml",
+              "DocumentMoniker": "\\\\localhost\\Sadhna\\New folder (2)\\Soller_Admin\\SolarPortal\\SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Views\\Operations\\OperationsList.cshtml",
+              "RelativeDocumentMoniker": "SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Views\\Operations\\OperationsList.cshtml",
+              "ToolTip": "\\\\localhost\\Sadhna\\New folder (2)\\Soller_Admin\\SolarPortal\\SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Views\\Operations\\OperationsList.cshtml",
+              "RelativeToolTip": "SolarPortal.AdminWeb\\Areas\\SolarPanelAdmin\\Views\\Operations\\OperationsList.cshtml",
+              "ViewState": "AgIAAPUBAAAAAAAAAAAswC0CAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-06-25T07:15:34.398Z",
               "EditorCaption": ""
             }
           ]

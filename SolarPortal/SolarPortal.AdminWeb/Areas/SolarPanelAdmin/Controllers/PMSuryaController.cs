@@ -21,6 +21,7 @@ public class PMSuryaController : Controller
     private readonly IPMDocumentService _pmDocs;
     private readonly ISolarRequestService _requestService;
     private readonly INotificationService _notifications;
+    private readonly IFileUploadService _fileUploadService;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public PMSuryaController(
@@ -28,12 +29,14 @@ public class PMSuryaController : Controller
         IPMDocumentService pmDocs,
         ISolarRequestService requestService,
         INotificationService notifications,
+        IFileUploadService fileUploadService,
         UserManager<ApplicationUser> userManager)
     {
         _uow = uow;
         _pmDocs = pmDocs;
         _requestService = requestService;
         _notifications = notifications;
+        _fileUploadService = fileUploadService;
         _userManager = userManager;
     }
 
@@ -129,54 +132,54 @@ public class PMSuryaController : Controller
         return Json(new { success = true, message = "Document rejected" });
     }
 
-    // POST: /Admin/PMSurya/ApproveAndAdvance/5 — approve the whole batch and move to MeterDispatch
+    // POST: /Admin/PMSurya/ApproveAndAdvance/5 — approve the whole batch, store the
+    // PM Surya Ghar application no. + admin approval docs, and open Meter Dispatch +
+    // Site Survey together.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ApproveAndAdvance(int requestId, string? notes)
+    public async Task<IActionResult> ApproveAndAdvance(int requestId, string? notes,
+                                                       string? pmSuryaApplicationNo,
+                                                       List<IFormFile>? approvalDocs)
     {
         var req = await _uow.SolarRequests.GetByIdAsync(requestId);
         if (req == null) return Json(new { success = false, message = "Request not found" });
 
-        // ===== Server-side guard =====
-        // Symptom: page showed "No documents uploaded yet" but the "Approve All &
-        // Move to Meter Dispatch" button was clickable. An accidental click would
-        // advance the project with zero supporting docs. The view also hides the
-        // button now, but this server check is authoritative — direct POSTs from
-        // curl, devtools replay or stale tabs are blocked here.
         var docs = (await _uow.PMDocuments.FindAsync(d => d.SolarRequestId == requestId)).ToList();
-        if (!docs.Any())
-            return Json(new
-            {
-                success = false,
-                message = "Cannot approve — user has not uploaded any PM Surya Ghar documents yet. " +
-                          "Ask the user to upload required documents before advancing the project."
-            });
 
-        var anyUsable = docs.Any(d => d.Status != ApprovalStatus.Rejected);
-        if (!anyUsable)
-            return Json(new
-            {
-                success = false,
-                message = "Cannot approve — every uploaded document is rejected. " +
-                          "Ask the user to re-upload corrected documents."
-            });
-
-        // Idempotency: project already past PMSurvey — don't re-run side effects
-        if (req.CurrentStage == ProjectStatus.MeterDispatch ||
-            req.CurrentStage == ProjectStatus.SiteSurvey ||
-            req.CurrentStage == ProjectStatus.MaterialDispatch ||
-            req.CurrentStage == ProjectStatus.Installation ||
-            req.CurrentStage == ProjectStatus.DCRUpdate ||
-            req.CurrentStage == ProjectStatus.Completed)
+        // ── Task 10: approval blocked until ALL required documents are present and
+        //    none is still in Rejected state. ──────────────────────────────────────
+        // Required user document types (PM Surya Ghar Application is now admin-uploaded
+        // per Task 9, so it is NOT part of the user-required set).
+        var requiredTypes = new[]
+        {
+            DocumentType.AadharCard,
+            DocumentType.PANCard,
+            DocumentType.LightBill,
+            DocumentType.BankPassbook,
+            DocumentType.PropertyDocument,
+            DocumentType.GPSPhoto
+        };
+        var presentTypes = docs.Select(d => d.DocumentType).ToHashSet();
+        var missing = requiredTypes.Where(t => !presentTypes.Contains(t)).ToList();
+        if (missing.Any())
         {
             return Json(new
             {
                 success = false,
-                message = $"This project has already advanced past PM Surya Ghar (currently: {req.CurrentStage}). Duplicate advance blocked."
+                message = "Cannot approve yet — these documents are still missing: " +
+                          string.Join(", ", missing)
+            });
+        }
+        if (docs.Any(d => requiredTypes.Contains(d.DocumentType) && d.Status == ApprovalStatus.Rejected))
+        {
+            return Json(new
+            {
+                success = false,
+                message = "Some documents are still Rejected. Approve each document (or wait for the user to re-upload) before final approval."
             });
         }
 
-        // Mark all pending PM docs approved (rejected ones are left as-is)
+        // Mark all required PM docs approved
         foreach (var d in docs)
         {
             if (d.Status == ApprovalStatus.Pending)
@@ -186,10 +189,35 @@ public class PMSuryaController : Controller
                 _uow.PMDocuments.Update(d);
             }
         }
+
+        // ── Task 11: PM Surya Ghar application no. + admin-uploaded approval docs ──
+        if (!string.IsNullOrWhiteSpace(pmSuryaApplicationNo))
+            req.PmSuryaApplicationNo = pmSuryaApplicationNo.Trim();
+
+        if (approvalDocs != null)
+        {
+            foreach (var file in approvalDocs.Where(f => f != null && f.Length > 0))
+            {
+                var (ok, path, _) = await _fileUploadService.UploadAsync(file, $"{req.RequestNumber}/pmsurya-approval");
+                if (ok && !string.IsNullOrWhiteSpace(path))
+                {
+                    await _pmDocs.UploadDocumentAsync(
+                        solarRequestId: requestId,
+                        documentType: DocumentType.PMApprovalDocument,
+                        fileName: Path.GetFileNameWithoutExtension(file.FileName),
+                        filePath: path,
+                        contentType: file.ContentType,
+                        fileSize: file.Length);
+                }
+            }
+        }
+
+        _uow.SolarRequests.Update(req);
         await _uow.SaveChangesAsync();
 
         var adminId = _userManager.GetUserId(User)!;
-        // Spec workflow: PM Surya Ghar → Site Survey → Meter Dispatch
+        // Task 12: PM approve hote hi project MeterDispatch stage par aa jaata hai, jisse
+        // Meter Dispatch (admin) aur Site Survey (user) DONO parallel open ho jaate hain.
         await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
         {
             Id = requestId,
@@ -202,10 +230,10 @@ public class PMSuryaController : Controller
             UserId = req.UserId,
             SolarRequestId = requestId,
             Title = "PM Surya Ghar approved",
-            Message = "Your documents are verified. Site survey form is now available for download.",
+            Message = "Your documents are verified. Meter Dispatch and Site Survey are now both available — you can fill the Site Survey right away.",
             NotificationType = "PMSurya"
         });
 
-        return Json(new { success = true, message = "PM Surya Ghar approved. Project moved to Site Survey." });
+        return Json(new { success = true, message = "PM Surya Ghar approved. Meter Dispatch & Site Survey are now open." });
     }
 }

@@ -67,33 +67,23 @@
         // so plain `var` declarations work — no need for @{ } which is the
         // *transition* syntax from HTML to C#.
         var isHistoryMode = string.Equals((string)ViewBag.Filter, "all", StringComparison.OrdinalIgnoreCase);
-        var meterMap     = ViewBag.MeterDetails        as Dictionary<int, SolarPortal.Domain.Entities.MeterDispatch>;
-        var materialMap  = ViewBag.MaterialDetails     as Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>;
-        var installMap   = ViewBag.InstallationDetails as Dictionary<int, SolarPortal.Domain.Entities.Installation>;
-        var dcrMap       = ViewBag.DCRDetails          as Dictionary<int, SolarPortal.Domain.Entities.DCRDocument>;
+        var meterMap = ViewBag.MeterDetails as Dictionary<int, SolarPortal.Domain.Entities.MeterDispatch>;
+        var materialMap = ViewBag.MaterialDetails as Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>;
+        var installMap = ViewBag.InstallationDetails as Dictionary<int, SolarPortal.Domain.Entities.Installation>;
+        var dcrMap = ViewBag.DCRDetails as Dictionary<int, SolarPortal.Domain.Entities.DCRDocument>;
 
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>@ViewBag.Title Queue (@Model.Count())</div>
-
-            @{
-                ViewData["FilterTableId"]     = "ops-table";
-                ViewData["FilterPlaceholder"] = "Search by Member ID, name, city, state, request #...";
-            }
-            @await Html.PartialAsync("_ReportFilterToolbar")
-
             <div class="tbl-wrap">
-                <table id="ops-table" class="report-table">
+                <table>
                     <thead>
                         <tr>
                             <th>Request</th>
                             <th>Member ID</th>
                             <th>Applicant</th>
-                            <th>Request Type</th>
-                            <th>Package</th>
                             <th>Type</th>
                             <th>Capacity</th>
                             <th>City / State</th>
-                            <th>Date</th>
                             <th>Stage</th>
                             @if (isHistoryMode)
                             {
@@ -105,42 +95,27 @@
                     <tbody>
                         @foreach (var r in Model)
                         {
-                            var reqTypeLabel = r.RequestType switch
-                            {
-                                SolarPortal.Domain.Enums.RequestType.WithActivation              => "🔌 With Activation",
-                                SolarPortal.Domain.Enums.RequestType.OnlySolarWithoutActivation  => "⚡ Without Activation",
-                                SolarPortal.Domain.Enums.RequestType.AlreadyActiveOnlyRequest    => "✅ Already Active",
-                                _ => r.RequestType.ToString()
-                            };
-                            var displayName = string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName;
-                            var searchHaystack = $"{r.UserId} {displayName} {r.City} {r.State} {r.RequestNumber} {r.SelectedPlan}".ToLower();
-                            var dateIso = r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd");
-                            <tr data-search="@searchHaystack" data-date="@dateIso">
-                                <td data-label="Request" class="td-b">
+                            <tr>
+                                <td class="td-b">
                                     <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Details"
                                        asp-route-id="@r.Id" style="color:var(--sun)">@r.RequestNumber</a>
                                 </td>
-                                <td data-label="Member ID"><code style="font-size:11px;color:#0d9488">@r.UserId</code></td>
-                                <td data-label="Applicant">
+                                <td><code style="font-size:11px;color:#0d9488">@r.UserId</code></td>
+                                <td>
                                     @* Live m_membermaster name when admin controller has enriched it,
                                        otherwise stored ApplicantName. *@
-                                    @displayName
+                                    @(string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName)
                                     <div style="font-size:11px;color:var(--text3)">@r.MobileNumber</div>
                                 </td>
-                                <td data-label="Request Type" style="font-size:12px">@reqTypeLabel</td>
-                                <td data-label="Package" style="font-size:12px;max-width:140px" title="@r.SelectedPlan">
-                                    @(string.IsNullOrWhiteSpace(r.SelectedPlan) ? "—" : r.SelectedPlan)
-                                </td>
-                                <td data-label="Type">@r.ConnectionType</td>
-                                <td data-label="Capacity">@r.KVCapacity kV</td>
-                                <td data-label="City / State">@r.City<div style="font-size:11px;color:var(--text3)">@r.State</div></td>
-                                <td data-label="Date" style="font-size:12px">@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
-                                <td data-label="Stage">
+                                <td>@r.ConnectionType</td>
+                                <td>@r.KVCapacity kV</td>
+                                <td>@r.City<div style="font-size:11px;color:var(--text3)">@r.State</div></td>
+                                <td>
                                     <span class="sts sts-disp">@r.CurrentStage.ToString().Replace("_", " ")</span>
                                 </td>
                                 @if (isHistoryMode)
                                 {
-                                    <td data-label="Details" style="font-size:12px;max-width:240px">
+                                    <td style="font-size:12px;max-width:240px">
                                         @* Render whatever dispatch record exists for this request, based on op. *@
                                         @switch (op)
                                         {
@@ -148,69 +123,145 @@
                                                 if (meterMap != null && meterMap.TryGetValue(r.Id, out var m))
                                                 {
                                                     <div><strong>#</strong> @m.MeterNumber</div>
-                                                    if (!string.IsNullOrWhiteSpace(m.MeterType))   { <div><strong>Type:</strong> @m.MeterType</div> }
-                                                    if (m.DispatchDate.HasValue)                   { <div><strong>Date:</strong> @m.DispatchDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div> }
-                                                    if (!string.IsNullOrWhiteSpace(m.Remark))      { <div style="color:var(--text3)">@m.Remark</div> }
+                                                    if (!string.IsNullOrWhiteSpace(m.MeterType))
+                                                    {
+
+                                                        <div><strong>Type:</strong> @m.MeterType</div>
+                                                    }
+                                                    if (m.DispatchDate.HasValue)
+                                                    {
+
+                                                        <div><strong>Date:</strong> @m.DispatchDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                                    }
+                                                    if (!string.IsNullOrWhiteSpace(m.Remark))
+                                                    {
+
+                                                        <div style="color:var(--text3)">@m.Remark</div>
+                                                    }
                                                     if (!string.IsNullOrWhiteSpace(m.DispatchDocumentPath))
                                                     {
                                                         <div><a href="javascript:void(0)" onclick="openFileModal('@m.DispatchDocumentPath')" style="color:var(--sun)">📄 Document</a></div>
                                                     }
                                                 }
-                                                else { <span class="text-muted">—</span> }
+                                                else
+                                                {
+
+                                                    <span class="text-muted">—</span>
+                                                }
                                                 break;
                                             case "material":
                                                 if (materialMap != null && materialMap.TryGetValue(r.Id, out var mat))
                                                 {
-                                                    if (!string.IsNullOrWhiteSpace(mat.MaterialDetails)) { <div>@mat.MaterialDetails</div> }
-                                                    if (mat.DispatchDate.HasValue)                       { <div><strong>Date:</strong> @mat.DispatchDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div> }
-                                                    if (!string.IsNullOrWhiteSpace(mat.VehicleDetails))  { <div><strong>Vehicle:</strong> @mat.VehicleDetails</div> }
-                                                    if (mat.AssignedWorker != null)                      { <div><strong>Worker:</strong> @mat.AssignedWorker.Name</div> }
-                                                    if (!string.IsNullOrWhiteSpace(mat.Remark))          { <div style="color:var(--text3)">@mat.Remark</div> }
+                                                    if (!string.IsNullOrWhiteSpace(mat.MaterialDetails))
+                                                    {
+
+                                                        <div>@mat.MaterialDetails</div>
+                                                    }
+                                                    if (mat.DispatchDate.HasValue)
+                                                    {
+
+                                                        <div><strong>Date:</strong> @mat.DispatchDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                                    }
+                                                    if (!string.IsNullOrWhiteSpace(mat.VehicleDetails))
+                                                    {
+
+                                                        <div><strong>Vehicle:</strong> @mat.VehicleDetails</div>
+                                                    }
+                                                    if (mat.AssignedWorker != null)
+                                                    {
+
+                                                        <div><strong>Worker:</strong> @mat.AssignedWorker.Name</div>
+                                                    }
+                                                    if (!string.IsNullOrWhiteSpace(mat.Remark))
+                                                    {
+
+                                                        <div style="color:var(--text3)">@mat.Remark</div>
+                                                    }
                                                     if (!string.IsNullOrWhiteSpace(mat.DispatchDocumentPath))
                                                     {
                                                         <div><a href="javascript:void(0)" onclick="openFileModal('@mat.DispatchDocumentPath')" style="color:var(--sun)">📄 Document</a></div>
                                                     }
                                                 }
-                                                else { <span class="text-muted">—</span> }
+                                                else
+                                                {
+
+                                                    <span class="text-muted">—</span>
+                                                }
                                                 break;
                                             case "installation":
                                                 if (installMap != null && installMap.TryGetValue(r.Id, out var inst))
                                                 {
-                                                    if (inst.InstallationDate.HasValue)              { <div><strong>Date:</strong> @inst.InstallationDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div> }
-                                                    if (inst.AssignedWorker != null)                 { <div><strong>Worker:</strong> @inst.AssignedWorker.Name</div> }
-                                                    if (!string.IsNullOrWhiteSpace(inst.Notes))      { <div>@inst.Notes</div> }
-                                                    if (!string.IsNullOrWhiteSpace(inst.Remark))     { <div style="color:var(--text3)">@inst.Remark</div> }
+                                                    if (inst.InstallationDate.HasValue)
+                                                    {
+
+                                                        <div><strong>Date:</strong> @inst.InstallationDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                                    }
+                                                    if (inst.AssignedWorker != null)
+                                                    {
+
+                                                        <div><strong>Worker:</strong> @inst.AssignedWorker.Name</div>
+                                                    }
+                                                    if (!string.IsNullOrWhiteSpace(inst.Notes))
+                                                    {
+
+                                                        <div>@inst.Notes</div>
+                                                    }
+                                                    if (!string.IsNullOrWhiteSpace(inst.Remark))
+                                                    {
+
+                                                        <div style="color:var(--text3)">@inst.Remark</div>
+                                                    }
                                                     if (!string.IsNullOrWhiteSpace(inst.CompletionPhotoPath))
                                                     {
                                                         <div><a href="javascript:void(0)" onclick="openFileModal('@inst.CompletionPhotoPath')" style="color:var(--sun)">📷 Photo</a></div>
                                                     }
                                                 }
-                                                else { <span class="text-muted">—</span> }
+                                                else
+                                                {
+
+                                                    <span class="text-muted">—</span>
+                                                }
                                                 break;
                                             case "dcr":
                                                 if (dcrMap != null && dcrMap.TryGetValue(r.Id, out var dcr))
                                                 {
-                                                    if (!string.IsNullOrWhiteSpace(dcr.DCRNumber))  { <div><strong>#</strong> @dcr.DCRNumber</div> }
-                                                    if (dcr.DCRDate.HasValue)                       { <div><strong>Date:</strong> @dcr.DCRDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div> }
-                                                    if (!string.IsNullOrWhiteSpace(dcr.Remark))     { <div style="color:var(--text3)">@dcr.Remark</div> }
+                                                    if (!string.IsNullOrWhiteSpace(dcr.DCRNumber))
+                                                    {
+
+                                                        <div><strong>#</strong> @dcr.DCRNumber</div>
+                                                    }
+                                                    if (dcr.DCRDate.HasValue)
+                                                    {
+
+                                                        <div><strong>Date:</strong> @dcr.DCRDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                                    }
+                                                    if (!string.IsNullOrWhiteSpace(dcr.Remark))
+                                                    {
+
+                                                        <div style="color:var(--text3)">@dcr.Remark</div>
+                                                    }
                                                     if (!string.IsNullOrWhiteSpace(dcr.DocumentPath))
                                                     {
                                                         <div><a href="javascript:void(0)" onclick="openFileModal('@dcr.DocumentPath')" style="color:var(--sun)">📄 Document</a></div>
                                                     }
                                                 }
-                                                else { <span class="text-muted">—</span> }
+                                                else
+                                                {
+
+                                                    <span class="text-muted">—</span>
+                                                }
                                                 break;
                                         }
                                     </td>
                                 }
-                                <td data-label="Action">
+                                <td>
                                     @{
                                         // Map the page's "op" to the stage it acts on
                                         var actStage =
-                                            op == "meter"        ? SolarPortal.Domain.Enums.ProjectStatus.MeterDispatch :
-                                            op == "material"     ? SolarPortal.Domain.Enums.ProjectStatus.MaterialDispatch :
+                                            op == "meter" ? SolarPortal.Domain.Enums.ProjectStatus.MeterDispatch :
+                                            op == "material" ? SolarPortal.Domain.Enums.ProjectStatus.MaterialDispatch :
                                             op == "installation" ? SolarPortal.Domain.Enums.ProjectStatus.Installation :
-                                            op == "dcr"          ? SolarPortal.Domain.Enums.ProjectStatus.DCRUpdate :
+                                            op == "dcr" ? SolarPortal.Domain.Enums.ProjectStatus.DCRUpdate :
                                                                    SolarPortal.Domain.Enums.ProjectStatus.Registration;
                                         var isActiveRow = r.CurrentStage == actStage;
                                     }
@@ -278,237 +329,226 @@
 }
 <script id="workerOptions" type="application/json">@Html.Raw(workerJson)</script>
 
+@* Existing user-submitted DCR details — used to pre-fill the admin DCR modal so the
+   admin verifies what the user already entered instead of typing it again. *@
+@{
+    var dcrDetailsForJson = ViewBag.DCRDetails as Dictionary<int, SolarPortal.Domain.Entities.DCRDocument>;
+    var dcrJson = System.Text.Json.JsonSerializer.Serialize(
+        (dcrDetailsForJson ?? new Dictionary<int, SolarPortal.Domain.Entities.DCRDocument>())
+        .ToDictionary(
+            kv => kv.Key.ToString(),
+            kv => new
+            {
+                number = kv.Value.DCRNumber ?? "",
+                date = kv.Value.DCRDate.HasValue ? kv.Value.DCRDate.Value.ToString("yyyy-MM-dd") : "",
+                remark = kv.Value.Remark ?? "",
+                docPath = kv.Value.DocumentPath ?? ""
+            }));
+}
+<script id="dcrData" type="application/json">@Html.Raw(dcrJson)</script>
+
 @section Scripts {
     <script>
         const workerData = JSON.parse(document.getElementById('workerOptions').textContent || '[]');
+        const dcrData = JSON.parse(document.getElementById('dcrData').textContent || '{}');
         const csrfToken = document.querySelector('#csrfForm input[name="__RequestVerificationToken"]')?.value || '';
         const today = new Date().toISOString().split('T')[0];
 
+        // Escape for safely injecting values into the SweetAlert HTML string.
+        const esc = s => (s == null ? '' : String(s))
+        .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
         function workerOptionsHtml(includeBlank=true) {
-            // Per spec: assign user choose karna mandatory hai, isliye default
-            // option ka label "— Please select a worker —" kar diya so admin
-            // ko clear pata chale ki ye field zaroori hai. Empty value submission
-            // ko preConfirm + server dono jagah block karte hain.
-            const blank = includeBlank ? '<option value="">— Please select a worker —</option>' : '';
-            return blank + workerData.map(w => `<option value="${w.id}">${w.name} (${w.type}, ${w.city || ''})</option>`).join('');
+        const blank = includeBlank ? '<option value="">— Not assigned —</option>' : '';
+        return blank + workerData.map(w => `<option value="${w.id}">${w.name} (${w.type}, ${w.city || ''})</option>`).join('');
         }
 
         async function postForm(url, formData, msgOnFail='Failed') {
-            formData.append('__RequestVerificationToken', csrfToken);
-            try {
-                const r = await fetch(url, { method: 'POST', body: formData });
-                const d = await r.json();
-                return d;
-            } catch (e) {
-                return { success: false, message: msgOnFail };
-            }
+        formData.append('__RequestVerificationToken', csrfToken);
+        try {
+        const r = await fetch(url, { method: 'POST', body: formData });
+        const d = await r.json();
+        return d;
+        } catch (e) {
+        return { success: false, message: msgOnFail };
+        }
         }
 
         function openMeterForm(requestId, requestNumber) {
-            Swal.fire({
-                title: '📦 Meter Dispatch — ' + requestNumber,
-                html: `
-                    <div style="text-align:left;font-size:13px">
-                        <label>Meter Number *</label>
-                        <input id="f-meter-num" type="text" class="swal2-input" required>
-                        <label>Meter Type *</label>
-                        <select id="f-meter-type" class="swal2-input">
-                            <option value="Single Phase">Single Phase</option>
-                            <option value="Three Phase">Three Phase</option>
-                        </select>
-                        <label>Dispatch Date *</label>
-                        <input id="f-meter-date" type="date" class="swal2-input" value="${today}">
-                        <label>Remark</label>
-                        <textarea id="f-meter-remark" class="swal2-textarea" placeholder="Courier / tracking / notes"></textarea>
-                        <label>Document (optional)</label>
-                        <input id="f-meter-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
-                    </div>`,
-                background: '#ffffff', color: '#1f2937',
-                showCancelButton: true,
-                confirmButtonText: 'Dispatch',
-                preConfirm: async () => {
-                    const num = document.getElementById('f-meter-num').value.trim();
-                    if (!num) { Swal.showValidationMessage('Meter number is required'); return false; }
-                    const fd = new FormData();
-                    fd.append('requestId', requestId);
-                    fd.append('meterNumber', num);
-                    fd.append('meterType', document.getElementById('f-meter-type').value);
-                    fd.append('dispatchDate', document.getElementById('f-meter-date').value);
-                    fd.append('remark', document.getElementById('f-meter-remark').value);
-                    const file = document.getElementById('f-meter-doc').files[0];
-                    if (file) fd.append('dispatchDoc', file);
-                    return await postForm('/SolarPanelAdmin/Operations/SubmitMeterDispatch', fd);
-                }
-            }).then(r => {
-                if (r.isConfirmed && r.value && r.value.success) {
-                    Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
-                } else if (r.isConfirmed) {
-                    Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
-                }
-            });
+        Swal.fire({
+        title: '📦 Meter Dispatch — ' + requestNumber,
+        html: `
+        <div style="text-align:left;font-size:13px">
+        <label>Meter Number *</label>
+        <input id="f-meter-num" type="text" class="swal2-input" required>
+        <label>Meter Type *</label>
+        <select id="f-meter-type" class="swal2-input">
+        <option value="Single Phase">Single Phase</option>
+        <option value="Three Phase">Three Phase</option>
+        </select>
+        <label>Dispatch Date *</label>
+        <input id="f-meter-date" type="date" class="swal2-input" value="${today}">
+        <label>Remark</label>
+        <textarea id="f-meter-remark" class="swal2-textarea" placeholder="Courier / tracking / notes"></textarea>
+        <label>Document (optional)</label>
+        <input id="f-meter-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
+        </div>`,
+        background: '#ffffff', color: '#1f2937',
+        showCancelButton: true,
+        confirmButtonText: 'Dispatch',
+        preConfirm: async () => {
+        const num = document.getElementById('f-meter-num').value.trim();
+        if (!num) { Swal.showValidationMessage('Meter number is required'); return false; }
+        const fd = new FormData();
+        fd.append('requestId', requestId);
+        fd.append('meterNumber', num);
+        fd.append('meterType', document.getElementById('f-meter-type').value);
+        fd.append('dispatchDate', document.getElementById('f-meter-date').value);
+        fd.append('remark', document.getElementById('f-meter-remark').value);
+        const file = document.getElementById('f-meter-doc').files[0];
+        if (file) fd.append('dispatchDoc', file);
+        return await postForm('/SolarPanelAdmin/Operations/SubmitMeterDispatch', fd);
+        }
+        }).then(r => {
+        if (r.isConfirmed && r.value && r.value.success) {
+        Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+        } else if (r.isConfirmed) {
+        Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+        }
+        });
         }
 
         function openMaterialForm(requestId, requestNumber) {
-            Swal.fire({
-                title: '📦 Material Dispatch — ' + requestNumber,
-                html: `
-                    <div style="text-align:left;font-size:13px">
-                        <label>Material Details</label>
-                        <textarea id="f-mat-detail" class="swal2-textarea" placeholder="Solar panels, inverter, wiring, mounts..."></textarea>
-                        <label>Dispatch Date *</label>
-                        <input id="f-mat-date" type="date" class="swal2-input" value="${today}">
-                        <label>Vehicle / Courier</label>
-                        <input id="f-mat-veh" type="text" class="swal2-input" placeholder="RJ-14-AB-1234 / DTDC AWB...">
-                        <label>Despatch Person (Worker) <span style="color:#dc2626">*</span></label>
-                        <select id="f-mat-worker" class="swal2-input" required>${workerOptionsHtml()}</select>
-                        <label>Remark</label>
-                        <textarea id="f-mat-remark" class="swal2-textarea"></textarea>
-                        <label>Document (optional)</label>
-                        <input id="f-mat-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
-                    </div>`,
-                background: '#ffffff', color: '#1f2937',
-                showCancelButton: true,
-                confirmButtonText: 'Dispatch',
-                preConfirm: async () => {
-                    // ===== Worker assignment mandatory =====
-                    // Per spec: jab tak worker assign nahi karta admin, aage process
-                    // nahi ho sakta. We block the submission here before building
-                    // the FormData so the user sees a clear inline error message.
-                    // Server-side SubmitMaterialDispatch also enforces this.
-                    const w = document.getElementById('f-mat-worker').value;
-                    if (!w) {
-                        Swal.showValidationMessage('Please assign a despatch worker before submitting.');
-                        return false;
-                    }
-                    const fd = new FormData();
-                    fd.append('requestId', requestId);
-                    fd.append('materialDetails', document.getElementById('f-mat-detail').value);
-                    fd.append('dispatchDate', document.getElementById('f-mat-date').value);
-                    fd.append('vehicleDetails', document.getElementById('f-mat-veh').value);
-                    fd.append('remark', document.getElementById('f-mat-remark').value);
-                    fd.append('workerId', w);
-                    const file = document.getElementById('f-mat-doc').files[0];
-                    if (file) fd.append('dispatchDoc', file);
-                    return await postForm('/SolarPanelAdmin/Operations/SubmitMaterialDispatch', fd);
-                }
-            }).then(r => {
-                if (r.isConfirmed && r.value && r.value.success) {
-                    Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
-                } else if (r.isConfirmed) {
-                    Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
-                }
-            });
+        Swal.fire({
+        title: '📦 Material Dispatch — ' + requestNumber,
+        html: `
+        <div style="text-align:left;font-size:13px">
+        <label>Material Details</label>
+        <textarea id="f-mat-detail" class="swal2-textarea" placeholder="Solar panels, inverter, wiring, mounts..."></textarea>
+        <label>Dispatch Date *</label>
+        <input id="f-mat-date" type="date" class="swal2-input" value="${today}">
+        <label>Vehicle / Courier</label>
+        <input id="f-mat-veh" type="text" class="swal2-input" placeholder="RJ-14-AB-1234 / DTDC AWB...">
+        <label>Despatch Person (Worker) *</label>
+        <select id="f-mat-worker" class="swal2-input">${workerOptionsHtml()}</select>
+        <label>Remark</label>
+        <textarea id="f-mat-remark" class="swal2-textarea"></textarea>
+        <label>Document (optional)</label>
+        <input id="f-mat-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
+        </div>`,
+        background: '#ffffff', color: '#1f2937',
+        showCancelButton: true,
+        confirmButtonText: 'Dispatch',
+        preConfirm: async () => {
+        // Worker assignment is mandatory — block submit until assigned.
+        const w = document.getElementById('f-mat-worker').value;
+        if (!w) { Swal.showValidationMessage('Please assign a despatch person (worker) before dispatching.'); return false; }
+        const fd = new FormData();
+        fd.append('requestId', requestId);
+        fd.append('materialDetails', document.getElementById('f-mat-detail').value);
+        fd.append('dispatchDate', document.getElementById('f-mat-date').value);
+        fd.append('vehicleDetails', document.getElementById('f-mat-veh').value);
+        fd.append('remark', document.getElementById('f-mat-remark').value);
+        fd.append('workerId', w);
+        const file = document.getElementById('f-mat-doc').files[0];
+        if (file) fd.append('dispatchDoc', file);
+        return await postForm('/SolarPanelAdmin/Operations/SubmitMaterialDispatch', fd);
+        }
+        }).then(r => {
+        if (r.isConfirmed && r.value && r.value.success) {
+        Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+        } else if (r.isConfirmed) {
+        Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+        }
+        });
         }
 
         function openInstallForm(requestId, requestNumber) {
-            Swal.fire({
-                title: '🔧 Installation — ' + requestNumber,
-                html: `
-                    <div style="text-align:left;font-size:13px">
-                        <label>Installation Date *</label>
-                        <input id="f-ins-date" type="date" class="swal2-input" value="${today}">
-                        <label>Installer (Worker) <span style="color:#dc2626">*</span></label>
-                        <select id="f-ins-worker" class="swal2-input" required>${workerOptionsHtml()}</select>
-                        <label>Notes</label>
-                        <textarea id="f-ins-notes" class="swal2-textarea" placeholder="Panels installed, inverter SN, meter reading..."></textarea>
-                        <label>Remark</label>
-                        <textarea id="f-ins-remark" class="swal2-textarea"></textarea>
-                        <label>Completion Photo (optional)</label>
-                        <input id="f-ins-photo" type="file" accept="image/*" class="swal2-file">
-                    </div>`,
-                background: '#ffffff', color: '#1f2937',
-                showCancelButton: true,
-                confirmButtonText: 'Submit',
-                preConfirm: async () => {
-                    // ===== Installer assignment mandatory =====
-                    // Per spec: assign user choose karna mandatory hai. Same as
-                    // Material Dispatch — block submission inline if no worker
-                    // picked, server-side SubmitInstallation backs this up.
-                    const w = document.getElementById('f-ins-worker').value;
-                    if (!w) {
-                        Swal.showValidationMessage('Please assign an installer (worker) before submitting.');
-                        return false;
-                    }
-                    const fd = new FormData();
-                    fd.append('requestId', requestId);
-                    fd.append('installationDate', document.getElementById('f-ins-date').value);
-                    fd.append('notes', document.getElementById('f-ins-notes').value);
-                    fd.append('remark', document.getElementById('f-ins-remark').value);
-                    fd.append('workerId', w);
-                    const file = document.getElementById('f-ins-photo').files[0];
-                    if (file) fd.append('completionPhoto', file);
-                    return await postForm('/SolarPanelAdmin/Operations/SubmitInstallation', fd);
-                }
-            }).then(r => {
-                if (r.isConfirmed && r.value && r.value.success) {
-                    Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
-                } else if (r.isConfirmed) {
-                    Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
-                }
-            });
+        Swal.fire({
+        title: '🔧 Installation — ' + requestNumber,
+        html: `
+        <div style="text-align:left;font-size:13px">
+        <label>Installation Date *</label>
+        <input id="f-ins-date" type="date" class="swal2-input" value="${today}">
+        <label>Installer (Worker) *</label>
+        <select id="f-ins-worker" class="swal2-input">${workerOptionsHtml()}</select>
+        <label>Notes</label>
+        <textarea id="f-ins-notes" class="swal2-textarea" placeholder="Panels installed, inverter SN, meter reading..."></textarea>
+        <label>Remark</label>
+        <textarea id="f-ins-remark" class="swal2-textarea"></textarea>
+        <label>Completion Photo (optional)</label>
+        <input id="f-ins-photo" type="file" accept="image/*" class="swal2-file">
+        </div>`,
+        background: '#ffffff', color: '#1f2937',
+        showCancelButton: true,
+        confirmButtonText: 'Submit',
+        preConfirm: async () => {
+        // Worker assignment is mandatory — block submit until assigned.
+        const w = document.getElementById('f-ins-worker').value;
+        if (!w) { Swal.showValidationMessage('Please assign an installer (worker) before submitting.'); return false; }
+        const fd = new FormData();
+        fd.append('requestId', requestId);
+        fd.append('installationDate', document.getElementById('f-ins-date').value);
+        fd.append('notes', document.getElementById('f-ins-notes').value);
+        fd.append('remark', document.getElementById('f-ins-remark').value);
+        fd.append('workerId', w);
+        const file = document.getElementById('f-ins-photo').files[0];
+        if (file) fd.append('completionPhoto', file);
+        return await postForm('/SolarPanelAdmin/Operations/SubmitInstallation', fd);
+        }
+        }).then(r => {
+        if (r.isConfirmed && r.value && r.value.success) {
+        Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+        } else if (r.isConfirmed) {
+        Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+        }
+        });
         }
 
-        async function openDCRForm(requestId, requestNumber) {
-            // ===== Pre-fetch the auto-generated DCR Number =====
-            // Per spec: "DCR Number ye fill hokar hi aana chahiye admin update
-            // nahi kar sakta". We hit the controller's GetNextDcrNumber endpoint
-            // BEFORE showing the modal so the input is pre-filled when it opens.
-            // The input is also marked readonly + styled grey so it's clear the
-            // admin can't edit it. Server-side SubmitDCR re-generates the number
-            // regardless of what the client sends, so tampering is futile too.
-            let nextDcrNum = '';
-            try {
-                const r = await fetch('/SolarPanelAdmin/Operations/GetNextDcrNumber');
-                const j = await r.json();
-                if (j && j.success && j.dcrNumber) nextDcrNum = j.dcrNumber;
-            } catch (e) {
-                console.warn('Failed to fetch next DCR number — falling back to server-side autogen', e);
-            }
-
-            Swal.fire({
-                title: '📄 DCR Update — ' + requestNumber,
-                html: `
-                    <div style="text-align:left;font-size:13px">
-                        <label>DCR Number * <small style="color:#6b7280;font-weight:normal">(auto-generated, not editable)</small></label>
-                        <input id="f-dcr-num" type="text" class="swal2-input"
-                               value="${nextDcrNum}"
-                               readonly
-                               style="background:#f3f4f6;color:#374151;cursor:not-allowed">
-                        <label>DCR Date *</label>
-                        <input id="f-dcr-date" type="date" class="swal2-input" value="${today}">
-                        <label>Remark</label>
-                        <textarea id="f-dcr-remark" class="swal2-textarea"></textarea>
-                        <label>DCR Document (optional)</label>
-                        <input id="f-dcr-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
-                    </div>`,
-                background: '#ffffff', color: '#1f2937',
-                showCancelButton: true,
-                confirmButtonText: 'Submit DCR',
-                preConfirm: async () => {
-                    // Sanity check — if server didn't return a number for some
-                    // reason, abort rather than POST a blank field. SubmitDCR
-                    // would re-generate anyway, but failing fast surfaces issues.
-                    const num = document.getElementById('f-dcr-num').value.trim();
-                    if (!num) {
-                        Swal.showValidationMessage('DCR number could not be generated. Please retry.');
-                        return false;
-                    }
-                    const fd = new FormData();
-                    fd.append('requestId', requestId);
-                    fd.append('dcrNumber', num);
-                    fd.append('dcrDate', document.getElementById('f-dcr-date').value);
-                    fd.append('remark', document.getElementById('f-dcr-remark').value);
-                    const file = document.getElementById('f-dcr-doc').files[0];
-                    if (file) fd.append('dcrDoc', file);
-                    return await postForm('/SolarPanelAdmin/Operations/SubmitDCR', fd);
-                }
-            }).then(r => {
-                if (r.isConfirmed && r.value && r.value.success) {
-                    Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
-                } else if (r.isConfirmed) {
-                    Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
-                }
-            });
+        function openDCRForm(requestId, requestNumber) {
+        // Pre-fill from the DCR the user already submitted (if any) so the admin
+        // verifies it instead of re-typing.
+        const ex = dcrData[requestId] || {};
+        const docLink = ex.docPath
+        ? `<div style="margin:4px 0 8px"><a href="${ex.docPath.charAt(0) === '/' ? ex.docPath : '/' + ex.docPath}" target="_blank">📄 View user-uploaded DCR document</a></div>`
+        : '';
+        Swal.fire({
+        title: '📄 DCR Update — ' + requestNumber,
+        html: `
+        <div style="text-align:left;font-size:13px">
+        <label>DCR Number *</label>
+        <input id="f-dcr-num" type="text" class="swal2-input" value="${esc(ex.number)}" required>
+        <label>DCR Date *</label>
+        <input id="f-dcr-date" type="date" class="swal2-input" value="${ex.date || today}">
+        <label>Remark</label>
+        <textarea id="f-dcr-remark" class="swal2-textarea">${esc(ex.remark)}</textarea>
+        ${docLink}
+        <label>DCR Document (optional — re-upload to replace user's)</label>
+        <input id="f-dcr-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
+        </div>`,
+        background: '#ffffff', color: '#1f2937',
+        showCancelButton: true,
+        confirmButtonText: 'Submit DCR',
+        preConfirm: async () => {
+        const num = document.getElementById('f-dcr-num').value.trim();
+        if (!num) { Swal.showValidationMessage('DCR number is required'); return false; }
+        const fd = new FormData();
+        fd.append('requestId', requestId);
+        fd.append('dcrNumber', num);
+        fd.append('dcrDate', document.getElementById('f-dcr-date').value);
+        fd.append('remark', document.getElementById('f-dcr-remark').value);
+        const file = document.getElementById('f-dcr-doc').files[0];
+        if (file) fd.append('dcrDoc', file);
+        return await postForm('/SolarPanelAdmin/Operations/SubmitDCR', fd);
+        }
+        }).then(r => {
+        if (r.isConfirmed && r.value && r.value.success) {
+        Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+        } else if (r.isConfirmed) {
+        Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+        }
+        });
         }
     </script>
 }

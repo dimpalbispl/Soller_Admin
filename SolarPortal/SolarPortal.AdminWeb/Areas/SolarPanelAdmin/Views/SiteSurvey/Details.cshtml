@@ -13,7 +13,7 @@
     var photos = new List<(string Label, string? Path)>
     {
         ("Roof Photo",   Model.RoofPhotoPath),
-        ("GPS Photo",    Model.GpsPhotoPath),
+        ("House Photo",  Model.GpsPhotoPath),   // Task 16: GpsPhotoPath now stores the House Photo
         ("Survey Photo", Model.SurveyPhotoPath),  // legacy combined
     };
 }
@@ -111,10 +111,7 @@
                             <small class="text-muted d-block">DISCOM Name</small>
                             <strong>@Show(Model.DiscomName)</strong>
                         </div>
-                        <div class="col-md-6">
-                            <small class="text-muted d-block">Consumer Number</small>
-                            <strong>@Show(Model.ConsumerNumber)</strong>
-                        </div>
+                        @* Task 13: Consumer Number (K No) display removed. *@
                         <div class="col-md-6">
                             <small class="text-muted d-block">Meter Type</small>
                             <strong>@Show(Model.MeterType)</strong>
@@ -122,6 +119,10 @@
                         <div class="col-md-6">
                             <small class="text-muted d-block">Grid Type</small>
                             <strong>@Show(Model.GridType)</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Water Pump</small>
+                            <strong>@Show(string.IsNullOrWhiteSpace(Model.WaterPumpType) ? "None" : Model.WaterPumpType)</strong>
                         </div>
                     </div>
                 </div>

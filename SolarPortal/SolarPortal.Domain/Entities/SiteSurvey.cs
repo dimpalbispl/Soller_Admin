@@ -22,6 +22,10 @@ public class SiteSurvey : BaseEntity
     public string? MeterType { get; set; }         // "SinglePhase" | "ThreePhase"
     public string? GridType { get; set; }          // "OnGrid" | "OffGrid" | "Hybrid"
 
+    // Task 15: Water pump connection type, shown next to Grid Type.
+    // Values: "OnGrid" | "OffGrid" | null (no water pump).
+    public string? WaterPumpType { get; set; }
+
     // ──────── Section 3: Site Conditions (PDF) ────────
     public string? ShadowOnRoof { get; set; }      // "Yes" | "No" | "Partial"
     public string? Obstructions { get; set; }      // CSV: "PaaniTanki,Makan,MeterArea"

@@ -32,6 +32,31 @@ public class PMDocumentService : IPMDocumentService
 
     public async Task<PMDocumentDto> UploadDocumentAsync(int solarRequestId, DocumentType documentType, string fileName, string filePath, string? contentType, long fileSize)
     {
+        // Task 10: a re-uploaded document (e.g. after admin rejected it) must REPLACE
+        // the existing one of the same type and reset its status to Pending — otherwise
+        // a stale Rejected row hid the fresh upload and it never reached the admin's
+        // pending queue. PMApprovalDocument is exempt: admin can attach several of those.
+        if (documentType != DocumentType.PMApprovalDocument)
+        {
+            var existing = (await _unitOfWork.PMDocuments
+                                .FindAsync(d => d.SolarRequestId == solarRequestId && d.DocumentType == documentType))
+                           .OrderByDescending(d => d.Id)
+                           .FirstOrDefault();
+            if (existing != null)
+            {
+                existing.FileName    = fileName;
+                existing.FilePath    = filePath;
+                existing.ContentType = contentType;
+                existing.FileSize    = fileSize;
+                existing.Status      = ApprovalStatus.Pending;   // fresh upload → re-review
+                existing.Remarks     = null;                     // clear old rejection note
+                existing.UpdatedAt   = DateTime.UtcNow;
+                _unitOfWork.PMDocuments.Update(existing);
+                await _unitOfWork.SaveChangesAsync();
+                return _mapper.Map<PMDocumentDto>(existing);
+            }
+        }
+
         var document = new PMDocument
         {
             SolarRequestId = solarRequestId,

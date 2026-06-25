@@ -16,6 +16,14 @@ public class SolarRequestDto
     public string PinCode { get; set; } = string.Empty;
     public string? AadharNumber { get; set; }
     public string? PANNumber { get; set; }
+    // Change request fields (auto-mapped from SolarRequest by AutoMapper)
+    public string? LightBillOwnerType { get; set; }          // Task 3: 'Self' | 'BloodRelation'
+    public string? LightBillRelationName { get; set; }       // Task 3/4
+    public string? LightBillRelationProofPath { get; set; }  // Task 3
+    public string? LightBillNumber { get; set; }             // Task 4
+    public string? LightBillPath { get; set; }               // Task 4
+    public string? PmSuryaLoanOption { get; set; }           // Task 7: 'Loan' | 'WithoutLoan'
+    public string? PmSuryaApplicationNo { get; set; }        // Task 11
     public RequestType RequestType { get; set; }
     public ConnectionType ConnectionType { get; set; }
     public decimal KVCapacity { get; set; }

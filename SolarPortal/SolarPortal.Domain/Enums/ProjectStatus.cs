@@ -46,7 +46,9 @@ public enum DocumentType
     GPSPhoto = 7,
     DCRDocument = 8,
     SitePhoto = 9,
-    PMSuryagramDocument = 10
+    PMSuryagramDocument = 10,
+    PMApprovalDocument = 11,   // admin-uploaded approval doc (Task 11), user-downloadable
+    RelationProof = 12         // blood-relation proof for light bill (Task 3)
 }
 
 public enum RequestType

@@ -1,0 +1,10 @@
+2026-06-25 12:48:36.750 +05:30 [INF] DbSeeder: skipping all DB schema work (live DB managed externally).
+2026-06-25 12:48:37.304 +05:30 [INF] User profile is available. Using 'C:\Users\Claude1\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2026-06-25 12:48:37.653 +05:30 [INF] Now listening on: http://localhost:5039
+2026-06-25 12:48:37.784 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2026-06-25 12:48:37.830 +05:30 [INF] Hosting environment: Development
+2026-06-25 12:48:37.926 +05:30 [INF] Content root path: \\localhost\Sadhna\New folder (2)\Soller_Admin\SolarPortal\SolarPortal.AdminWeb
+2026-06-25 12:48:38.565 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/ - null null
+2026-06-25 12:48:39.069 +05:30 [WRN] Failed to determine the https port for redirect.
+2026-06-25 12:48:39.191 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb)'
+2026-06-25 12:48:39.281 +05:30 [INF] Route matched with {action = "Login", controller = "Account", area = ""}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Login(System.String) on controller SolarPortal.AdminWeb.Controllers.AccountController (SolarPortal.AdminWeb).

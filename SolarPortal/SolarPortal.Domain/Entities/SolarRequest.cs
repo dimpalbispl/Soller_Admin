@@ -22,6 +22,20 @@ public class SolarRequest : BaseEntity
     public string? AadharNumber { get; set; }
     public string? PANNumber { get; set; }
 
+    // ─── Light Bill details (change request: Tasks 3 & 4) ────────────────
+    // Whether the electricity bill is in the applicant's OWN name or a blood
+    // relation's name. Values: "Self" | "BloodRelation". When "BloodRelation",
+    // a relationship proof is mandatory (LightBillRelationProofPath).
+    public string? LightBillOwnerType { get; set; }
+    public string? LightBillRelationName { get; set; }   // whose name (if blood relation)
+    public string? LightBillRelationProofPath { get; set; }
+    public string? LightBillNumber { get; set; }         // consumer / bill number from KYC
+    public string? LightBillPath { get; set; }           // the uploaded light-bill file
+
+    // ─── PM Surya Ghar (change request: Tasks 7 & 11) ────────────────────
+    public string? PmSuryaLoanOption { get; set; }       // "Loan" | "WithoutLoan"
+    public string? PmSuryaApplicationNo { get; set; }    // entered by admin at approval
+
     // Technical
     public RequestType RequestType { get; set; } = RequestType.WithActivation;
     public ConnectionType ConnectionType { get; set; }
