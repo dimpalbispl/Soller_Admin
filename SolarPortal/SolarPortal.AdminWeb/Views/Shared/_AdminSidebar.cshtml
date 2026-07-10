@@ -1,6 +1,14 @@
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+
+    // Controller-level active: highlights whenever we're anywhere in this controller.
     string IsActive(string ctrl) => currentController == ctrl ? "active" : "";
+
+    // Action-level active: for menu items that share ONE controller (Operations)
+    // but point to different actions — each item lights up only on its own action.
+    string IsActiveAction(string ctrl, string action) =>
+        (currentController == ctrl && currentAction == action) ? "active" : "";
 }
 
 <div class="sb-section">
@@ -39,19 +47,19 @@
     <a class="sb-item @IsActive("PMSurya")" asp-area="SolarPanelAdmin" asp-controller="PMSurya" asp-action="Index">
         <span class="sbi">📋</span>PM Surya Ghar
     </a>
-    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="MeterDispatch">
+    <a class="sb-item @IsActiveAction("Operations", "MeterDispatch")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="MeterDispatch">
         <span class="sbi">⚡</span>Meter Dispatch
     </a>
     <a class="sb-item @IsActive("SiteSurvey")" asp-area="SolarPanelAdmin" asp-controller="SiteSurvey" asp-action="Index">
         <span class="sbi">📐</span>Site Survey
     </a>
-    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="MaterialDispatch">
+    <a class="sb-item @IsActiveAction("Operations", "MaterialDispatch")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="MaterialDispatch">
         <span class="sbi">📦</span>Material Dispatch
     </a>
-    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="Installation">
+    <a class="sb-item @IsActiveAction("Operations", "Installation")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="Installation">
         <span class="sbi">🔧</span>Installation
     </a>
-    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="DCRUpdate">
+    <a class="sb-item @IsActiveAction("Operations", "DCRUpdate")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="DCRUpdate">
         <span class="sbi">📄</span>DCR Verify
     </a>
 </div>
@@ -66,7 +74,7 @@
 </div>
 <div class="sb-section">
     <div class="sb-label">Management</div>
-    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Commission" asp-action="Index">
+    <a class="sb-item @IsActive("Commission")" asp-area="SolarPanelAdmin" asp-controller="Commission" asp-action="Index">
         <span class="sbi">📈</span>INC Commission
     </a>
     @* Settings link hidden per spec: "Settings menu hide karo."

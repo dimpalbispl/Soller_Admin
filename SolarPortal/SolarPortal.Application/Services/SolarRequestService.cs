@@ -27,7 +27,7 @@ public class SolarRequestService : ISolarRequestService
             var entity = _mapper.Map<SolarRequest>(dto);
             entity.UserId = userId;
             entity.RequestNumber = await _uow.SolarRequests.GenerateRequestNumberAsync();
-            entity.CurrentStage = !string.IsNullOrEmpty(dto.SelectedPlan)
+            entity.CurrentStage = dto.PlanAmount > 0 || !string.IsNullOrEmpty(dto.SelectedPlan)
                 ? ProjectStatus.Payment
                 : ProjectStatus.Registration;
             entity.ApprovalStatus = ApprovalStatus.Pending;

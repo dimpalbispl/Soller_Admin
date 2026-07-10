@@ -6,7 +6,7 @@
 
 <div class="page-header" style="padding:16px">
     <h2>PM Surya Ghar — @req.RequestNumber</h2>
-    <p class="text-muted">@req.ApplicantName · @req.MobileNumber · @req.City, @req.State</p>
+    <p class="text-muted">@req.ApplicantName · @req.MobileNumber · @req.Email · @req.City, @req.State</p>
 </div>
 
 <div class="container-fluid">
@@ -97,12 +97,29 @@
                     </div>
                 </div>
             }
+            else if (!docs.Any())
+            {
+                @* No documents uploaded → nothing to verify, so the Approve button
+                   must NOT show. Admin can only approve once the user has uploaded
+                   at least one PM Surya Ghar document. *@
+                <div class="card">
+                    <div class="card-header bg-warning">⏳ Awaiting Documents</div>
+                    <div class="card-body">
+                        <p class="mb-2">
+                            No PM Surya Ghar documents have been uploaded yet.
+                            Approval is only possible once the user uploads the required document(s).
+                        </p>
+                        <p class="text-muted small mb-2">The Approve button will appear here after documents are uploaded.</p>
+                        <a asp-action="Index" class="btn btn-outline-secondary w-100">← Back to PM Surya list</a>
+                    </div>
+                </div>
+            }
             else
             {
                 <div class="card">
                     <div class="card-header bg-success text-white">Approve &amp; Advance</div>
                     <div class="card-body">
-                        <p>Verify all documents, then enter the PM Surya Ghar ID and (optionally) attach the approval document(s) the user can download. Approval opens <strong>Meter Dispatch</strong> &amp; <strong>Site Survey</strong> together.</p>
+                        <p>Verify all documents, then enter the PM Surya Ghar ID and (optionally) attach the approval document(s) the user can download. Approval opens <strong>Meter Dispatch</strong> &amp; <strong>Site Survey</strong> together. The user's mobile and email are shown at the top for quick contact.</p>
                         <label class="form-label mb-1">PM Surya Ghar ID No.</label>
                         <input id="pmAppNo" class="form-control mb-2" placeholder="e.g., RJ-PMSG-2026-000123" value="@(req.PmSuryaApplicationNo ?? "")" />
                         <label class="form-label mb-1">Approval Document(s) — user downloadable</label>

@@ -121,6 +121,7 @@
                         <tr>
                             <th>Request</th>
                             <th>Member ID</th>
+                            <th>Plan</th>
                             <th>INC Worker</th>
                             <th style="text-align:right">Project Amount</th>
                             <th>%</th>
@@ -136,6 +137,16 @@
                             <tr>
                                 <td><strong>@(c.SolarRequest?.RequestNumber ?? ("#" + c.SolarRequestId))</strong></td>
                                 <td><code style="font-size:11px;color:#0d9488">@c.UserId</code></td>
+                                <td>
+                                    @if (c.SolarRequest != null)
+                                    {
+                                        <partial name="_PlanCell" model="c.SolarRequest" />
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
                                 <td>
                                     @if (c.Worker != null)
                                     {

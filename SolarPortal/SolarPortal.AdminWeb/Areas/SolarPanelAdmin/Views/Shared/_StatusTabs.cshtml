@@ -35,7 +35,7 @@
     var preserveState = qs.ContainsKey("state") ? qs["state"].ToString() : null;
     var preserveCity  = qs.ContainsKey("city")  ? qs["city"].ToString()  : null;
 
-    string Cls(string name) => current == name ? "btn btn-p" : "btn btn-outline";
+   string Cls(string name) => current == name ? "btn btn-primary" : "btn btn-outline-primary";
 }
 
 <div class="status-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">

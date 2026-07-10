@@ -1,0 +1,36 @@
+@*
+    Reusable Plan cell — shows the request-type badge + plan name + capacity/amount,
+    exactly like the PM Surya Ghar report. Used by every admin report table so the
+    "Plan" column looks identical everywhere.
+
+    Model is dynamic because callers pass different shapes that all share the same
+    property names: SolarRequest (entity) and SolarRequestDto. Guard for null at the
+    call site: @if (req != null) { <partial name="_PlanCell" model="req" /> }
+*@
+@model dynamic
+@{
+    string rtStr = Model.RequestType.ToString();
+    var rtLabel = rtStr switch
+    {
+        "WithActivation" => "📦 With Activation",
+        "OnlySolarWithoutActivation" => "☀️ Without Activation",
+        "AlreadyActiveOnlyRequest" => "✅ Already Active",
+        _ => rtStr
+    };
+    var rtCls = rtStr switch
+    {
+        "WithActivation" => "bg-info",
+        "OnlySolarWithoutActivation" => "bg-warning",
+        "AlreadyActiveOnlyRequest" => "bg-success",
+        _ => "bg-secondary"
+    };
+    string plan = Model.SelectedPlan as string;
+    decimal kv = (decimal)Model.KVCapacity;
+    decimal amt = (decimal)Model.PlanAmount;
+}
+<span class="badge @rtCls" style="display:inline-block;margin-bottom:4px">@rtLabel</span>
+@if (!string.IsNullOrWhiteSpace(plan))
+{
+    <div style="font-weight:600;color:#1f2937;font-size:12px">@plan</div>
+}
+<div style="font-size:11px;color:#6b7280">@kv kV • ₹@amt.ToString("N0")</div>

@@ -77,24 +77,10 @@ public class PaymentsController : Controller
                 }
             }
 
-            // (2) ROLLBACK — PMSurvey → Payment when NOT fully paid.
-            // Only touch PMSurvey itself (don't undo MeterDispatch+ which mean
-            // admin/operations already did downstream work). This fixes the case
-            // shown in the screenshot: Stage was PMSurvey but Paid=₹20K / Plan=₹30K.
-            var advanced = allRequests.Where(r => r.CurrentStage == ProjectStatus.PMSurvey).ToList();
-            foreach (var r in advanced)
-            {
-                var verified = await _payments.GetVerifiedPaidAsync(r.Id);
-                if (r.PlanAmount > 0 && verified < r.PlanAmount)
-                {
-                    await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
-                    {
-                        Id = r.Id,
-                        NewStage = ProjectStatus.Payment,
-                        Notes = $"Auto-rolled back to Payment. Verified ₹{verified:N0} < project total ₹{r.PlanAmount:N0}."
-                    }, adminId);
-                }
-            }
+            // (2) No rollback. The admin workflow should not automatically move
+            // requests backwards from PMSurvey when a payment record later changes.
+            // This preserves the ability to complete PM Surya / dispatch tasks
+            // even when the project has not yet reached full verified payment.
         }
         catch { /* non-fatal; continue showing the page */ }
 

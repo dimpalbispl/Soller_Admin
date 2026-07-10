@@ -66,6 +66,22 @@ public class CreateSolarRequestViewModel
     // GPS Photo
     public IFormFile? GPSPhoto { get; set; }
 
+    // Light bill / KYC
+    [Display(Name = "Light Bill Owner")]
+    public string? LightBillOwnerType { get; set; }
+
+    [Display(Name = "Light Bill Relation Name")]
+    public string? LightBillRelationName { get; set; }
+
+    [Display(Name = "Light Bill Number")]
+    public string? LightBillNumber { get; set; }
+
+    [Display(Name = "Light Bill (file)")]
+    public IFormFile? LightBillFile { get; set; }
+
+    [Display(Name = "Relation Proof (file)")]
+    public IFormFile? LightBillRelationProof { get; set; }
+
     // === First Payment (submitted together with the request per spec) ===
     // Payment fields are required for all 3 modes. Server enforces the effective
     // minimum (= min(₹20,000, project amount)) and the upper cap (≤ project total).

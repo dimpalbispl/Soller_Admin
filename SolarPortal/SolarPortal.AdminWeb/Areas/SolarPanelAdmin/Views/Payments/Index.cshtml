@@ -1,4 +1,4 @@
-@model IEnumerable<SolarPortal.Domain.Entities.Payment>
+﻿@model IEnumerable<SolarPortal.Domain.Entities.Payment>
 @{
     ViewData["Title"] = "Payment Verification";
     var filter = ViewBag.Filter as string ?? "all";
@@ -137,51 +137,53 @@
     }
 
     <!-- Summary cards -->
-    <div class="g4 mb-3">
-        <div class="sc">
-            <div class="sc-label">Payments Visible</div>
-            <div class="sc-val blue">@Model.Count()</div>
-            <div class="sc-sub">Total ₹@sumThisPage.ToString("N0") on this page</div>
+    <div class="g4 mb-3" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:16px">
+        <div style="background:linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);color:white;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(59,130,246,0.15)">
+            <div style="font-size:13px;opacity:0.9;font-weight:500">PAYMENTS VISIBLE</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0">@Model.Count()</div>
+            <div style="font-size:12px;opacity:0.85">₹@sumThisPage.ToString("N0") on this page</div>
         </div>
-        <div class="sc">
-            <div class="sc-label">Verified Amount</div>
-            <div class="sc-val green">₹@sumVerifiedThisPage.ToString("N0")</div>
-            <div class="sc-sub">Confirmed payments on this page</div>
+        <div style="background:linear-gradient(135deg, #10b981 0%, #065f46 100%);color:white;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(16,185,129,0.15)">
+            <div style="font-size:13px;opacity:0.9;font-weight:500">VERIFIED AMOUNT</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0">₹@sumVerifiedThisPage.ToString("N0")</div>
+            <div style="font-size:12px;opacity:0.85">Confirmed on this page</div>
         </div>
-        <div class="sc">
-            <div class="sc-label">Project Total</div>
-            <div class="sc-val gold">₹@sumProjectAmt.ToString("N0")</div>
-            <div class="sc-sub">@distinctReqs.Count distinct request(s)</div>
+        <div style="background:linear-gradient(135deg, #f59e0b 0%, #b45309 100%);color:white;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(245,158,11,0.15)">
+            <div style="font-size:13px;opacity:0.9;font-weight:500">PROJECT TOTAL</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0">₹@sumProjectAmt.ToString("N0")</div>
+            <div style="font-size:12px;opacity:0.85">@distinctReqs.Count request(s)</div>
         </div>
-        <div class="sc">
-            <div class="sc-label">Outstanding Due</div>
-            <div class="sc-val red">₹@sumDue.ToString("N0")</div>
-            <div class="sc-sub">Across visible requests</div>
+        <div style="background:linear-gradient(135deg, #ef4444 0%, #991b1b 100%);color:white;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(239,68,68,0.15)">
+            <div style="font-size:13px;opacity:0.9;font-weight:500">OUTSTANDING DUE</div>
+            <div style="font-size:28px;font-weight:700;margin:8px 0">₹@sumDue.ToString("N0")</div>
+            <div style="font-size:12px;opacity:0.85">Across visible requests</div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Receipt #</th>
-                        <th>Member ID</th>
-                        <th>Request ID</th>
-                        <th>Member Name</th>
-                        <th>Mobile</th>
-                        <th>Address</th>
-                        <th style="text-align:right">Project Amount</th>
-                        <th style="text-align:right">Paid (Total)</th>
-                        <th style="text-align:right">Due</th>
-                        <th style="text-align:right">This Payment</th>
-                        <th>UTR</th>
-                        <th>Method</th>
-                        <th>Date</th>
-                        <th>Uploaded By</th>
-                        <th>Receipt</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+    <div class="card" style="border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.05)">
+        <div class="card-body" style="padding:0">
+            <div style="overflow-x:auto">
+            <table class="table table-hover" style="margin:0;font-size:13px">
+                <thead style="background:#f9fafb;border-bottom:2px solid #e5e7eb">
+                    <tr style="height:45px">
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Receipt #</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Member ID</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Request ID</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Member Name</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Plan</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Mobile</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Address</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;text-align:right;font-size:12px">Project Amt</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;text-align:right;font-size:12px">Paid (Total)</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;text-align:right;font-size:12px">Due</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;text-align:right;font-size:12px">This Payment</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">UTR</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Method</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Date</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Uploaded By</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Receipt</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Status</th>
+                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;text-align:center;font-size:12px">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -194,9 +196,6 @@
                     var isAdminEntry = !string.IsNullOrEmpty(p.Notes) && p.Notes.Contains("[ADMIN ENTRY");
                     var isRejected = p.Status == SolarPortal.Domain.Enums.PaymentStatus.Rejected;
                     // ===== Receipt URL normalization =====
-                    // ReceiptImagePath is stored as a relative path; older records sometimes carried
-                    // a stray "wwwroot/" prefix because the upload service used to write it that way.
-                    // Strip it here so the URL resolves correctly from the web root, then prefix "/".
                     string? receiptUrl = null;
                     if (!string.IsNullOrEmpty(p.ReceiptImagePath))
                     {
@@ -206,106 +205,141 @@
                         receiptUrl = "/" + rel;
                     }
                     var receiptIsPdf = receiptUrl != null && receiptUrl.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
-                    <tr>
-                        <td><small>@p.ReceiptNumber</small></td>
-                        <td><code style="font-size:11px;color:#0d9488">@p.UserId</code></td>
-                        <td><strong>@req?.RequestNumber</strong></td>
-                        <td>@req?.ApplicantName</td>
-                        <td>
+                    <tr style="height:48px;border-bottom:1px solid #f3f4f6;transition:background-color 0.1s;font-size:13px">
+                        <td style="padding:12px;vertical-align:middle"><small style="color:#6b7280">@p.ReceiptNumber</small></td>
+                        <td style="padding:12px;vertical-align:middle"><code style="font-size:10px;color:#0d9488;background:#f0fdfa;padding:3px 6px;border-radius:3px">@p.UserId</code></td>
+                        <td style="padding:12px;vertical-align:middle"><strong style="color:#1f2937">@req?.RequestNumber</strong></td>
+                        <td style="padding:12px;vertical-align:middle">
+                            <div style="font-weight:500;color:#1f2937">@req?.ApplicantName</div>
+                        </td>
+                        <td style="padding:12px;vertical-align:middle">
+                            @* Plan column — same as PM Surya Ghar: request-type badge + plan name + capacity/amount *@
+                            @if (req != null)
+                            {
+                                var rtLabel = req.RequestType.ToString() switch
+                                {
+                                    "WithActivation" => "📦 With Activation",
+                                    "OnlySolarWithoutActivation" => "☀️ Without Activation",
+                                    "AlreadyActiveOnlyRequest" => "✅ Already Active",
+                                    _ => req.RequestType.ToString()
+                                };
+                                var rtCls = req.RequestType.ToString() switch
+                                {
+                                    "WithActivation" => "bg-info",
+                                    "OnlySolarWithoutActivation" => "bg-warning",
+                                    "AlreadyActiveOnlyRequest" => "bg-success",
+                                    _ => "bg-secondary"
+                                };
+                                <span class="badge @rtCls" style="display:inline-block;margin-bottom:4px">@rtLabel</span>
+                                if (!string.IsNullOrWhiteSpace(req.SelectedPlan))
+                                {
+                                    <div style="font-weight:600;color:#1f2937;font-size:12px">@req.SelectedPlan</div>
+                                }
+                                <div style="font-size:11px;color:#6b7280">@req.KVCapacity kV • ₹@req.PlanAmount.ToString("N0")</div>
+                            }
+                            else
+                            {
+                                <span style="color:#9ca3af">—</span>
+                            }
+                        </td>
+                        <td style="padding:12px;vertical-align:middle;white-space:nowrap">
                             @if (!string.IsNullOrWhiteSpace(req?.MobileNumber))
                             {
-                                <a href="tel:@req.MobileNumber" style="color:#0d9488;font-size:12px">@req.MobileNumber</a>
+                                <a href="tel:@req.MobileNumber" style="color:#0d9488;font-weight:500;text-decoration:none;font-size:12px">@req.MobileNumber</a>
                             }
-                            else { <span class="text-muted" style="font-size:11px">—</span> }
+                            else { <span style="color:#9ca3af">—</span> }
                         </td>
-                        <td style="max-width:180px;font-size:12px" title="@req?.Address">
+                        <td style="padding:12px;vertical-align:middle;max-width:160px;font-size:12px" title="@req?.Address">
                             @{
-                                // Compact address: combine City + State for the cell, with full
-                                // Address in tooltip so wide cards stay readable.
                                 var addr = string.Join(", ",
                                     new[] { req?.City, req?.State, req?.PinCode }
                                     .Where(s => !string.IsNullOrWhiteSpace(s)));
                             }
                             @if (!string.IsNullOrWhiteSpace(addr))
                             {
-                                <span>@addr</span>
+                                <span style="color:#4b5563">@addr</span>
                             }
                             else if (!string.IsNullOrWhiteSpace(req?.Address))
                             {
-                                <span>@(req.Address.Length > 40 ? req.Address.Substring(0, 40) + "…" : req.Address)</span>
+                                <span style="color:#4b5563">@(req.Address.Length > 30 ? req.Address.Substring(0, 30) + "…" : req.Address)</span>
                             }
-                            else { <span class="text-muted" style="font-size:11px">—</span> }
+                            else { <span style="color:#9ca3af">—</span> }
                         </td>
-                        <td style="text-align:right;color:#16a34a;font-weight:600">₹@projectAmt.ToString("N0")</td>
-                        <td style="text-align:right;color:#0d9488;font-weight:600">₹@paidTotal.ToString("N0")</td>
-                        <td style="text-align:right;color:@(due > 0 ? "#dc2626" : "#16a34a");font-weight:600">
-                            ₹@due.ToString("N0")
+                        <td style="padding:12px;vertical-align:middle;text-align:right;white-space:nowrap">
+                            <span style="color:#16a34a;font-weight:600;font-size:13px">₹@projectAmt.ToString("N0")</span>
+                        </td>
+                        <td style="padding:12px;vertical-align:middle;text-align:right;white-space:nowrap">
+                            <span style="color:#0d9488;font-weight:600;font-size:13px">₹@paidTotal.ToString("N0")</span>
+                        </td>
+                        <td style="padding:12px;vertical-align:middle;text-align:right;white-space:nowrap">
+                            <span style="color:@(due > 0 ? "#dc2626" : "#16a34a");font-weight:600;font-size:13px">₹@due.ToString("N0")</span>
                             @if (due == 0 && projectAmt > 0)
                             {
-                                <small style="display:block;font-size:10px;color:#16a34a">✓ Fully Paid</small>
+                                <div style="font-size:10px;color:#16a34a;margin-top:2px">✓ Fully Paid</div>
                             }
                         </td>
-                        <td style="text-align:right">₹@p.Amount.ToString("N0")</td>
-                        <td><code>@p.UTRNumber</code></td>
-                        <td>@p.PaymentMethod</td>
-                        <td>@p.PaymentDate.ToLocalTime().ToString("dd MMM yyyy")</td>
-                        <td>
+                        <td style="padding:12px;vertical-align:middle;text-align:right;white-space:nowrap">
+                            <strong style="color:#059669;font-size:13px">₹@p.Amount.ToString("N0")</strong>
+                        </td>
+                        <td style="padding:12px;vertical-align:middle;white-space:nowrap">
+                            <code style="background:#f3f4f6;padding:4px 8px;border-radius:4px;font-size:11px;color:#4b5563">@p.UTRNumber</code>
+                        </td>
+                        <td style="padding:12px;vertical-align:middle;white-space:nowrap;font-size:12px;color:#6b7280">@p.PaymentMethod</td>
+                        <td style="padding:12px;vertical-align:middle;white-space:nowrap;font-size:12px;color:#6b7280">@p.PaymentDate.ToLocalTime().ToString("dd MMM yyyy")</td>
+                        <td style="padding:12px;vertical-align:middle;white-space:nowrap">
                             @if (isAdminEntry)
                             {
-                                <span class="badge bg-info">Admin</span>
+                                <span style="display:inline-block;background:#dbeafe;color:#0369a1;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500">Admin</span>
                             }
                             else
                             {
-                                <span class="badge bg-secondary">User</span>
+                                <span style="display:inline-block;background:#e5e7eb;color:#374151;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500">User</span>
                             }
                         </td>
-                        <td>
+                        <td style="padding:12px;vertical-align:middle;white-space:nowrap">
                             @if (receiptUrl != null)
                             {
                                 <a href="javascript:void(0)" class="receipt-preview"
                                    data-url="@receiptUrl" data-pdf="@(receiptIsPdf ? "1" : "0")"
-                                   data-utr="@p.UTRNumber">
-                                   @(receiptIsPdf ? "📄 View PDF" : "🖼️ View Image")
-                                </a>
+                                   data-utr="@p.UTRNumber"
+                                   style="color:#0d9488;font-size:12px;text-decoration:none;font-weight:500">@(receiptIsPdf ? "📄 PDF" : "🖼️ Image")</a>
                             }
-                            else { <small class="text-muted">—</small> }
+                            else { <small style="color:#9ca3af">—</small> }
                         </td>
-                        <td>
+                        <td style="padding:12px;vertical-align:middle;white-space:nowrap">
                             @if (p.IsVerified)
                             {
-                                <span class="badge bg-success">Verified</span>
+                                <span style="display:inline-block;background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600">✓ Verified</span>
                             }
                             else if (isRejected)
                             {
-                                <span class="badge bg-danger">Rejected</span>
+                                <span style="display:inline-block;background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600">✕ Rejected</span>
                             }
                             else
                             {
-                                <span class="badge bg-warning">Pending</span>
+                                <span style="display:inline-block;background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600">⏳ Pending</span>
                             }
                         </td>
-                        <td>
-                            @* === Buttons hide once a decision is made (verified OR rejected) === *@
-                            @* This satisfies: "Payment reject/approve hone ke baad buttons hide/disable karo" *@
-                            @* AND "Duplicate approval/reject allow mat karo" (server-side guard backs this up). *@
+                        <td style="padding:12px;vertical-align:middle;text-align:center;white-space:nowrap">
                             @if (!p.IsVerified && !isRejected)
                             {
-                                <button class="btn btn-sm btn-success btn-verify" data-id="@p.Id">Verify</button>
-                                <button class="btn btn-sm btn-danger btn-reject" data-id="@p.Id">Reject</button>
+                                <button class="btn btn-sm btn-verify" data-id="@p.Id" style="padding:6px 10px;font-size:11px;background:#10b981;border:0;color:white;border-radius:4px;cursor:pointer;font-weight:500">Verify</button>
+                                <button class="btn btn-sm btn-reject" data-id="@p.Id" style="padding:6px 10px;font-size:11px;background:#ef4444;border:0;color:white;border-radius:4px;cursor:pointer;font-weight:500;margin-left:4px">Reject</button>
                             }
                             else
                             {
-                                <small class="text-muted" title="Decision locked">— locked —</small>
+                                <small style="color:#9ca3af">Locked</small>
                             }
                         </td>
                     </tr>
                 }
                 @if (!Model.Any())
                 {
-                    <tr><td colspan="17" class="text-center text-muted py-3">No payments.</td></tr>
+                    <tr><td colspan="18" style="padding:20px;text-align:center;color:#9ca3af;font-size:13px">No payments.</td></tr>
                 }
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 </div>

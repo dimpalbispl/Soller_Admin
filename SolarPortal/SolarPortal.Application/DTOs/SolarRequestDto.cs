@@ -70,6 +70,12 @@ public class CreateSolarRequestDto
     public int? SolarProjectId { get; set; }
     public string? SelectedPlan { get; set; }
     public decimal PlanAmount { get; set; }
+    public string? LightBillOwnerType { get; set; }
+    public string? LightBillRelationName { get; set; }
+    public string? LightBillNumber { get; set; }
+    public string? LightBillPath { get; set; }
+    public string? LightBillRelationProofPath { get; set; }
+    public string? PmSuryaLoanOption { get; set; }
     public int? ExternalProductId { get; set; }
 }
 

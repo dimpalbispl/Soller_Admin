@@ -50,7 +50,7 @@
                 <div class="fg">
                     <label>&nbsp;</label>
                     <div style="display:flex;gap:8px">
-                        <button type="submit" class="btn btn-p btn-sm">🔍 Apply</button>
+                        <button type="submit" class="btn btn-primary btn-sm">🔍 Apply</button>
                         <a href="?" class="btn btn-s btn-sm">Reset</a>
                     </div>
                 </div>
@@ -81,6 +81,7 @@
                             <th>Request</th>
                             <th>Member ID</th>
                             <th>Applicant</th>
+                            <th>Plan</th>
                             <th>Type</th>
                             <th>Capacity</th>
                             <th>City / State</th>
@@ -107,6 +108,7 @@
                                     @(string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName)
                                     <div style="font-size:11px;color:var(--text3)">@r.MobileNumber</div>
                                 </td>
+                                <td><partial name="_PlanCell" model="r" /></td>
                                 <td>@r.ConnectionType</td>
                                 <td>@r.KVCapacity kV</td>
                                 <td>@r.City<div style="font-size:11px;color:var(--text3)">@r.State</div></td>
@@ -270,16 +272,16 @@
                                         @switch (op)
                                         {
                                             case "meter":
-                                                <button class="btn btn-p btn-sm" onclick="openMeterForm(@r.Id, '@r.RequestNumber')">📦 Dispatch Meter</button>
+                                                <button class="btn btn-primary btn-sm" onclick="openMeterForm(@r.Id, '@r.RequestNumber')">📦 Dispatch Meter</button>
                                                 break;
                                             case "material":
-                                                <button class="btn btn-p btn-sm" onclick="openMaterialForm(@r.Id, '@r.RequestNumber')">📦 Dispatch Material</button>
+                                                <button class="btn btn-primary btn-sm" onclick="openMaterialForm(@r.Id, '@r.RequestNumber')">📦 Dispatch Material</button>
                                                 break;
                                             case "installation":
-                                                <button class="btn btn-p btn-sm" onclick="openInstallForm(@r.Id, '@r.RequestNumber')">🔧 Mark Installation</button>
+                                                <button class="btn btn-primary btn-sm" onclick="openInstallForm(@r.Id, '@r.RequestNumber')">🔧 Mark Installation</button>
                                                 break;
                                             case "dcr":
-                                                <button class="btn btn-p btn-sm" onclick="openDCRForm(@r.Id, '@r.RequestNumber')">📄 Submit DCR</button>
+                                                <button class="btn btn-primary btn-sm" onclick="openDCRForm(@r.Id, '@r.RequestNumber')">📄 Submit DCR</button>
                                                 break;
                                         }
                                     }

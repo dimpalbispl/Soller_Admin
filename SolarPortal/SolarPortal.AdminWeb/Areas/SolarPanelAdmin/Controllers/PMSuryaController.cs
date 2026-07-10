@@ -99,7 +99,22 @@ public class PMSuryaController : Controller
 
         ViewBag.Title = "PM Surya Ghar Verification";
         ViewBag.Filter = f;
-        return View(requests.OrderByDescending(r => r.CreatedAt));
+            
+            // Enrich user active status info
+            var requestList = requests.OrderByDescending(r => r.CreatedAt).ToList();
+            var userIds = requestList.Select(r => r.UserId).Distinct().ToList();
+            var users = new Dictionary<string, ApplicationUser>();
+            
+            foreach (var uid in userIds)
+            {
+                var user = await _userManager.FindByIdAsync(uid);
+                if (user != null)
+                    users[uid] = user;
+            }
+            
+            ViewBag.UserStatuses = users;
+            
+            return View(requestList);
     }
 
     // GET: /Admin/PMSurya/Details/5
@@ -216,8 +231,9 @@ public class PMSuryaController : Controller
         await _uow.SaveChangesAsync();
 
         var adminId = _userManager.GetUserId(User)!;
-        // Task 12: PM approve hote hi project MeterDispatch stage par aa jaata hai, jisse
-        // Meter Dispatch (admin) aur Site Survey (user) DONO parallel open ho jaate hain.
+        // Task 12: PM approve — open Meter Dispatch and Site Survey simultaneously.
+        // We advance the request to MeterDispatch but SiteSurvey remains available
+        // for the user to submit/complete; both can be done in any order.
         await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
         {
             Id = requestId,

@@ -50,6 +50,7 @@
                             <th>ID</th>
                             <th>Member ID</th>
                             <th>Member Name</th>
+                            <th>Plan</th>
                             <th>Type</th>
                             <th style="width:80px">Capacity</th>
                             <th>Stage</th>
@@ -73,6 +74,7 @@
                                 </td>
                                 <td><code style="font-size:11px;color:#0d9488">@project.UserId</code></td>
                                 <td>@project.ApplicantName</td>
+                                <td><partial name="_PlanCell" model="project" /></td>
                                 <td>@project.ConnectionType</td>
                                 <td>@project.KVCapacity kV</td>
                                 <td>

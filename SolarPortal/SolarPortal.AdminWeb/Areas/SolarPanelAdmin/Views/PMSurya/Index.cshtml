@@ -1,67 +1,99 @@
 @model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
+@using SolarPortal.Domain.Entities
 @{
     ViewData["Title"] = ViewBag.Title;
+    var pmFilter = (ViewBag.Filter as string) ?? "pending";
+    var userDict = (Dictionary<string, ApplicationUser>)(ViewBag.UserStatuses ?? new Dictionary<string, ApplicationUser>());
 }
 
-<div class="page-header" style="padding:16px">
-    <h2>PM Surya Ghar Verification</h2>
-    <p class="text-muted">Requests awaiting PM Surya Ghar document verification.</p>
-</div>
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>PM Surya Ghar</span></div>
+        <div class="ph-title">PM Surya Ghar Verification</div>
+        <div class="ph-sub">Requests awaiting PM Surya Ghar document verification</div>
+    </div>
 
-<div class="container-fluid">
-    @{
-        var pmFilter = (ViewBag.Filter as string) ?? "pending";
-    }
-    @* 4-tab status filter — Pending / Approved / Rejected / All.
-       Replaced the previous 3-tab inline version so the Rejected list
-       is reachable (per spec: "approve karta hu to pending se ht jata hai
-       wha sb show karwao pending approve reject all"). *@
+    @* 4-tab status filter — Pending / Approved / Rejected / All. *@
     @await Html.PartialAsync("_StatusTabs", (object)pmFilter)
 
-    <div class="card">
-        <div class="card-body">
-            <table class="table table-hover" id="pmTable">
-                <thead>
-                    <tr>
-                        <th>Request #</th>
-                        <th>Member ID</th>
-                        <th>Applicant</th>
-                        <th>Plan</th>
-                        <th>City / State</th>
-                        <th>Connection</th>
-                        <th>Submitted</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var r in Model)
-                {
-                    <tr>
-                        <td><strong>@r.RequestNumber</strong></td>
-                        <td><code style="font-size:11px;color:#0d9488">@r.UserId</code></td>
-                        <td>
-                            @* Prefer the LIVE m_membermaster name (MemFullName from
-                               MemFirstName + MemLastName) when admin controllers have
-                               populated it via EnrichMemberNamesAsync. Falls back to
-                               the stored ApplicantName on the SolarRequest itself. *@
-                            @(string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName)
-                            <br /><small class="text-muted">@r.MobileNumber</small>
-                        </td>
-                        <td>@r.SelectedPlan<br /><small class="text-muted">@r.KVCapacity kV</small></td>
-                        <td>@r.City, @r.State</td>
-                        <td><span class="badge bg-info">@r.ConnectionType</span></td>
-                        <td>@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
-                        <td>
-                            <a class="btn btn-sm btn-primary" asp-action="Details" asp-route-id="@r.Id">Review</a>
-                        </td>
-                    </tr>
-                }
-                @if (!Model.Any())
-                {
-                    <tr><td colspan="8" class="text-center text-muted">No requests pending PM Surya Ghar verification.</td></tr>
-                }
-                </tbody>
-            </table>
+    @if (Model.Any())
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>PM Surya Ghar Queue (@Model.Count())</div>
+            <div class="tbl-wrap">
+                <table id="pmTable">
+                    <thead>
+                        <tr>
+                            <th>Request #</th>
+                            <th>Member ID</th>
+                            <th>Applicant</th>
+                            <th>Plan</th>
+                            <th>City / State</th>
+                            <th>Connection</th>
+                            <th>Submitted</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var r in Model)
+                    {
+                        var user = userDict.ContainsKey(r.UserId) ? userDict[r.UserId] : null;
+                        var isActive = user?.IsActive ?? false;
+
+                        var requestTypeLabel = r.RequestType.ToString() switch
+                        {
+                            "WithActivation" => "📦 With Activation",
+                            "OnlySolarWithoutActivation" => "☀️ Without Activation",
+                            "AlreadyActiveOnlyRequest" => "✅ Already Active",
+                            _ => r.RequestType.ToString()
+                        };
+                        var requestTypeCls = r.RequestType.ToString() switch
+                        {
+                            "WithActivation" => "bg-info",
+                            "OnlySolarWithoutActivation" => "bg-warning",
+                            "AlreadyActiveOnlyRequest" => "bg-success",
+                            _ => "bg-secondary"
+                        };
+                        <tr>
+                            <td class="td-b">@r.RequestNumber</td>
+                            <td>
+                                <span class="mid-code">@r.UserId</span>
+                                <div>
+                                    <span class="mini-pill @(isActive ? "pill-active" : "pill-inactive")">
+                                        @(isActive ? "✓ Active" : "✗ Inactive")
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                @(string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName)
+                                <div class="cell-sub">@r.MobileNumber</div>
+                            </td>
+                            <td>
+                                <span class="badge @requestTypeCls" style="margin-bottom:6px;display:inline-block">@requestTypeLabel</span>
+                                <div class="td-b">@r.SelectedPlan</div>
+                                <div class="cell-sub">@r.KVCapacity kV • ₹@r.PlanAmount.ToString("N0")</div>
+                            </td>
+                            <td>@r.City<div class="cell-sub">@r.State</div></td>
+                            <td><span class="badge bg-info">@r.ConnectionType</span></td>
+                            <td>@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                            <td>
+                                <a class="btn btn-p btn-sm" asp-action="Details" asp-route-id="@r.Id">Review</a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="empty-state">
+                <div class="es-icon">📋</div>
+                <div class="es-title">No requests in this list</div>
+                <div class="es-sub">No requests pending PM Surya Ghar verification.</div>
+            </div>
+        </div>
+    }
 </div>

@@ -2,80 +2,103 @@
 @{
     ViewData["Title"] = "Site Survey Approval";
     var surveys = (IEnumerable<SolarPortal.Domain.Entities.SiteSurvey>)ViewBag.Surveys;
+    var ssFilter = (ViewBag.Filter as string) ?? "pending";
 }
 
-<div class="page-header" style="padding:16px">
-    <h2>Site Survey Approval</h2>
-    <p class="text-muted">User-submitted site surveys awaiting review.</p>
-</div>
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Site Survey</span></div>
+        <div class="ph-title">Site Survey Approval</div>
+        <div class="ph-sub">User-submitted site surveys awaiting review</div>
+    </div>
 
-<div class="container-fluid">
-    @{
-        var ssFilter = (ViewBag.Filter as string) ?? "pending";
-    }
     @* 4-tab status filter — see _StatusTabs partial for explanation *@
     @await Html.PartialAsync("_StatusTabs", (object)ssFilter)
 
-    <div class="card">
-        <div class="card-body">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Survey ID</th>
-                        <th>Member ID</th>
-                        <th>Request #</th>
-                        <th>Applicant</th>
-                        <th>Property / Roof</th>
-                        <th>DISCOM / Consumer</th>
-                        <th>Submitted</th>
-                        <th>Files</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var s in surveys)
-                {
-                    var req = Model.FirstOrDefault(r => r.Id == s.SolarRequestId);
-                    // Count attached files across both new (separate) and legacy (combined) paths
-                    var fileCount = 0;
-                    if (!string.IsNullOrWhiteSpace(s.RoofPhotoPath)) fileCount++;
-                    if (!string.IsNullOrWhiteSpace(s.GpsPhotoPath)) fileCount++;
-                    fileCount += (s.SurveyPhotoPath ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries).Length;
-                    <tr>
-                        <td>#@s.Id</td>
-                        <td><code style="font-size:11px;color:#0d9488">@req?.UserId</code></td>
-                        <td><strong>@req?.RequestNumber</strong></td>
-                        <td>@req?.ApplicantName<br /><small class="text-muted">@req?.MobileNumber</small></td>
-                        <td style="font-size:12px">
-                            @if (!string.IsNullOrWhiteSpace(s.PropertyType))
-                            {
-                                <span>@s.PropertyType</span><br />
-                            }
-                            @if (!string.IsNullOrWhiteSpace(s.RoofType))
-                            {
-                                <small class="text-muted">@s.RoofType roof</small>
-                            }
-                        </td>
-                        <td style="font-size:12px">
-                            @if (!string.IsNullOrWhiteSpace(s.DiscomName))
-                            {
-                                <span>@s.DiscomName</span>
-                            }
-                            @* Task 13: Consumer Number (K No) removed from list. *@
-                        </td>
-                        <td>@s.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
-                        <td><span class="badge bg-info">@fileCount file(s)</span></td>
-                        <td>
-                            <a class="btn btn-sm btn-primary" asp-action="Details" asp-route-id="@s.Id">Review</a>
-                        </td>
-                    </tr>
-                }
-                @if (!surveys.Any())
-                {
-                    <tr><td colspan="9" class="text-center text-muted">No surveys awaiting approval.</td></tr>
-                }
-                </tbody>
-            </table>
+    @if (surveys.Any())
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Site Survey Queue (@surveys.Count())</div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Survey ID</th>
+                            <th>Member ID</th>
+                            <th>Request #</th>
+                            <th>Applicant</th>
+                            <th>Plan</th>
+                            <th>Property / Roof</th>
+                            <th>DISCOM</th>
+                            <th>Submitted</th>
+                            <th>Files</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var s in surveys)
+                    {
+                        var req = Model.FirstOrDefault(r => r.Id == s.SolarRequestId);
+                        // Count attached files across both new (separate) and legacy (combined) paths
+                        var fileCount = 0;
+                        if (!string.IsNullOrWhiteSpace(s.RoofPhotoPath)) fileCount++;
+                        if (!string.IsNullOrWhiteSpace(s.GpsPhotoPath)) fileCount++;
+                        fileCount += (s.SurveyPhotoPath ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries).Length;
+                        <tr>
+                            <td class="td-b">#@s.Id</td>
+                            <td><span class="mid-code">@req?.UserId</span></td>
+                            <td class="td-b">@req?.RequestNumber</td>
+                            <td>@req?.ApplicantName<div class="cell-sub">@req?.MobileNumber</div></td>
+                            <td>
+                                @if (req != null)
+                                {
+                                    <partial name="_PlanCell" model="req" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(s.PropertyType))
+                                {
+                                    <span>@s.PropertyType</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(s.RoofType))
+                                {
+                                    <div class="cell-sub">@s.RoofType roof</div>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(s.DiscomName))
+                                {
+                                    <span>@s.DiscomName</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td>@s.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                            <td><span class="badge bg-info">@fileCount file(s)</span></td>
+                            <td>
+                                <a class="btn btn-p btn-sm" asp-action="Details" asp-route-id="@s.Id">Review</a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="empty-state">
+                <div class="es-icon">📐</div>
+                <div class="es-title">No surveys in this list</div>
+                <div class="es-sub">No surveys awaiting approval.</div>
+            </div>
+        </div>
+    }
 </div>

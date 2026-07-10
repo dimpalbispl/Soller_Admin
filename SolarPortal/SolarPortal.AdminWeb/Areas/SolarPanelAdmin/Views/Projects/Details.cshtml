@@ -181,16 +181,14 @@
                             This project was rejected. The user must re-submit.
                         </div>
                     }
-                    else
+                        else
                     {
                         @* Approve / Reject buttons removed per change request. Initial
                            request approval ab stage-wise workflow se hota hai
                            (Payment Verification → PM Surya Ghar → Site Survey → ...).
-                           Admin yahan se sirf stage update kar sakta hai. *@
-                        @if (Model.CurrentStage != Domain.Enums.ProjectStatus.Completed)
-                        {
-                            <button class="btn btn-p" onclick="updateStage(@Model.Id)">📊 Update Stage</button>
-                        }
+                           Per UI update: hide the inline stage override here to avoid
+                           accidental overrides. Use the workflow pages to manage stages. *@
+                        <div style="padding:8px 0;color:var(--text2);font-size:13px">Stage overrides hidden on this details page. Use the Workflow pages (Meter Dispatch / Site Survey / Operations) to change stages.</div>
                     }
                 </div>
             </div>
