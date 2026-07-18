@@ -1,4 +1,4 @@
-﻿@model IEnumerable<SolarPortal.Domain.Entities.Payment>
+@model IEnumerable<SolarPortal.Domain.Entities.Payment>
 @{
     ViewData["Title"] = "Payment Verification";
     var filter = ViewBag.Filter as string ?? "all";
@@ -231,7 +231,7 @@
                                     _ => "bg-secondary"
                                 };
                                 <span class="badge @rtCls" style="display:inline-block;margin-bottom:4px">@rtLabel</span>
-                                if (!string.IsNullOrWhiteSpace(req.SelectedPlan))
+                                @if (!string.IsNullOrWhiteSpace(req.SelectedPlan))
                                 {
                                     <div style="font-weight:600;color:#1f2937;font-size:12px">@req.SelectedPlan</div>
                                 }

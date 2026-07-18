@@ -13,6 +13,11 @@ public class WorkerDto
     public string? City { get; set; }
     public string? State { get; set; }
     public int AssignmentsCount { get; set; }
+
+    // INC panel info (Phase 1): shown in the admin Workers list.
+    public string? LoginUsername { get; set; }
+    public string? LoginPassword { get; set; }
+    public decimal? CommissionPercent { get; set; }
 }
 
 public class CreateWorkerDto
@@ -25,6 +30,11 @@ public class CreateWorkerDto
     public string? City { get; set; }
     public string? State { get; set; }
     public bool IsAvailable { get; set; } = true;
+
+    // INC-only login + commission (Phase 1)
+    public string? LoginUsername { get; set; }
+    public string? LoginPassword { get; set; }
+    public decimal? CommissionPercent { get; set; }
 }
 
 public class CreateNotificationDto

@@ -77,6 +77,12 @@
     <a class="sb-item @IsActive("Commission")" asp-area="SolarPanelAdmin" asp-controller="Commission" asp-action="Index">
         <span class="sbi">📈</span>INC Commission
     </a>
+    <a class="sb-item @IsActiveAction("Inc","Connections")" asp-area="SolarPanelAdmin" asp-controller="Inc" asp-action="Connections">
+        <span class="sbi">🔌</span>INC Connections
+    </a>
+    <a class="sb-item @IsActiveAction("Inc","Withdrawals")" asp-area="SolarPanelAdmin" asp-controller="Inc" asp-action="Withdrawals">
+        <span class="sbi">🏦</span>INC Withdrawals
+    </a>
     @* Settings link hidden per spec: "Settings menu hide karo."
        The controller/route still exists for direct access by SuperAdmin if needed.
     <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Settings" asp-action="Index">

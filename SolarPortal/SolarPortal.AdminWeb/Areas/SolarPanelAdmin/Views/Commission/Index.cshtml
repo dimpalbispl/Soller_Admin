@@ -251,10 +251,16 @@ function postJson(url, data, cb) {
 // Generate
 $('#createCommissionForm').on('submit', function (e) {
     e.preventDefault();
+    // Multi-click guard: disable Generate on first click so rapid double/triple
+    // clicks can't create duplicate commission records.
+    var $btn = $(this).find('button[type="submit"]');
+    if ($btn.prop('disabled')) return;
+    $btn.prop('disabled', true).data('label', $btn.text()).text('Generating…');
     const fd = $(this).serializeArray().reduce((a, x) => (a[x.name] = x.value, a), {});
     postJson('@Url.Action("Create")', fd, function (r) {
         alert(r.message);
-        if (r.success) location.reload();
+        if (r.success) { location.reload(); }
+        else { $btn.prop('disabled', false).text($btn.data('label') || 'Generate'); }
     });
 });
 

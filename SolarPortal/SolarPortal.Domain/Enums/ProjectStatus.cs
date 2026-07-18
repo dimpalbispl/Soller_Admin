@@ -48,7 +48,12 @@ public enum DocumentType
     SitePhoto = 9,
     PMSuryagramDocument = 10,
     PMApprovalDocument = 11,   // admin-uploaded approval doc (Task 11), user-downloadable
-    RelationProof = 12         // blood-relation proof for light bill (Task 3)
+    RelationProof = 12,        // blood-relation proof for light bill (Task 3)
+    PMApprovalPhoto = 13,      // admin-uploaded PM Surya approval photo, user-downloadable
+    PMApprovalSignature = 14,   // admin-uploaded PM Surya approval signature, user-downloadable
+    // Applicant-side (user panel) live photo & signature on the PM Surya page
+    Photo = 15,
+    Signature = 16
 }
 
 public enum RequestType

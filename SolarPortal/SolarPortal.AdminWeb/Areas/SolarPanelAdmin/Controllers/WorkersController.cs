@@ -44,6 +44,16 @@ public class WorkersController : Controller
         // dto.IsAvailable is already `true` by default in the DTO.
         ModelState.Remove(nameof(dto.Specialization));
 
+        // INC-only login + commission: clear them on JOB workers so salaried
+        // rows never carry credentials. (Phase 1 captures/stores; actual INC
+        // login wiring is a later, separate step.)
+        if (dto.Type != SolarPortal.Domain.Enums.WorkerType.INC)
+        {
+            dto.LoginUsername = null;
+            dto.LoginPassword = null;
+            dto.CommissionPercent = null;
+        }
+
         if (!ModelState.IsValid)
         {
             // Re-populate states so the dropdown isn't empty on validation re-render.

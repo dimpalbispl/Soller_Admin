@@ -32,6 +32,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Wallet> Wallets => Set<Wallet>();
     public DbSet<WalletTransaction> WalletTransactions => Set<WalletTransaction>();
     public DbSet<Withdrawal> Withdrawals => Set<Withdrawal>();
+    public DbSet<IncConnection> IncConnections => Set<IncConnection>();
+    public DbSet<IncWithdrawal> IncWithdrawals => Set<IncWithdrawal>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)

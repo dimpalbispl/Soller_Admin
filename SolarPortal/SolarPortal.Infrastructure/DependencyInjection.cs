@@ -21,7 +21,17 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection"),
-                b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+                b =>
+                {
+                    b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                    // The live/legacy DB runs at a compatibility level below 130
+                    // (pre-SQL Server 2016). EF Core 8 otherwise translates
+                    // `list.Contains(x)` to OPENJSON(...) WITH ([value] int '$'),
+                    // and the '$' JSON path fails with "Incorrect syntax near '$'".
+                    // Pinning to 120 makes EF generate the classic IN(...) SQL that
+                    // older SQL Server understands.
+                    b.UseCompatibilityLevel(120);
+                }));
 
         // Identity
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>

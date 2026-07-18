@@ -14,5 +14,10 @@ public class Worker : BaseEntity
     public string? City { get; set; }
     public string? State { get; set; }
 
+    // INC worker login + commission (Phase 1). Only for INC-type workers.
+    public string? LoginUsername { get; set; }
+    public string? LoginPassword { get; set; }
+    public decimal? CommissionPercent { get; set; }
+
     public virtual ICollection<WorkerAssignment> Assignments { get; set; } = new List<WorkerAssignment>();
 }

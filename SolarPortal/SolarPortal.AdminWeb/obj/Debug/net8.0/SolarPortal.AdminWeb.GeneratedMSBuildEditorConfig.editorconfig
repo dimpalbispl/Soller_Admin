@@ -30,6 +30,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXERhc2hib2FyZFxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[//localhost/Sadhna/GitHub/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Inc/Connections.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXEluY1xDb25uZWN0aW9ucy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[//localhost/Sadhna/GitHub/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Inc/Withdrawals.cshtml]
+build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXEluY1xXaXRoZHJhd2Fscy5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [//localhost/Sadhna/GitHub/Soller_Admin/SolarPortal/SolarPortal.AdminWeb/Areas/SolarPanelAdmin/Views/Operations/OperationsList.cshtml]
 build_metadata.AdditionalFiles.TargetPath = QXJlYXNcU29sYXJQYW5lbEFkbWluXFZpZXdzXE9wZXJhdGlvbnNcT3BlcmF0aW9uc0xpc3QuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

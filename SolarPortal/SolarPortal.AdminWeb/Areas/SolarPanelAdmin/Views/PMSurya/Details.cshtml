@@ -97,23 +97,6 @@
                     </div>
                 </div>
             }
-            else if (!docs.Any())
-            {
-                @* No documents uploaded → nothing to verify, so the Approve button
-                   must NOT show. Admin can only approve once the user has uploaded
-                   at least one PM Surya Ghar document. *@
-                <div class="card">
-                    <div class="card-header bg-warning">⏳ Awaiting Documents</div>
-                    <div class="card-body">
-                        <p class="mb-2">
-                            No PM Surya Ghar documents have been uploaded yet.
-                            Approval is only possible once the user uploads the required document(s).
-                        </p>
-                        <p class="text-muted small mb-2">The Approve button will appear here after documents are uploaded.</p>
-                        <a asp-action="Index" class="btn btn-outline-secondary w-100">← Back to PM Surya list</a>
-                    </div>
-                </div>
-            }
             else
             {
                 <div class="card">

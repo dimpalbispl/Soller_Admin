@@ -1,0 +1,91 @@
+@model List<SolarPortal.Domain.Entities.IncConnection>
+@{
+    ViewData["Title"] = "INC Connections";
+    var workers = ViewBag.Workers as Dictionary<int,string> ?? new();
+    var states = ViewBag.States as List<string> ?? new();
+    var cities = ViewBag.Cities as List<string> ?? new();
+    string curStatus = ViewBag.Status as string ?? "";
+    string curState = ViewBag.State as string ?? "";
+    string curCity = ViewBag.City as string ?? "";
+    string Badge(string s) => s == "Approved" ? "success" : s == "Rejected" ? "danger" : s == "Complete" ? "info" : "warning";
+}
+<div class="page-header" style="padding:16px">
+    <h2>INC Connections</h2>
+    <p class="text-muted">Review installer-registered connections. Approve with commission, or reject.</p>
+</div>
+<div class="container-fluid">
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-auto">
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Status</option>
+                @foreach (var s in new[]{"Pending","Complete","Approved","Rejected"})
+                { <option value="@s" selected="@(curStatus==s)">@s</option> }
+            </select>
+        </div>
+        <div class="col-auto">
+            <select name="state" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All States</option>
+                @foreach (var s in states) { <option value="@s" selected="@(curState==s)">@s</option> }
+            </select>
+        </div>
+        <div class="col-auto">
+            <select name="city" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">All Cities</option>
+                @foreach (var c in cities) { <option value="@c" selected="@(curCity==c)">@c</option> }
+            </select>
+        </div>
+        <div class="col-auto"><a href="@Url.Action("Connections")" class="btn btn-sm btn-outline-secondary">Clear</a></div>
+    </form>
+
+    <div class="card">
+        <div class="card-header">Connections (@Model.Count)</div>
+        <div class="card-body">
+            @Html.AntiForgeryToken()
+            @if (!Model.Any()) { <p class="text-muted">No connections found.</p> }
+            else
+            {
+                <div class="table-responsive"><table class="table table-hover align-middle">
+                    <thead><tr><th>Installer</th><th>Customer</th><th>Mobile</th><th>Conn.</th><th>kV</th><th>City/State</th><th>Doc</th><th>Status</th><th>Commission</th><th>Action</th></tr></thead>
+                    <tbody>
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td>@(workers.TryGetValue(c.WorkerId, out var wn) ? wn : ("#"+c.WorkerId))</td>
+                            <td class="fw-semibold">@c.CustomerName</td>
+                            <td>@c.MobileNumber</td>
+                            <td>@c.ConnectionType</td>
+                            <td>@c.KVCapacity</td>
+                            <td>@c.City, @c.State</td>
+                            <td>@if(!string.IsNullOrWhiteSpace(c.DocumentPath)){<a href="@c.DocumentPath" target="_blank">View</a>}else{<span class="text-muted">-</span>}</td>
+                            <td><span class="badge bg-@Badge(c.Status)">@c.Status</span></td>
+                            <td>@(c.CommissionAmount > 0 ? "₹"+c.CommissionAmount.ToString("N0") : "-")</td>
+                            <td style="white-space:nowrap">
+                                @if (c.Status == "Pending" || c.Status == "Complete")
+                                {
+                                    <form asp-action="ApproveConnection" method="post" style="display:inline-flex;gap:4px;align-items:center">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@c.Id" />
+                                        <input type="number" name="commission" step="0.01" min="0" placeholder="Commission" required style="width:110px" class="form-control form-control-sm" />
+                                        <button class="btn btn-sm btn-success">Approve</button>
+                                    </form>
+                                    <button class="btn btn-sm btn-danger" onclick="rejConn(@c.Id)">Reject</button>
+                                }
+                                else if (c.Status == "Rejected" && !string.IsNullOrWhiteSpace(c.AdminRemark))
+                                {
+                                    <span class="text-danger small" title="@c.AdminRemark">Reason</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table></div>
+            }
+        </div>
+    </div>
+</div>
+@section Scripts {
+<script>
+function postForm(url, data){ var f=document.createElement('form'); f.method='post'; f.action=url; for(var k in data){ var i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=data[k]; f.appendChild(i);} var t=document.querySelector('input[name="__RequestVerificationToken"]'); if(t){f.appendChild(t.cloneNode(true));} document.body.appendChild(f); f.submit(); }
+function rejConn(id){ var r=prompt("Rejection reason?"); if(r===null) return; postForm("@Url.Action("RejectConnection")", {id:id, remark:r}); }
+</script>
+}
