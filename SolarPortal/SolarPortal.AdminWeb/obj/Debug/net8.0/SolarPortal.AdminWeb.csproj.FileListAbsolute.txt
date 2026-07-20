@@ -930,4 +930,3 @@
 \\localhost\Sadhna\GitHub\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\obj\Debug\net8.0\SolarPortal.AdminWeb.pdb
 \\localhost\Sadhna\GitHub\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\obj\Debug\net8.0\SolarPortal.AdminWeb.genruntimeconfig.cache
 \\localhost\Sadhna\GitHub\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\obj\Debug\net8.0\ref\SolarPortal.AdminWeb.dll
-\\localhost\Sadhna\GitHub\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

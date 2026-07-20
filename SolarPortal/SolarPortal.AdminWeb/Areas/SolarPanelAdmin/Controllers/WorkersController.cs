@@ -44,14 +44,21 @@ public class WorkersController : Controller
         // dto.IsAvailable is already `true` by default in the DTO.
         ModelState.Remove(nameof(dto.Specialization));
 
-        // INC-only login + commission: clear them on JOB workers so salaried
-        // rows never carry credentials. (Phase 1 captures/stores; actual INC
-        // login wiring is a later, separate step.)
+        // Login credentials apply to BOTH worker types — JOB and INC workers
+        // each get a panel login. Commission stays INC-only: JOB is salaried.
         if (dto.Type != SolarPortal.Domain.Enums.WorkerType.INC)
         {
-            dto.LoginUsername = null;
-            dto.LoginPassword = null;
             dto.CommissionPercent = null;
+        }
+
+        dto.LoginUsername = dto.LoginUsername?.Trim();
+
+        // Username is the login key, so it must be unique across all workers.
+        if (!string.IsNullOrWhiteSpace(dto.LoginUsername)
+            && await _workerService.LoginUsernameExistsAsync(dto.LoginUsername))
+        {
+            ModelState.AddModelError(nameof(dto.LoginUsername),
+                "This username is already taken by another worker.");
         }
 
         if (!ModelState.IsValid)

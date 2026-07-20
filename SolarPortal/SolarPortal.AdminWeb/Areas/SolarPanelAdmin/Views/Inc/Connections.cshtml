@@ -7,85 +7,184 @@
     string curStatus = ViewBag.Status as string ?? "";
     string curState = ViewBag.State as string ?? "";
     string curCity = ViewBag.City as string ?? "";
-    string Badge(string s) => s == "Approved" ? "success" : s == "Rejected" ? "danger" : s == "Complete" ? "info" : "warning";
+
+    // Maps a connection status onto the theme's status-pill modifiers
+    // (solar-theme.css defines only: sts-act / sts-pend / sts-comp / sts-rej / sts-disp).
+    string Pill(string s) => s switch
+    {
+        "Approved" => "sts-act",
+        "Rejected" => "sts-rej",
+        "Complete" => "sts-comp",
+        _          => "sts-pend"
+    };
+    bool hasFilter = !string.IsNullOrEmpty(curStatus) || !string.IsNullOrEmpty(curState) || !string.IsNullOrEmpty(curCity);
 }
-<div class="page-header" style="padding:16px">
-    <h2>INC Connections</h2>
-    <p class="text-muted">Review installer-registered connections. Approve with commission, or reject.</p>
-</div>
-<div class="container-fluid">
-    <form method="get" class="row g-2 mb-3">
-        <div class="col-auto">
-            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                <option value="">All Status</option>
-                @foreach (var s in new[]{"Pending","Complete","Approved","Rejected"})
-                { <option value="@s" selected="@(curStatus==s)">@s</option> }
-            </select>
+
+<div class="page active">
+    @Html.AntiForgeryToken()
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>INC Connections</span></div>
+        <div class="ph-title">🔌 INC Connections</div>
+        <div class="ph-sub">Review installer-registered connections. Approve with commission, or reject.</div>
+    </div>
+
+    <form method="get" class="card" style="padding:16px 18px;margin-bottom:18px">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:1 1 170px;min-width:150px">
+                <label for="status">Status</label>
+                <select id="status" name="status" onchange="this.form.submit()">
+                    <option value="">All Status</option>
+                    @foreach (var s in new[]{"Pending","Complete","Approved","Rejected"})
+                    { <option value="@s" selected="@(curStatus==s)">@s</option> }
+                </select>
+            </div>
+            <div style="flex:1 1 170px;min-width:150px">
+                <label for="state">State</label>
+                <select id="state" name="state" onchange="this.form.submit()">
+                    <option value="">All States</option>
+                    @foreach (var s in states) { <option value="@s" selected="@(curState==s)">@s</option> }
+                </select>
+            </div>
+            <div style="flex:1 1 170px;min-width:150px">
+                <label for="city">City</label>
+                <select id="city" name="city" onchange="this.form.submit()">
+                    <option value="">All Cities</option>
+                    @foreach (var c in cities) { <option value="@c" selected="@(curCity==c)">@c</option> }
+                </select>
+            </div>
+            @if (hasFilter)
+            {
+                <a href="@Url.Action("Connections")" class="btn btn-s btn-sm" style="margin-bottom:1px">✕ Clear</a>
+            }
         </div>
-        <div class="col-auto">
-            <select name="state" class="form-select form-select-sm" onchange="this.form.submit()">
-                <option value="">All States</option>
-                @foreach (var s in states) { <option value="@s" selected="@(curState==s)">@s</option> }
-            </select>
-        </div>
-        <div class="col-auto">
-            <select name="city" class="form-select form-select-sm" onchange="this.form.submit()">
-                <option value="">All Cities</option>
-                @foreach (var c in cities) { <option value="@c" selected="@(curCity==c)">@c</option> }
-            </select>
-        </div>
-        <div class="col-auto"><a href="@Url.Action("Connections")" class="btn btn-sm btn-outline-secondary">Clear</a></div>
     </form>
 
     <div class="card">
-        <div class="card-header">Connections (@Model.Count)</div>
-        <div class="card-body">
-            @Html.AntiForgeryToken()
-            @if (!Model.Any()) { <p class="text-muted">No connections found.</p> }
-            else
-            {
-                <div class="table-responsive"><table class="table table-hover align-middle">
-                    <thead><tr><th>Installer</th><th>Customer</th><th>Mobile</th><th>Conn.</th><th>kV</th><th>City/State</th><th>Doc</th><th>Status</th><th>Commission</th><th>Action</th></tr></thead>
+        <div class="ct"><span class="ct-dot"></span>Connections (@Model.Count)</div>
+
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <div class="es-icon">🔌</div>
+                <div class="es-title">No connections found</div>
+                <div class="es-sub">
+                    @(hasFilter
+                        ? "Nothing matches these filters — try clearing them."
+                        : "Connections registered by installers will appear here.")
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Installer</th>
+                            <th>Customer</th>
+                            <th>Mobile</th>
+                            <th>Conn.</th>
+                            <th>kV</th>
+                            <th>City / State</th>
+                            <th>Doc</th>
+                            <th>Status</th>
+                            <th style="text-align:right">Commission</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
                     <tbody>
                     @foreach (var c in Model)
                     {
                         <tr>
-                            <td>@(workers.TryGetValue(c.WorkerId, out var wn) ? wn : ("#"+c.WorkerId))</td>
-                            <td class="fw-semibold">@c.CustomerName</td>
+                            <td>@(workers.TryGetValue(c.WorkerId, out var wn) ? wn : ("#" + c.WorkerId))</td>
+                            <td class="td-b">@c.CustomerName</td>
                             <td>@c.MobileNumber</td>
                             <td>@c.ConnectionType</td>
                             <td>@c.KVCapacity</td>
                             <td>@c.City, @c.State</td>
-                            <td>@if(!string.IsNullOrWhiteSpace(c.DocumentPath)){<a href="@c.DocumentPath" target="_blank">View</a>}else{<span class="text-muted">-</span>}</td>
-                            <td><span class="badge bg-@Badge(c.Status)">@c.Status</span></td>
-                            <td>@(c.CommissionAmount > 0 ? "₹"+c.CommissionAmount.ToString("N0") : "-")</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(c.DocumentPath))
+                                {
+                                    <a href="@c.DocumentPath" target="_blank" style="color:var(--accent);font-weight:600">View</a>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text3)">—</span>
+                                }
+                            </td>
+                            <td><span class="sts @Pill(c.Status)">@c.Status</span></td>
+                            <td style="text-align:right;font-weight:600">
+                                @(c.CommissionAmount > 0 ? "₹" + c.CommissionAmount.ToString("N0") : "—")
+                            </td>
                             <td style="white-space:nowrap">
                                 @if (c.Status == "Pending" || c.Status == "Complete")
                                 {
-                                    <form asp-action="ApproveConnection" method="post" style="display:inline-flex;gap:4px;align-items:center">
+                                    <form asp-action="ApproveConnection" method="post"
+                                          style="display:inline-flex;gap:6px;align-items:center;margin:0">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@c.Id" />
-                                        <input type="number" name="commission" step="0.01" min="0" placeholder="Commission" required style="width:110px" class="form-control form-control-sm" />
-                                        <button class="btn btn-sm btn-success">Approve</button>
+                                        <input type="number" name="commission" step="0.01" min="0"
+                                               placeholder="₹ Amount" required style="width:110px" />
+                                        <button class="btn btn-g btn-sm">✓ Approve</button>
                                     </form>
-                                    <button class="btn btn-sm btn-danger" onclick="rejConn(@c.Id)">Reject</button>
+                                    <button class="btn btn-d btn-sm" style="margin-left:6px"
+                                            onclick="rejConn(@c.Id)">✕ Reject</button>
                                 }
                                 else if (c.Status == "Rejected" && !string.IsNullOrWhiteSpace(c.AdminRemark))
                                 {
-                                    <span class="text-danger small" title="@c.AdminRemark">Reason</span>
+                                    <span class="hint" style="color:var(--red);cursor:help" title="@c.AdminRemark">
+                                        Reason: @c.AdminRemark
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text3)">—</span>
                                 }
                             </td>
                         </tr>
                     }
                     </tbody>
-                </table></div>
-            }
-        </div>
+                </table>
+            </div>
+        }
     </div>
 </div>
+
 @section Scripts {
 <script>
-function postForm(url, data){ var f=document.createElement('form'); f.method='post'; f.action=url; for(var k in data){ var i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=data[k]; f.appendChild(i);} var t=document.querySelector('input[name="__RequestVerificationToken"]'); if(t){f.appendChild(t.cloneNode(true));} document.body.appendChild(f); f.submit(); }
-function rejConn(id){ var r=prompt("Rejection reason?"); if(r===null) return; postForm("@Url.Action("RejectConnection")", {id:id, remark:r}); }
+    function postForm(url, data) {
+        var f = document.createElement('form');
+        f.method = 'post'; f.action = url;
+        for (var k in data) {
+            var i = document.createElement('input');
+            i.type = 'hidden'; i.name = k; i.value = data[k];
+            f.appendChild(i);
+        }
+        var t = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (t) { f.appendChild(t.cloneNode(true)); }
+        document.body.appendChild(f);
+        f.submit();
+    }
+
+    function rejConn(id) {
+        Swal.fire({
+            title: 'Reject Connection?',
+            input: 'text',
+            inputLabel: 'Rejection reason',
+            inputPlaceholder: 'Why is this being rejected?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Reject',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc2626',
+            inputValidator: function (v) {
+                if (!v || !v.trim()) { return 'Please enter a reason'; }
+            }
+        }).then(function (r) {
+            if (r.isConfirmed) {
+                postForm('@Url.Action("RejectConnection")', { id: id, remark: r.value });
+            }
+        });
+    }
 </script>
 }

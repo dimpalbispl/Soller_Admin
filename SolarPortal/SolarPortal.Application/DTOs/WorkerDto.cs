@@ -1,3 +1,4 @@
+﻿using System.ComponentModel.DataAnnotations;
 using SolarPortal.Domain.Enums;
 
 namespace SolarPortal.Application.DTOs;
@@ -31,9 +32,15 @@ public class CreateWorkerDto
     public string? State { get; set; }
     public bool IsAvailable { get; set; } = true;
 
-    // INC-only login + commission (Phase 1)
+    // Panel login for BOTH worker types (JOB and INC). Commission is INC-only.
+    [Required(ErrorMessage = "Username is required.")]
+    [StringLength(50, MinimumLength = 3, ErrorMessage = "Username must be 3-50 characters.")]
     public string? LoginUsername { get; set; }
+
+    [Required(ErrorMessage = "Password is required.")]
+    [StringLength(100, MinimumLength = 4, ErrorMessage = "Password must be at least 4 characters.")]
     public string? LoginPassword { get; set; }
+
     public decimal? CommissionPercent { get; set; }
 }
 

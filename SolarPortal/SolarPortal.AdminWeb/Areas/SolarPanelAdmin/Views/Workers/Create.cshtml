@@ -69,6 +69,20 @@
                 </div>
             </div>
 
+            <div class="fr">
+                <div class="fg">
+                    <label asp-for="LoginUsername">Login Username <span class="req">*</span></label>
+                    <input asp-for="LoginUsername" placeholder="e.g. ramesh.k" autocomplete="off" required />
+                    <span asp-validation-for="LoginUsername" class="text-danger hint"></span>
+                </div>
+                <div class="fg">
+                    <label asp-for="LoginPassword">Login Password <span class="req">*</span></label>
+                    <input asp-for="LoginPassword" type="text" placeholder="Set a password" autocomplete="off" required />
+                    <span asp-validation-for="LoginPassword" class="text-danger hint"></span>
+                </div>
+            </div>
+            <span class="hint">Panel login for this worker &mdash; applies to both JOB and INC types.</span>
+
             @* Removed per spec:
                  - "Specialization" dropdown (was on this form line 42-53)
                  - "Available for Assignment" checkbox (was on this form line 73-79)

@@ -37,6 +37,15 @@ public class WorkerService : IWorkerService
         return _mapper.Map<WorkerDto>(worker);
     }
 
+    public async Task<bool> LoginUsernameExistsAsync(string username, int? excludeWorkerId = null)
+    {
+        if (string.IsNullOrWhiteSpace(username)) return false;
+        var workers = await _uow.Workers.GetAllAsync();
+        return workers.Any(w =>
+            w.Id != excludeWorkerId &&
+            string.Equals(w.LoginUsername, username, StringComparison.OrdinalIgnoreCase));
+    }
+
     public async Task DeleteAsync(int id)
     {
         var worker = await _uow.Workers.GetByIdAsync(id);

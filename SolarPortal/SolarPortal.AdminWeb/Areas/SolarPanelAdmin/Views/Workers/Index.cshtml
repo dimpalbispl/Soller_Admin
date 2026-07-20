@@ -30,6 +30,8 @@
                             <th>Type</th>
                             <th>Specialization</th>
                             <th>City</th>
+                            <th>Username</th>
+                            <th>Password</th>
                             <th>Is Available</th>
                             <th>Assignments</th>
                             <th>Action</th>
@@ -50,6 +52,8 @@
                                     <span class="chip chip-s">@worker.Specialization</span>
                                 </td>
                                 <td>@worker.City</td>
+                                <td>@(string.IsNullOrWhiteSpace(worker.LoginUsername) ? "—" : worker.LoginUsername)</td>
+                                <td>@(string.IsNullOrWhiteSpace(worker.LoginPassword) ? "—" : worker.LoginPassword)</td>
                                 <td>
                                     <span class="sts @(worker.IsAvailable ? "sts-act" : "sts-pend")">
                                         @(worker.IsAvailable ? "✓ Available" : "Busy")

@@ -3,59 +3,158 @@
     ViewData["Title"] = "INC Withdrawals";
     var workers = ViewBag.Workers as Dictionary<int,string> ?? new();
     string curStatus = ViewBag.Status as string ?? "";
-    string Badge(string s) => s == "Approved" ? "success" : s == "Rejected" ? "danger" : "warning";
+
+    // Maps a withdrawal status onto the theme's status-pill modifiers
+    // (solar-theme.css defines only: sts-act / sts-pend / sts-comp / sts-rej / sts-disp).
+    string Pill(string s) => s switch
+    {
+        "Approved" => "sts-act",
+        "Rejected" => "sts-rej",
+        _          => "sts-pend"
+    };
+    bool hasFilter = !string.IsNullOrEmpty(curStatus);
 }
-<div class="page-header" style="padding:16px">
-    <h2>INC Withdrawals</h2>
-    <p class="text-muted">Approve or reject installer withdrawal requests.</p>
-</div>
-<div class="container-fluid">
-    <form method="get" class="mb-3">
-        <select name="status" class="form-select form-select-sm" style="width:auto;display:inline-block" onchange="this.form.submit()">
-            <option value="">All Status</option>
-            @foreach (var s in new[]{"Pending","Approved","Rejected"}) { <option value="@s" selected="@(curStatus==s)">@s</option> }
-        </select>
-    </form>
-    <div class="card">
-        <div class="card-header">Withdrawal Requests (@Model.Count)</div>
-        <div class="card-body">
-            @Html.AntiForgeryToken()
-            @if (!Model.Any()) { <p class="text-muted">No withdrawal requests found.</p> }
-            else
+
+<div class="page active">
+    @Html.AntiForgeryToken()
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>INC Withdrawals</span></div>
+        <div class="ph-title">💸 INC Withdrawals</div>
+        <div class="ph-sub">Approve or reject installer withdrawal requests.</div>
+    </div>
+
+    <form method="get" class="card" style="padding:16px 18px;margin-bottom:18px">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:0 1 200px;min-width:150px">
+                <label for="status">Status</label>
+                <select id="status" name="status" onchange="this.form.submit()">
+                    <option value="">All Status</option>
+                    @foreach (var s in new[]{"Pending","Approved","Rejected"})
+                    { <option value="@s" selected="@(curStatus==s)">@s</option> }
+                </select>
+            </div>
+            @if (hasFilter)
             {
-                <div class="table-responsive"><table class="table table-hover align-middle">
-                    <thead><tr><th>Req #</th><th>Installer</th><th style="text-align:right">Amount</th><th>Bank / UPI</th><th>Requested</th><th>Status</th><th>Action</th></tr></thead>
+                <a href="@Url.Action("Withdrawals")" class="btn btn-s btn-sm" style="margin-bottom:1px">✕ Clear</a>
+            }
+        </div>
+    </form>
+
+    <div class="card">
+        <div class="ct"><span class="ct-dot"></span>Withdrawal Requests (@Model.Count)</div>
+
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <div class="es-icon">💸</div>
+                <div class="es-title">No withdrawal requests</div>
+                <div class="es-sub">
+                    @(hasFilter
+                        ? "Nothing matches this filter — try clearing it."
+                        : "Withdrawal requests raised by installers will appear here.")
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Req #</th>
+                            <th>Installer</th>
+                            <th style="text-align:right">Amount</th>
+                            <th>Bank / UPI</th>
+                            <th>Requested</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
                     <tbody>
                     @foreach (var w in Model)
                     {
                         <tr>
-                            <td>@(w.RequestNumber ?? ("#"+w.Id))</td>
-                            <td>@(workers.TryGetValue(w.WorkerId, out var wn) ? wn : ("#"+w.WorkerId))</td>
+                            <td class="td-b">@(w.RequestNumber ?? ("#" + w.Id))</td>
+                            <td>@(workers.TryGetValue(w.WorkerId, out var wn) ? wn : ("#" + w.WorkerId))</td>
                             <td style="text-align:right;font-weight:600">₹@w.Amount.ToString("N2")</td>
-                            <td class="small">@(string.IsNullOrWhiteSpace(w.BankDetails) ? "-" : w.BankDetails)</td>
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(w.BankDetails))
+                                {
+                                    <span style="color:var(--text3)">—</span>
+                                }
+                                else
+                                {
+                                    <span class="hint" style="margin-top:0">@w.BankDetails</span>
+                                }
+                            </td>
                             <td>@w.RequestedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
-                            <td><span class="badge bg-@Badge(w.Status)">@w.Status</span>@if(w.Status=="Rejected" && !string.IsNullOrWhiteSpace(w.RejectionReason)){<div class="small text-danger">@w.RejectionReason</div>}</td>
+                            <td>
+                                <span class="sts @Pill(w.Status)">@w.Status</span>
+                                @if (w.Status == "Rejected" && !string.IsNullOrWhiteSpace(w.RejectionReason))
+                                {
+                                    <div class="hint" style="color:var(--red)">@w.RejectionReason</div>
+                                }
+                            </td>
                             <td style="white-space:nowrap">
                                 @if (w.Status == "Pending")
                                 {
-                                    <form asp-action="ApproveWithdrawal" method="post" style="display:inline">
-                                        @Html.AntiForgeryToken()<input type="hidden" name="id" value="@w.Id" />
-                                        <button class="btn btn-sm btn-success">Approve</button>
+                                    <form asp-action="ApproveWithdrawal" method="post" style="display:inline;margin:0">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@w.Id" />
+                                        <button class="btn btn-g btn-sm">✓ Approve</button>
                                     </form>
-                                    <button class="btn btn-sm btn-danger" onclick="rejWd(@w.Id)">Reject</button>
+                                    <button class="btn btn-d btn-sm" style="margin-left:6px"
+                                            onclick="rejWd(@w.Id)">✕ Reject</button>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text3)">—</span>
                                 }
                             </td>
                         </tr>
                     }
                     </tbody>
-                </table></div>
-            }
-        </div>
+                </table>
+            </div>
+        }
     </div>
 </div>
+
 @section Scripts {
 <script>
-function postForm(url, data){ var f=document.createElement('form'); f.method='post'; f.action=url; for(var k in data){ var i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=data[k]; f.appendChild(i);} var t=document.querySelector('input[name="__RequestVerificationToken"]'); if(t){f.appendChild(t.cloneNode(true));} document.body.appendChild(f); f.submit(); }
-function rejWd(id){ var r=prompt("Rejection reason?"); if(r===null) return; postForm("@Url.Action("RejectWithdrawal")", {id:id, reason:r}); }
+    function postForm(url, data) {
+        var f = document.createElement('form');
+        f.method = 'post'; f.action = url;
+        for (var k in data) {
+            var i = document.createElement('input');
+            i.type = 'hidden'; i.name = k; i.value = data[k];
+            f.appendChild(i);
+        }
+        var t = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (t) { f.appendChild(t.cloneNode(true)); }
+        document.body.appendChild(f);
+        f.submit();
+    }
+
+    function rejWd(id) {
+        Swal.fire({
+            title: 'Reject Withdrawal?',
+            input: 'text',
+            inputLabel: 'Rejection reason',
+            inputPlaceholder: 'Why is this being rejected?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Reject',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc2626',
+            inputValidator: function (v) {
+                if (!v || !v.trim()) { return 'Please enter a reason'; }
+            }
+        }).then(function (r) {
+            if (r.isConfirmed) {
+                postForm('@Url.Action("RejectWithdrawal")', { id: id, reason: r.value });
+            }
+        });
+    }
 </script>
 }
