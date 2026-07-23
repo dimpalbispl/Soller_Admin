@@ -241,6 +241,25 @@
                     </div>
                 </div>
             }
+            else if (Model.ApprovalStatus == SolarPortal.Domain.Enums.ApprovalStatus.Rejected)
+            {
+                @* Reject ho chuka hai — dobara Approve/Reject nahi dikhna chahiye.
+                   User jab survey re-submit karega (status wapas Pending) tab hi
+                   ye buttons wapas aayenge. *@
+                <div class="card mb-3 border-danger">
+                    <div class="card-header bg-danger text-white">✗ Rejected</div>
+                    <div class="card-body">
+                        <p class="mb-1"><strong>Rejected on:</strong>
+                            @(Model.RejectedAt?.ToLocalTime().ToString("dd MMM yyyy HH:mm") ?? "—")</p>
+                        @if (!string.IsNullOrWhiteSpace(Model.RejectionReason))
+                        {
+                            <p class="mb-1"><strong>Reason:</strong> @Model.RejectionReason</p>
+                        }
+                        <p class="text-muted small mt-2 mb-2">Waiting for the user to fix the issues and re-submit the survey. Approve / Reject will be available again after re-submission.</p>
+                        <a asp-action="Index" class="btn btn-outline-secondary w-100">← Back to Site Survey list</a>
+                    </div>
+                </div>
+            }
             else
             {
                 <div class="card mb-3">

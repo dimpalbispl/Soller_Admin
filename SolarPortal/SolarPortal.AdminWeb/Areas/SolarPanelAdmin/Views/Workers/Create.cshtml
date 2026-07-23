@@ -69,19 +69,23 @@
                 </div>
             </div>
 
+            @* Panel login credentials — worker (JOB & INC dono) isi username/password
+               se INC panel par login karta hai. Ye fields DTO mein [Required] hain;
+               form se galti se hat gaye the jisse Add Worker hamesha silently fail
+               ho raha tha (validation error kisi visible field par nahi tha). *@
             <div class="fr">
                 <div class="fg">
-                    <label asp-for="LoginUsername">Login Username <span class="req">*</span></label>
-                    <input asp-for="LoginUsername" placeholder="e.g. ramesh.k" autocomplete="off" required />
+                    <label asp-for="LoginUsername">Username <span class="req">*</span></label>
+                    <input asp-for="LoginUsername" placeholder="Login username" autocomplete="off" required />
                     <span asp-validation-for="LoginUsername" class="text-danger hint"></span>
                 </div>
                 <div class="fg">
-                    <label asp-for="LoginPassword">Login Password <span class="req">*</span></label>
-                    <input asp-for="LoginPassword" type="text" placeholder="Set a password" autocomplete="off" required />
+                    <label asp-for="LoginPassword">Password <span class="req">*</span></label>
+                    <input asp-for="LoginPassword" type="password" placeholder="Min 4 characters" autocomplete="new-password" required />
                     <span asp-validation-for="LoginPassword" class="text-danger hint"></span>
+                    <span class="hint">Worker uses these credentials to log in to the INC panel.</span>
                 </div>
             </div>
-            <span class="hint">Panel login for this worker &mdash; applies to both JOB and INC types.</span>
 
             @* Removed per spec:
                  - "Specialization" dropdown (was on this form line 42-53)

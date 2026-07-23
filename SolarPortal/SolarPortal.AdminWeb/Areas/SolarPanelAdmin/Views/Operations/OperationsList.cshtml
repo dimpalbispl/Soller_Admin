@@ -108,6 +108,11 @@
                                     @(string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName)
                                     <div style="font-size:11px;color:var(--text3)">@r.MobileNumber</div>
                                 </td>
+                                @* Plan cell missing tha — header mein Plan/Type/Capacity
+                                   3 columns hain, body mein sirf 2 cells the. Isse poori
+                                   row ek column left shift ho jati thi (Processed badge
+                                   Details ke neeche, Action khali). *@
+                                <td><partial name="_PlanCell" model="r" /></td>
                                 <td>@r.ConnectionType</td>
                                 <td>@r.KVCapacity kV</td>
                                 <td>@r.City<div style="font-size:11px;color:var(--text3)">@r.State</div></td>

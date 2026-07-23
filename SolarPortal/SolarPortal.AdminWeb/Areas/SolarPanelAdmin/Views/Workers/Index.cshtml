@@ -52,8 +52,10 @@
                                     <span class="chip chip-s">@worker.Specialization</span>
                                 </td>
                                 <td>@worker.City</td>
-                                <td>@(string.IsNullOrWhiteSpace(worker.LoginUsername) ? "—" : worker.LoginUsername)</td>
-                                <td>@(string.IsNullOrWhiteSpace(worker.LoginPassword) ? "—" : worker.LoginPassword)</td>
+                                @* INC panel login credentials — report mein wapas
+                                   dikhaye gaye (admin ko worker ko batane hote hain). *@
+                                <td><code style="font-size:12px;color:#0d9488">@(string.IsNullOrWhiteSpace(worker.LoginUsername) ? "—" : worker.LoginUsername)</code></td>
+                                <td><code style="font-size:12px;color:#0d9488">@(string.IsNullOrWhiteSpace(worker.LoginPassword) ? "—" : worker.LoginPassword)</code></td>
                                 <td>
                                     <span class="sts @(worker.IsAvailable ? "sts-act" : "sts-pend")">
                                         @(worker.IsAvailable ? "✓ Available" : "Busy")

@@ -36,7 +36,13 @@
                                 </td>
                                 <td>@d.Remarks</td>
                                 <td>
-                                    @if (d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Pending)
+                                    @if (d.DocumentType == SolarPortal.Domain.Enums.DocumentType.PMApprovalDocument)
+                                    {
+                                        @* Admin ka apna upload hai — Approve/Reject ka matlab nahi.
+                                           Sirf Delete milta hai; delete karke wapas upload kar sakta hai. *@
+                                        <button class="btn btn-sm btn-outline-danger btn-del-approval" data-id="@d.Id">Delete</button>
+                                    }
+                                    else if (d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Pending)
                                     {
                                         <button class="btn btn-sm btn-success btn-approve" data-id="@d.Id">Approve</button>
                                         <button class="btn btn-sm btn-danger btn-reject"   data-id="@d.Id">Reject</button>
@@ -51,16 +57,15 @@
         </div>
         <div class="col-lg-4">
             @{
-                // Per spec: agar saare documents approve ho gaye aur project
-                // stage PMSurvey ke aage badh chuka hai, to "Approve All" button
-                // nahi dikhna chahiye — sirf "Already Approved" status dikhe.
+                // "Already Approved" panel SIRF tab dikhe jab project stage
+                // PMSurvey se aage badh chuka ho — yaani admin ne "Approve All"
+                // (final approval, PM Surya Ghar ID ke saath) kar diya ho.
                 //
-                // Two conditions for "already advanced":
-                //   (a) Stage is past PMSurvey (MeterDispatch, SiteSurvey, etc.) — workflow moved on
-                //   (b) All uploaded docs are approved AND there's at least one doc — batch done
-                //
-                // If only some docs are approved (mixed pending), keep the
-                // Approve & Advance card visible so admin can finish the batch.
+                // Pehle yahan "all docs individually approved" bhi count hota tha,
+                // jisse documents ko single-single approve karte hi ye card aa jata
+                // tha aur PM Surya Ghar ID + approval-document upload ka form gayab
+                // ho jata tha — jabki ID abhi upload hi nahi hui thi. Ab jab tak
+                // final Approve All (ID ke saath) nahi hota, form visible rahega.
                 var stage = req.CurrentStage;
                 var advancedPastPMSurvey =
                     stage == SolarPortal.Domain.Enums.ProjectStatus.MeterDispatch ||
@@ -73,7 +78,7 @@
                 var allDocsApproved = docs.Any() &&
                     docs.All(d => d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Approved);
 
-                var alreadyApproved = advancedPastPMSurvey || allDocsApproved;
+                var alreadyApproved = advancedPastPMSurvey;
             }
 
             @if (alreadyApproved)
@@ -83,16 +88,19 @@
                     <div class="card-body">
                         <p class="mb-2">
                             All PM Surya Ghar documents are <strong>approved</strong>.
-                            @if (advancedPastPMSurvey)
-                            {
-                                <span>Project has advanced to <strong>@stage.ToString().Replace("_", " ")</strong>.</span>
-                            }
-                            else
-                            {
-                                <span>You can now move it to <strong>Meter Dispatch</strong> from the workflow.</span>
-                            }
+                            <span>Project has advanced to <strong>@stage.ToString().Replace("_", " ")</strong>.</span>
                         </p>
-                        <p class="text-muted small mb-2">No further action allowed on this page.</p>
+                        @if (!string.IsNullOrWhiteSpace(req.PmSuryaApplicationNo))
+                        {
+                            <p class="mb-2">PM Surya Ghar ID: <strong>@req.PmSuryaApplicationNo</strong></p>
+                        }
+                        <p class="text-muted small mb-2">Document verification is complete. You can still delete / re-upload the PM approval document(s) below.</p>
+                        <hr />
+                        @* Final approval ke baad bhi admin approval document(s)
+                           delete karke wapas upload kar sakta hai. *@
+                        <label class="form-label mb-1">Upload Approval Document(s) — user downloadable</label>
+                        <input id="reApprovalDocs" type="file" class="form-control mb-2" multiple accept=".pdf,.png,.jpg,.jpeg" />
+                        <button id="btnUploadApproval" class="btn btn-outline-success w-100 mb-2">Upload Approval Document(s)</button>
                         <a asp-action="Index" class="btn btn-outline-secondary w-100">← Back to PM Surya list</a>
                     </div>
                 </div>
@@ -102,8 +110,14 @@
                 <div class="card">
                     <div class="card-header bg-success text-white">Approve &amp; Advance</div>
                     <div class="card-body">
+                        @if (allDocsApproved)
+                        {
+                            <div class="alert alert-info py-2 mb-2">
+                                All documents are verified ✓ — now enter the <strong>PM Surya Ghar ID</strong> and click Approve All to finish this stage.
+                            </div>
+                        }
                         <p>Verify all documents, then enter the PM Surya Ghar ID and (optionally) attach the approval document(s) the user can download. Approval opens <strong>Meter Dispatch</strong> &amp; <strong>Site Survey</strong> together. The user's mobile and email are shown at the top for quick contact.</p>
-                        <label class="form-label mb-1">PM Surya Ghar ID No.</label>
+                        <label class="form-label mb-1">PM Surya Ghar ID No. <span class="text-danger">*</span></label>
                         <input id="pmAppNo" class="form-control mb-2" placeholder="e.g., RJ-PMSG-2026-000123" value="@(req.PmSuryaApplicationNo ?? "")" />
                         <label class="form-label mb-1">Approval Document(s) — user downloadable</label>
                         <input id="approvalDocs" type="file" class="form-control mb-2" multiple accept=".pdf,.png,.jpg,.jpeg" />
@@ -138,7 +152,48 @@ $('.btn-reject').on('click', function () {
     });
 });
 
+// Admin-uploaded PM approval document delete — confirm ke baad remove,
+// phir admin naya upload kar sakta hai.
+$('.btn-del-approval').on('click', function () {
+    if (!confirm('Delete this approval document? You can upload a new one after deleting.')) return;
+    const id = $(this).data('id');
+    $.post('@Url.Action("DeleteApprovalDocument")', { docId: id, __RequestVerificationToken: token }, function (r) {
+        if (r.success) { setTimeout(function () { location.reload(); }, 600); }
+    });
+});
+
+// Final approval ke baad approval document(s) re-upload.
+$('#btnUploadApproval').on('click', function () {
+    var files = document.getElementById('reApprovalDocs').files;
+    if (!files.length) { alert('Please select at least one file.'); return; }
+    $(this).prop('disabled', true).text('Uploading…');
+
+    var fd = new FormData();
+    fd.append('requestId', @req.Id);
+    fd.append('__RequestVerificationToken', token);
+    for (var i = 0; i < files.length; i++) { fd.append('files', files[i]); }
+
+    $.ajax({
+        url: '@Url.Action("UploadApprovalDocument")',
+        type: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false
+    }).done(function (r) {
+        if (r.success) { setTimeout(function () { location.reload(); }, 600); }
+        else { $('#btnUploadApproval').prop('disabled', false).text('Upload Approval Document(s)'); }
+    }).fail(function () {
+        $('#btnUploadApproval').prop('disabled', false).text('Upload Approval Document(s)');
+    });
+});
+
 $('#btnAdvance').on('click', function () {
+    // PM Surya Ghar ID mandatory — bina ID ke final approve nahi hoga.
+    if (!$('#pmAppNo').val().trim()) {
+        alert('PM Surya Ghar ID No. is required. Please enter the ID before final approval.');
+        $('#pmAppNo').focus();
+        return;
+    }
     if (!confirm('Approve all PM Surya Ghar docs and open Meter Dispatch + Site Survey?')) return;
     $(this).prop('disabled', true).text('Approving…');
 

@@ -123,6 +123,25 @@ public class PMSuryaController : Controller
         var req = await _uow.SolarRequests.GetByIdAsync(id);
         if (req == null) return NotFound();
 
+        // Admin-uploaded PM approval documents are ALWAYS auto-approved — admin
+        // khud upload karta hai to approve/reject ka koi matlab nahi. Purane
+        // (legacy) rows jo Pending reh gaye the unhe yahan self-heal kar dete
+        // hain taaki table mein Approve/Reject kabhi na dikhe.
+        var pendingApprovalDocs = (await _uow.PMDocuments.FindAsync(d =>
+                d.SolarRequestId == id &&
+                d.DocumentType == DocumentType.PMApprovalDocument &&
+                d.Status == ApprovalStatus.Pending)).ToList();
+        if (pendingApprovalDocs.Any())
+        {
+            foreach (var d in pendingApprovalDocs)
+            {
+                d.Status = ApprovalStatus.Approved;
+                d.UpdatedAt = DateTime.UtcNow;
+                _uow.PMDocuments.Update(d);
+            }
+            await _uow.SaveChangesAsync();
+        }
+
         var docs = await _pmDocs.GetByRequestIdAsync(id);
         ViewBag.Request = req;
         ViewBag.Documents = docs;
@@ -194,6 +213,19 @@ public class PMSuryaController : Controller
             });
         }
 
+        // ── PM Surya Ghar ID is mandatory for final approval. Jab tak admin
+        //    ID upload/enter nahi karta, batch approve + stage advance blocked
+        //    rahega (UI bhi ID form ko tab tak visible rakhta hai). ──────────
+        if (string.IsNullOrWhiteSpace(pmSuryaApplicationNo) &&
+            string.IsNullOrWhiteSpace(req.PmSuryaApplicationNo))
+        {
+            return Json(new
+            {
+                success = false,
+                message = "PM Surya Ghar ID No. is required. Enter the ID before final approval."
+            });
+        }
+
         // Mark all required PM docs approved
         foreach (var d in docs)
         {
@@ -216,13 +248,15 @@ public class PMSuryaController : Controller
                 var (ok, path, _) = await _fileUploadService.UploadAsync(file, $"{req.RequestNumber}/pmsurya-approval");
                 if (ok && !string.IsNullOrWhiteSpace(path))
                 {
-                    await _pmDocs.UploadDocumentAsync(
+                    var uploaded = await _pmDocs.UploadDocumentAsync(
                         solarRequestId: requestId,
                         documentType: DocumentType.PMApprovalDocument,
                         fileName: Path.GetFileNameWithoutExtension(file.FileName),
                         filePath: path,
                         contentType: file.ContentType,
                         fileSize: file.Length);
+                    // Admin ka upload hai — direct Approved (koi review nahi chahiye).
+                    await _pmDocs.ApproveDocumentAsync(uploaded.Id, null);
                 }
             }
         }
@@ -251,5 +285,65 @@ public class PMSuryaController : Controller
         });
 
         return Json(new { success = true, message = "PM Surya Ghar approved. Meter Dispatch & Site Survey are now open." });
+    }
+
+    // POST: /Admin/PMSurya/DeleteApprovalDocument — sirf admin-uploaded
+    // PMApprovalDocument delete ho sakta hai (user ke documents nahi).
+    // Delete ke baad admin wapas naya approval document upload kar sakta hai.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteApprovalDocument(int docId)
+    {
+        var doc = await _uow.PMDocuments.GetByIdAsync(docId);
+        if (doc == null)
+            return Json(new { success = false, message = "Document not found" });
+
+        if (doc.DocumentType != DocumentType.PMApprovalDocument)
+            return Json(new { success = false, message = "Only admin-uploaded PM approval documents can be deleted here." });
+
+        // Physical file bhi hata do taaki orphan files na bachein.
+        if (!string.IsNullOrWhiteSpace(doc.FilePath))
+            _fileUploadService.DeleteFile(doc.FilePath);
+
+        await _pmDocs.DeleteDocumentAsync(docId);
+        return Json(new { success = true, message = "Approval document deleted. You can upload a new one." });
+    }
+
+    // POST: /Admin/PMSurya/UploadApprovalDocument — final approval ke BAAD bhi
+    // admin approval document(s) upload/replace kar sakta hai. Uploads direct
+    // Approved status ke saath save hote hain.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UploadApprovalDocument(int requestId, List<IFormFile>? files)
+    {
+        var req = await _uow.SolarRequests.GetByIdAsync(requestId);
+        if (req == null)
+            return Json(new { success = false, message = "Request not found" });
+
+        var validFiles = (files ?? new List<IFormFile>()).Where(f => f != null && f.Length > 0).ToList();
+        if (!validFiles.Any())
+            return Json(new { success = false, message = "Please select at least one file to upload." });
+
+        var count = 0;
+        foreach (var file in validFiles)
+        {
+            var (ok, path, _) = await _fileUploadService.UploadAsync(file, $"{req.RequestNumber}/pmsurya-approval");
+            if (ok && !string.IsNullOrWhiteSpace(path))
+            {
+                var uploaded = await _pmDocs.UploadDocumentAsync(
+                    solarRequestId: requestId,
+                    documentType: DocumentType.PMApprovalDocument,
+                    fileName: Path.GetFileNameWithoutExtension(file.FileName),
+                    filePath: path,
+                    contentType: file.ContentType,
+                    fileSize: file.Length);
+                await _pmDocs.ApproveDocumentAsync(uploaded.Id, null);
+                count++;
+            }
+        }
+
+        return Json(new { success = count > 0, message = count > 0
+            ? $"{count} approval document(s) uploaded."
+            : "Upload failed. Please try again." });
     }
 }

@@ -105,7 +105,10 @@
                             <td>
                                 @if (!string.IsNullOrWhiteSpace(c.DocumentPath))
                                 {
-                                    <a href="@c.DocumentPath" target="_blank" style="color:var(--accent);font-weight:600">View</a>
+                                    @* New tab ki jagah in-page modal mein document/image
+                                       preview — same _FileModal jo PM Surya / Operations
+                                       pages use karte hain. *@
+                                    <a href="javascript:void(0)" onclick="openFileModal('@c.DocumentPath')" style="color:var(--accent);font-weight:600">View</a>
                                 }
                                 else
                                 {
@@ -188,3 +191,6 @@
     }
 </script>
 }
+
+@* In-page file preview modal (no new tab) *@
+@await Html.PartialAsync("_FileModal")

@@ -54,6 +54,18 @@ public class OperationsController : Controller
         if (mode == "all" || showHistory)
         {
             all = await _uow.SolarRequests.FindAsync(x => (int)x.CurrentStage >= (int)stage);
+
+            // DCR: jo request abhi DCRUpdate stage par hai lekin user ne DCR
+            // upload hi nahi kiya, wo "All" (history) mein bhi nahi aani
+            // chahiye — admin ke liye abhi koi record hai hi nahi. Stage se
+            // aage badh chuki (Completed) rows history hain, wo dikhengi.
+            if (string.Equals(op, "dcr", StringComparison.OrdinalIgnoreCase))
+            {
+                var docIds = (await _uow.DCRDocuments.GetAllAsync())
+                             .Select(d => d.SolarRequestId)
+                             .ToHashSet();
+                all = all.Where(r => (int)r.CurrentStage > (int)stage || docIds.Contains(r.Id)).ToList();
+            }
         }
         else if (mode == "approved")
         {
@@ -82,6 +94,20 @@ public class OperationsController : Controller
         else // pending
         {
             all = await _uow.SolarRequests.FindAsync(x => x.CurrentStage == stage);
+
+            // DCR pending queue: sirf wo requests dikhao jinke liye USER ne
+            // apna DCR upload kar diya hai (DCRDocument row Pending status mein).
+            // Installation ke baad stage DCRUpdate par aate hi row pending mein
+            // nahi aani chahiye — jab tak user upload nahi karta, admin ke paas
+            // verify karne ko kuch hai hi nahi. (Same pattern as PM Surya pending.)
+            if (string.Equals(op, "dcr", StringComparison.OrdinalIgnoreCase))
+            {
+                var pendingDocIds = (await _uow.DCRDocuments.FindAsync(
+                                        d => d.ApprovalStatus == ApprovalStatus.Pending))
+                                    .Select(d => d.SolarRequestId)
+                                    .ToHashSet();
+                all = all.Where(r => pendingDocIds.Contains(r.Id)).ToList();
+            }
         }
 
         IEnumerable<SolarRequest> q = all;
