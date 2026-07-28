@@ -1,39 +1,86 @@
 @*
     === Reusable Report Filter Toolbar ===
 
-    Drop-in filter toolbar for any admin report table. Provides:
-        • Free-text search (matches against each row's `data-search` attribute)
-        • From Date / To Date filter (matches each row's `data-date` attribute, YYYY-MM-DD)
-        • Clear button + live row count
+    Drop-in filter toolbar for any admin report table (or card list). Provides:
+        • Free-text search   → matches each row's `data-search`
+        • Member ID          → matches each row's `data-mid`
+        • City               → dropdown auto-built from each row's `data-city`
+        • State              → dropdown auto-built from each row's `data-state`
+        • Worker / Installer → dropdown auto-built from each row's `data-worker`
+                               (off by default — switch on with FilterShowWorker)
+        • From / To date     → matches each row's `data-date` (YYYY-MM-DD)
+        • Clear button + live "N shown of M" count
 
     USAGE — in your view, do TWO things:
 
       1. Put the toolbar partial just above the table:
             @{
-                ViewData["FilterTableId"] = "myUniqueTableId";
+                ViewData["FilterTableId"]     = "myUniqueTableId";
                 ViewData["FilterPlaceholder"] = "Search by Member ID, name, city...";
+                ViewData["FilterDateLabel"]   = "Request Date";   // optional
+                ViewData["FilterShowMemberId"] = false;           // optional, default true
+                ViewData["FilterShowCity"]     = false;           // optional, default true
+                ViewData["FilterShowState"]    = false;           // optional, default true
+                ViewData["FilterShowDate"]     = false;           // optional, default true
+                ViewData["FilterShowWorker"]   = true;            // optional, default FALSE
+                ViewData["FilterWorkerLabel"]  = "Installer";     // optional, default "Worker"
             }
             @await Html.PartialAsync("_ReportFilterToolbar")
 
-      2. On the table, set id="myUniqueTableId" and on each row add:
-            <tr data-search="@($"{member.IdNo} {member.Name} {req.City} {req.State} {req.RequestNumber}".ToLower())"
-                data-date="@req.CreatedAt.ToString("yyyy-MM-dd")">
+      2. On the table set id="myUniqueTableId", and on each row add the
+         attributes the toolbar filters on:
+            <tr data-search="@($"{r.UserId} {r.ApplicantName} {r.City} {r.State} {r.RequestNumber}".ToLower())"
+                data-mid="@r.UserId"
+                data-city="@r.City"
+                data-state="@r.State"
+                data-date="@r.CreatedAt.ToString("yyyy-MM-dd")">
 
     `data-search` should be a lowercased space-separated string of every value
-    you want the search box to match. `data-date` is the row's primary date in
-    YYYY-MM-DD form (so string comparison works for ranges).
+    the search box should match. `data-date` is the row's primary date in
+    YYYY-MM-DD form (so plain string comparison works for ranges).
 
-    The JS is fully self-contained — wires itself up to the table id and runs
-    on DOMContentLoaded. Multiple toolbars on the same page work as long as the
-    table ids are unique.
+    Works on card lists too: point FilterTableId at a container <div> and give
+    each direct child card the same data-* attributes.
+
+    The JS is fully self-contained. It defers to DOMContentLoaded, so the
+    toolbar can sit ABOVE the table it filters. Multiple toolbars on one page
+    work as long as the element ids differ.
 *@
 @{
-    var tableId    = ViewData["FilterTableId"]    as string ?? "report-table";
+    var tableId     = ViewData["FilterTableId"]     as string ?? "report-table";
     var placeholder = ViewData["FilterPlaceholder"] as string ?? "Search by Member ID, name, city, state...";
+    var dateLabel   = ViewData["FilterDateLabel"]   as string ?? "Request Date";
+
+    // Each field can be switched off for reports where it makes no sense
+    // (e.g. the Solar Project master has no member / city / state).
+    var showMid   = ViewData["FilterShowMemberId"] as bool? ?? true;
+    var showCity  = ViewData["FilterShowCity"]     as bool? ?? true;
+    var showState = ViewData["FilterShowState"]    as bool? ?? true;
+    var showDate  = ViewData["FilterShowDate"]     as bool? ?? true;
+
+    // Worker/installer filter is opt-IN — only the operations queues that carry
+    // an assigned person (Material Dispatch, Installation) switch it on.
+    var showWorker  = ViewData["FilterShowWorker"]  as bool? ?? false;
+    var workerLabel = ViewData["FilterWorkerLabel"] as string ?? "Worker";
+
+    // ViewData is shared for the whole view, so a second toolbar on the same
+    // page would inherit the first one's switches. Reset them after reading.
+    ViewData.Remove("FilterShowMemberId");
+    ViewData.Remove("FilterShowCity");
+    ViewData.Remove("FilterShowState");
+    ViewData.Remove("FilterShowDate");
+    ViewData.Remove("FilterShowWorker");
+    ViewData.Remove("FilterWorkerLabel");
+    ViewData.Remove("FilterDateLabel");
+    ViewData.Remove("FilterPlaceholder");
 
     // Unique element ids derived from the table id so multiple toolbars on
     // the same page don't collide.
     var idSearch = $"rf_{tableId}_search";
+    var idMid    = $"rf_{tableId}_mid";
+    var idCity   = $"rf_{tableId}_city";
+    var idState  = $"rf_{tableId}_state";
+    var idWorker = $"rf_{tableId}_worker";
     var idFrom   = $"rf_{tableId}_from";
     var idTo     = $"rf_{tableId}_to";
     var idClear  = $"rf_{tableId}_clear";
@@ -42,17 +89,48 @@
 
 <div class="report-filter">
     <div class="rf-field rf-field-grow">
-        <label class="rf-label">Search</label>
+        <label class="rf-label" for="@idSearch">Search</label>
         <input id="@idSearch" type="text" class="rf-input" placeholder="@placeholder" autocomplete="off" />
     </div>
-    <div class="rf-field rf-field-narrow">
-        <label class="rf-label">From Date</label>
-        <input id="@idFrom" type="date" class="rf-input" />
-    </div>
-    <div class="rf-field rf-field-narrow">
-        <label class="rf-label">To Date</label>
-        <input id="@idTo" type="date" class="rf-input" />
-    </div>
+    @if (showMid)
+    {
+        <div class="rf-field rf-field-narrow">
+            <label class="rf-label" for="@idMid">Member ID</label>
+            <input id="@idMid" type="text" class="rf-input" placeholder="Member ID" autocomplete="off" />
+        </div>
+    }
+    @if (showCity)
+    {
+        <div class="rf-field rf-field-narrow">
+            <label class="rf-label" for="@idCity">City</label>
+            <select id="@idCity" class="rf-input"><option value="">All Cities</option></select>
+        </div>
+    }
+    @if (showState)
+    {
+        <div class="rf-field rf-field-narrow">
+            <label class="rf-label" for="@idState">State</label>
+            <select id="@idState" class="rf-input"><option value="">All States</option></select>
+        </div>
+    }
+    @if (showWorker)
+    {
+        <div class="rf-field rf-field-narrow">
+            <label class="rf-label" for="@idWorker">@workerLabel</label>
+            <select id="@idWorker" class="rf-input"><option value="">@($"All {workerLabel}s")</option></select>
+        </div>
+    }
+    @if (showDate)
+    {
+        <div class="rf-field rf-field-narrow">
+            <label class="rf-label" for="@idFrom">@dateLabel From</label>
+            <input id="@idFrom" type="date" class="rf-input" />
+        </div>
+        <div class="rf-field rf-field-narrow">
+            <label class="rf-label" for="@idTo">@dateLabel To</label>
+            <input id="@idTo" type="date" class="rf-input" />
+        </div>
+    }
     <div class="rf-field">
         <label class="rf-label">&nbsp;</label>
         <button type="button" id="@idClear" class="rf-clear">✕ Clear</button>
@@ -62,51 +140,114 @@
 
 <script>
 (function () {
-    // Scope by table id so multiple filters on one page coexist.
-    const tableId  = '@tableId';
-    const $table   = document.getElementById(tableId);
-    if (!$table) {
-        console.warn('[ReportFilter] table not found: #' + tableId);
-        return;
-    }
-    const $search  = document.getElementById('@idSearch');
-    const $from    = document.getElementById('@idFrom');
-    const $to      = document.getElementById('@idTo');
-    const $clear   = document.getElementById('@idClear');
-    const $count   = document.getElementById('@idCount');
-    const $tbody   = $table.querySelector('tbody');
-    if (!$tbody) return;
-    const rows     = Array.from($tbody.querySelectorAll('tr'));
+    // The toolbar renders ABOVE the table it filters, so the target element
+    // doesn't exist yet at parse time — always defer to DOMContentLoaded.
+    function init() {
+        var host = document.getElementById('@tableId');
+        if (!host) { console.warn('[ReportFilter] element not found: #@tableId'); return; }
 
-    function apply() {
-        const q    = (($search && $search.value) || '').trim().toLowerCase();
-        const from = ($from && $from.value) || '';
-        const to   = ($to   && $to.value)   || '';
-        let shown  = 0;
-
-        for (const r of rows) {
-            const haystack = r.getAttribute('data-search') || '';
-            const date     = r.getAttribute('data-date')   || '';
-            let ok = true;
-            if (q && !haystack.includes(q)) ok = false;
-            if (ok && from && date && date < from) ok = false;
-            if (ok && to   && date && date > to)   ok = false;
-            r.style.display = ok ? '' : 'none';
-            if (ok) shown++;
+        // Tables filter their tbody rows; anything else (a card list container)
+        // filters its direct children.
+        var rows;
+        if (host.tagName === 'TABLE') {
+            var tbody = host.querySelector('tbody');
+            if (!tbody) return;
+            rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+        } else {
+            rows = Array.prototype.slice.call(host.children);
         }
-        if ($count) $count.textContent = shown + ' shown of ' + rows.length;
+        // Placeholder rows ("No records") carry no data-search — never filter
+        // them, and never count them.
+        rows = rows.filter(function (r) { return r.hasAttribute('data-search'); });
+
+        var $search = document.getElementById('@idSearch');
+        var $mid    = document.getElementById('@idMid');
+        var $city   = document.getElementById('@idCity');
+        var $state  = document.getElementById('@idState');
+        var $worker = document.getElementById('@idWorker');
+        var $from   = document.getElementById('@idFrom');
+        var $to     = document.getElementById('@idTo');
+        var $clear  = document.getElementById('@idClear');
+        var $count  = document.getElementById('@idCount');
+
+        // Build the City / State dropdowns from the values actually present in
+        // the table, so the options can never drift out of sync with the data.
+        function fillSelect($sel, attr, allLabel) {
+            if (!$sel) return;
+            var seen = {};
+            rows.forEach(function (r) {
+                var v = (r.getAttribute(attr) || '').trim();
+                if (v) seen[v] = true;
+            });
+            var keys = Object.keys(seen).sort(function (a, b) {
+                return a.localeCompare(b, undefined, { sensitivity: 'base' });
+            });
+            keys.forEach(function (v) {
+                var o = document.createElement('option');
+                o.value = v.toLowerCase();
+                o.textContent = v;
+                $sel.appendChild(o);
+            });
+            $sel.options[0].textContent = allLabel + ' (' + keys.length + ')';
+        }
+        fillSelect($city,  'data-city',  'All Cities');
+        fillSelect($state, 'data-state', 'All States');
+        fillSelect($worker, 'data-worker', 'All @workerLabel' + 's');
+
+        // Rows with no assigned person are invisible to a name-based dropdown,
+        // yet "kis-kis ko abhi tak assign nahi kiya" is exactly what the admin
+        // wants to filter on — so expose an explicit Unassigned option.
+        if ($worker && rows.some(function (r) { return !(r.getAttribute('data-worker') || '').trim(); })) {
+            var oNone = document.createElement('option');
+            oNone.value = '__none__';
+            oNone.textContent = '— Unassigned —';
+            $worker.appendChild(oNone);
+        }
+
+        function apply() {
+            var q     = (($search && $search.value) || '').trim().toLowerCase();
+            var mid   = (($mid    && $mid.value)    || '').trim().toLowerCase();
+            var city  = (($city   && $city.value)   || '').trim().toLowerCase();
+            var state = (($state  && $state.value)  || '').trim().toLowerCase();
+            var wrk   = (($worker && $worker.value) || '').trim().toLowerCase();
+            var from  = ($from && $from.value) || '';
+            var to    = ($to   && $to.value)   || '';
+            var shown = 0;
+
+            rows.forEach(function (r) {
+                var hay  = r.getAttribute('data-search') || '';
+                var date = r.getAttribute('data-date')   || '';
+                var ok = true;
+                if (q     && hay.indexOf(q) === -1) ok = false;
+                if (ok && mid   && (r.getAttribute('data-mid')   || '').toLowerCase().indexOf(mid) === -1) ok = false;
+                if (ok && city  && (r.getAttribute('data-city')  || '').toLowerCase() !== city)  ok = false;
+                if (ok && state && (r.getAttribute('data-state') || '').toLowerCase() !== state) ok = false;
+                if (ok && wrk) {
+                    var rw = (r.getAttribute('data-worker') || '').trim().toLowerCase();
+                    if (wrk === '__none__' ? rw !== '' : rw !== wrk) ok = false;
+                }
+                if (ok && from  && date && date < from) ok = false;
+                if (ok && to    && date && date > to)   ok = false;
+                r.style.display = ok ? '' : 'none';
+                if (ok) shown++;
+            });
+            if ($count) $count.textContent = shown + ' shown of ' + rows.length;
+        }
+
+        [$search, $mid].forEach(function (el) { if (el) el.addEventListener('input', apply); });
+        [$city, $state, $worker, $from, $to].forEach(function (el) { if (el) el.addEventListener('change', apply); });
+        if ($clear) $clear.addEventListener('click', function () {
+            [$search, $mid, $city, $state, $worker, $from, $to].forEach(function (el) { if (el) el.value = ''; });
+            apply();
+        });
+
+        apply();   // initial count
     }
 
-    if ($search) $search.addEventListener('input',  apply);
-    if ($from)   $from.addEventListener('change',   apply);
-    if ($to)     $to.addEventListener('change',     apply);
-    if ($clear)  $clear.addEventListener('click', function () {
-        if ($search) $search.value = '';
-        if ($from)   $from.value   = '';
-        if ($to)     $to.value     = '';
-        apply();
-    });
-
-    apply();   // initial count
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 })();
 </script>

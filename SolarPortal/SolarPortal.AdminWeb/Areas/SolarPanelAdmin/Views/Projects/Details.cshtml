@@ -1,249 +1,31 @@
-@model SolarPortal.Application.DTOs.SolarRequestDto
+﻿@model SolarPortal.Application.DTOs.SolarRequestDto
+@using SolarPortal.Domain.Entities
 @{
     ViewData["Title"] = @Model?.RequestNumber ?? "Project Details";
+
+    // Razor ka RUNTIME compiler generic type arguments mein bare type ke naam ko
+    // ek HTML tag samajh leta hai (build-time source generator ise handle kar leta
+    // hai, isliye build pass hone ke baad bhi page 500 deta tha). Isliye yahan
+    // non-generic IEnumerable use karte hain; count aur worker naam controller se
+    // simple types mein aate hain. Comment bhi // hai -- @ wala Razor comment is
+    // code block ke andar C# verbatim specifier ban jaata hai.
+    var payments      = ViewBag.Payments as System.Collections.IEnumerable;
+    var paymentCount  = (int)(ViewBag.PaymentCount ?? 0);
+    var totalPaid     = (decimal)(ViewBag.TotalPaid ?? 0m);
+    var meter         = ViewBag.MeterDispatch    as MeterDispatch;
+    var survey        = ViewBag.SiteSurvey       as SiteSurvey;
+    var material      = ViewBag.MaterialDispatch as MaterialDispatch;
+    var installation  = ViewBag.Installation     as Installation;
+    var dcr           = ViewBag.DCR              as DCRDocument;
+    var commission    = ViewBag.Commission       as Commission;
+    var solarProject  = ViewBag.SolarProject     as SolarProject;
+    var materialWorker = ViewBag.MaterialWorkerName as string;
+    var installerName  = ViewBag.InstallerName      as string;
+
+    var projectAmt = Model?.PlanAmount ?? 0m;
+    var due = System.Math.Max(0, projectAmt - totalPaid);
+    var paidPct = projectAmt > 0 ? (int)System.Math.Min(100, (double)(totalPaid / projectAmt * 100)) : 0;
 }
-
-<div class="page active">
-    <div class="ph">
-        <div class="ph-bc">🛡️ Admin / <a asp-controller="Projects" asp-action="Index" style="color:var(--sun)">Projects</a> / <span>Details</span></div>
-        <div class="ph-title">📄 Project @Model?.RequestNumber</div>
-        <div class="ph-sub">View and manage this solar connection project</div>
-    </div>
-
-    @if (Model != null)
-    {
-        <div class="g2">
-            <!-- Project Info -->
-            <div class="card">
-                <div class="ct"><span class="ct-dot"></span>Project Information</div>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <span class="detail-label">Request Number</span>
-                        <span class="detail-value">@Model.RequestNumber</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Status</span>
-                        <span class="detail-value">
-                            @{
-                                // Per spec: jab project Completed stage pe pahunch jaaye, status
-                                // "Approved" dikhna chahiye — "Pending" nahi. Workflow ke last step
-                                // (Domestic = DCR, Commercial = Installation) ke baad project
-                                // automatically complete + approved maana jaata hai.
-                                var effApproval = Model.CurrentStage == Domain.Enums.ProjectStatus.Completed
-                                    ? Domain.Enums.ApprovalStatus.Approved
-                                    : Model.ApprovalStatus;
-                            }
-                            <span class="sts @GetStatusClass(effApproval)">@effApproval</span>
-                        </span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Current Stage</span>
-                        <span class="detail-value">
-                            <span class="sts @GetStageClass(Model.CurrentStage)">@Model.CurrentStage.ToString().Replace("_", " ")</span>
-                        </span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Connection Type</span>
-                        <span class="detail-value">@Model.ConnectionType</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Applicant Info -->
-            <div class="card">
-                <div class="ct"><span class="ct-dot"></span>Applicant Details</div>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <span class="detail-label">Name</span>
-                        <span class="detail-value">@Model.ApplicantName</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Mobile</span>
-                        <span class="detail-value">@Model.MobileNumber</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Email</span>
-                        <span class="detail-value">@Model.Email</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Address</span>
-                        <span class="detail-value">@Model.Address, @Model.City, @Model.State @Model.PinCode</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Light Bill & PM Surya (change request: Tasks 3, 4, 7, 11) -->
-            <div class="card">
-                <div class="ct"><span class="ct-dot"></span>Light Bill & PM Surya Ghar</div>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <span class="detail-label">Light Bill Owner</span>
-                        <span class="detail-value">
-                            @(Model.LightBillOwnerType == "BloodRelation"
-                                ? "Blood Relation" + (string.IsNullOrWhiteSpace(Model.LightBillRelationName) ? "" : " — " + Model.LightBillRelationName)
-                                : (string.IsNullOrWhiteSpace(Model.LightBillOwnerType) ? "—" : "Self (own name)"))
-                        </span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Light Bill Number</span>
-                        <span class="detail-value">@(string.IsNullOrWhiteSpace(Model.LightBillNumber) ? "—" : Model.LightBillNumber)</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Loan Option</span>
-                        <span class="detail-value">
-                            @(Model.PmSuryaLoanOption switch {
-                                "Loan" => "With Loan",
-                                "WithoutLoan" => "Without Loan",
-                                _ => "—" })
-                        </span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">PM Surya Ghar App No.</span>
-                        <span class="detail-value">@(string.IsNullOrWhiteSpace(Model.PmSuryaApplicationNo) ? "—" : Model.PmSuryaApplicationNo)</span>
-                    </div>
-                </div>
-                <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
-                    @if (!string.IsNullOrWhiteSpace(Model.LightBillPath))
-                    {
-                        <a href="javascript:void(0)" onclick="openFileModal('@Model.LightBillPath')" class="btn btn-s btn-sm">📥 View Light Bill</a>
-                    }
-                    @if (Model.LightBillOwnerType == "BloodRelation" && !string.IsNullOrWhiteSpace(Model.LightBillRelationProofPath))
-                    {
-                        <a href="javascript:void(0)" onclick="openFileModal('@Model.LightBillRelationProofPath')" class="btn btn-s btn-sm">📥 View Relation Proof</a>
-                    }
-                </div>
-            </div>
-
-            <!-- Capacity & Amount -->
-            <div class="card">
-                <div class="ct"><span class="ct-dot"></span>Project Details</div>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <span class="detail-label">Capacity</span>
-                        <span class="detail-value">@Model.KVCapacity kV</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Requested Amount</span>
-                        <span class="detail-value gold">₹@Model.RequestedAmount.ToString("N0")</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Approved Amount</span>
-                        <span class="detail-value green">₹@Model.ApprovedAmount.ToString("N0")</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Submitted On</span>
-                        <span class="detail-value">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Documents -->
-            @if (Model.Documents.Any())
-            {
-                <div class="card">
-                    <div class="ct"><span class="ct-dot"></span>Attached Documents (@Model.Documents.Count)</div>
-                    <div style="max-height:300px;overflow-y:auto">
-                        @foreach (var doc in Model.Documents)
-                        {
-                                <div style="padding:12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-                                    <div>
-                                        <div style="font-size:12px">@doc.DocumentType</div>
-                                        <div style="color:var(--text2);font-size:11px">@doc.FileName</div>
-                                    </div>
-                                    <a href="javascript:void(0)" onclick="openFileModal('@doc.FilePath')" class="btn btn-s btn-sm">
-                                        📥 View
-                                    </a>
-                                </div>
-                        }
-                    </div>
-                </div>
-            }
-
-            <!-- Actions -->
-            <div class="card">
-                <div class="ct"><span class="ct-dot"></span>Actions</div>
-                <div class="btn-row">
-                    @if (Model.CurrentStage == Domain.Enums.ProjectStatus.Completed)
-                    {
-                        @* Project workflow ka last step ho chuka hai
-                           (Domestic = DCR Update, Commercial = Installation).
-                           Ab koi manual approve/reject nahi — project automatically
-                           complete + approved hai. Sirf status dikhao. *@
-                        <div class="alert alert-s" style="margin:0;width:100%">
-                            <span class="ai">✅</span>
-                            Project complete — all workflow steps finished. No further action needed.
-                        </div>
-                    }
-                    else if (Model.ApprovalStatus == Domain.Enums.ApprovalStatus.Rejected)
-                    {
-                        <div class="alert alert-d" style="margin:0;width:100%">
-                            <span class="ai">❌</span>
-                            This project was rejected. The user must re-submit.
-                        </div>
-                    }
-                        else
-                    {
-                        @* Approve / Reject buttons removed per change request. Initial
-                           request approval ab stage-wise workflow se hota hai
-                           (Payment Verification → PM Surya Ghar → Site Survey → ...).
-                           Per UI update: hide the inline stage override here to avoid
-                           accidental overrides. Use the workflow pages to manage stages. *@
-                        <div style="padding:8px 0;color:var(--text2);font-size:13px">Stage overrides hidden on this details page. Use the Workflow pages (Meter Dispatch / Site Survey / Operations) to change stages.</div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <!-- Status Flow -->
-        <div class="card" style="margin-top:20px">
-            <div class="ct"><span class="ct-dot"></span>Project Status Flow</div>
-            <partial name="~/Views/Shared/_StatusFlow.cshtml" model="(int)Model.CurrentStage" />
-        </div>
-    }
-    else
-    {
-        <div class="card">
-            <div style="text-align:center;padding:40px;color:var(--text3)">Project not found</div>
-        </div>
-    }
-</div>
-
-<style>
-.detail-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    padding: 0;
-}
-
-.detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.detail-label {
-    font-size: 12px;
-    color: var(--text2);
-    text-transform: uppercase;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-}
-
-.detail-value {
-    font-size: 16px;
-    color: var(--text1);
-    font-weight: 500;
-}
-
-.detail-value.gold {
-    color: var(--sun);
-}
-
-.detail-value.green {
-    color: var(--succ);
-}
-</style>
 
 @functions {
     string GetStatusClass(Domain.Enums.ApprovalStatus status) => status switch
@@ -254,134 +36,498 @@
         _ => "sts-pend"
     };
 
-    string GetStageClass(Domain.Enums.ProjectStatus stage) => stage switch
+    // Stage pill: jo stage guzar chuki hai wo green, current highlighted, aage wali muted.
+    string GetStageClass(Domain.Enums.ProjectStatus stage) =>
+        stage >= Domain.Enums.ProjectStatus.MeterDispatch ? "sts-act" : "sts-pend";
+
+    string Show(string s) => string.IsNullOrWhiteSpace(s) ? "—" : s;
+}
+
+<div class="page active">
+    @Html.AntiForgeryToken()
+
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <a asp-controller="Projects" asp-action="Index" style="color:var(--sun)">Projects</a> / <span>Details</span></div>
+        <div class="ph-title">📄 Project @Model?.RequestNumber</div>
+        <div class="ph-sub">Complete lifecycle — application, plan, payments and every workflow stage</div>
+    </div>
+
+    @if (Model == null)
     {
-        Domain.Enums.ProjectStatus.Registration => "sts-pend",
-        Domain.Enums.ProjectStatus.ProductSelection => "sts-pend",
-        Domain.Enums.ProjectStatus.Payment => "sts-pend",
-        Domain.Enums.ProjectStatus.PMSurvey => "sts-pend",
-        Domain.Enums.ProjectStatus.MeterDispatch => "sts-act",
-        Domain.Enums.ProjectStatus.MaterialDispatch => "sts-act",
-        Domain.Enums.ProjectStatus.Installation => "sts-act",
-        Domain.Enums.ProjectStatus.DCRUpdate => "sts-act",
-        Domain.Enums.ProjectStatus.Completed => "sts-act",
-        _ => "sts-pend"
-    };
-}
+        <div class="card">
+            <div style="text-align:center;padding:40px;color:var(--text3)">Project not found</div>
+        </div>
+        return;
+    }
 
-@section Scripts {
-    <script>
-        function approveProject(id) {
-            Swal.fire({
-                title: 'Approve Project?',
-                text: 'This will approve the solar connection request',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Approve',
-                cancelButtonText: 'Cancel',
-                background: '#ffffff',
-                color: '#1f2937'
-            }).then(result => {
-                if (result.isConfirmed) {
-                    const fd = new FormData();
-                    fd.append('id', id);
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
-                    if (token) fd.append('__RequestVerificationToken', token.value);
+    @{
+        // Per spec: Completed stage par status "Approved" dikhna chahiye — "Pending" nahi.
+        var effApproval = Model.CurrentStage == Domain.Enums.ProjectStatus.Completed
+            ? Domain.Enums.ApprovalStatus.Approved
+            : Model.ApprovalStatus;
+    }
 
-                    fetch('/SolarPanelAdmin/Projects/Approve', { method: 'POST', body: fd })
-                        .then(r => r.json())
-                        .then(d => {
-                            if (d.success) {
-                                Swal.fire('Approved', d.message || 'Approved', 'success').then(() => location.reload());
-                            } else {
-                                Swal.fire('Error', d.message || 'Failed', 'error');
-                            }
-                        });
+    @* ===== Summary strip — ek nazar mein project ki haalat ===== *@
+    <div class="pd-summary">
+        <div class="pd-stat">
+            <div class="pd-stat-l">Member</div>
+            <div class="pd-stat-v">@Show(string.IsNullOrWhiteSpace(Model.MemberFullName) ? Model.ApplicantName : Model.MemberFullName)</div>
+            <div class="pd-stat-s"><code class="mid-code">@Model.UserId</code></div>
+        </div>
+        <div class="pd-stat">
+            <div class="pd-stat-l">Capacity</div>
+            <div class="pd-stat-v">@Model.KVCapacity kV</div>
+            <div class="pd-stat-s">@Model.ConnectionType</div>
+        </div>
+        <div class="pd-stat">
+            <div class="pd-stat-l">Project Amount</div>
+            <div class="pd-stat-v gold">₹@projectAmt.ToString("N0")</div>
+            <div class="pd-stat-s">Approved ₹@Model.ApprovedAmount.ToString("N0")</div>
+        </div>
+        <div class="pd-stat">
+            <div class="pd-stat-l">Paid (Verified)</div>
+            <div class="pd-stat-v green">₹@totalPaid.ToString("N0")</div>
+            <div class="pd-prog"><i style="width:@paidPct%"></i></div>
+        </div>
+        <div class="pd-stat">
+            <div class="pd-stat-l">Outstanding Due</div>
+            <div class="pd-stat-v @(due > 0 ? "red" : "green")">₹@due.ToString("N0")</div>
+            <div class="pd-stat-s">@(due > 0 ? "Payment pending" : "Fully paid")</div>
+        </div>
+        <div class="pd-stat">
+            <div class="pd-stat-l">Status</div>
+            <div class="pd-stat-v" style="font-size:15px">
+                <span class="sts @GetStatusClass(effApproval)">@effApproval</span>
+            </div>
+            <div class="pd-stat-s">
+                <span class="sts @GetStageClass(Model.CurrentStage)">@Model.CurrentStage.ToString().Replace("_", " ")</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="g2">
+        @* ===== Applicant ===== *@
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Applicant Details</div>
+            <div class="pd-grid">
+                <div><div class="pd-l">Name</div><div class="pd-v">@Show(Model.ApplicantName)</div></div>
+                <div><div class="pd-l">Member ID</div><div class="pd-v"><code class="mid-code">@Model.UserId</code></div></div>
+                <div><div class="pd-l">Mobile</div><div class="pd-v"><a href="tel:@Model.MobileNumber" style="color:var(--accent)">@Show(Model.MobileNumber)</a></div></div>
+                <div><div class="pd-l">Email</div><div class="pd-v" style="word-break:break-all">@Show(Model.Email)</div></div>
+                <div><div class="pd-l">Aadhar</div><div class="pd-v">@Show(Model.AadharNumber)</div></div>
+                <div><div class="pd-l">PAN</div><div class="pd-v">@Show(Model.PANNumber)</div></div>
+                <div style="grid-column:1/-1">
+                    <div class="pd-l">Address</div>
+                    <div class="pd-v">@Show($"{Model.Address}, {Model.City}, {Model.State} {Model.PinCode}".Trim(' ', ','))</div>
+                </div>
+            </div>
+        </div>
+
+        @* ===== Plan & Product ===== *@
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Plan &amp; Product</div>
+            <div class="pd-grid">
+                <div style="grid-column:1/-1">
+                    <div class="pd-l">Selected Plan / Product</div>
+                    <div class="pd-v"><partial name="_PlanCell" model="Model" /></div>
+                </div>
+                <div><div class="pd-l">Request Type</div><div class="pd-v">@Model.RequestType.ToString().Replace("_", " ")</div></div>
+                <div><div class="pd-l">Capacity</div><div class="pd-v">@Model.KVCapacity kV</div></div>
+                <div><div class="pd-l">Requested Amount</div><div class="pd-v gold">₹@Model.RequestedAmount.ToString("N0")</div></div>
+                <div><div class="pd-l">Approved Amount</div><div class="pd-v green">₹@Model.ApprovedAmount.ToString("N0")</div></div>
+                @if (solarProject != null)
+                {
+                    <div><div class="pd-l">Plan Master</div><div class="pd-v">@solarProject.Name</div></div>
+                    <div><div class="pd-l">Plan Project Amount</div><div class="pd-v">₹@solarProject.ProjectAmount.ToString("N0")</div></div>
                 }
-            });
-        }
+                <div><div class="pd-l">Submitted On</div><div class="pd-v">@Model.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</div></div>
+            </div>
+        </div>
 
-        function rejectProject(id) {
-            Swal.fire({
-                title: 'Reject Project?',
-                text: 'Enter rejection reason',
-                icon: 'warning',
-                input: 'textarea',
-                inputPlaceholder: 'Reason for rejection...',
-                showCancelButton: true,
-                confirmButtonText: 'Reject',
-                background: '#ffffff',
-                color: '#1f2937',
-                preConfirm: (reason) => {
-                    if (!reason) {
-                        Swal.showValidationMessage('Please enter a reason');
-                        return false;
+        @* ===== Light Bill & PM Surya ===== *@
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Light Bill &amp; PM Surya Ghar</div>
+            <div class="pd-grid">
+                <div>
+                    <div class="pd-l">Light Bill Owner</div>
+                    <div class="pd-v">
+                        @(Model.LightBillOwnerType == "BloodRelation"
+                            ? "Blood Relation" + (string.IsNullOrWhiteSpace(Model.LightBillRelationName) ? "" : " — " + Model.LightBillRelationName)
+                            : (string.IsNullOrWhiteSpace(Model.LightBillOwnerType) ? "—" : "Self (own name)"))
+                    </div>
+                </div>
+                <div><div class="pd-l">Light Bill Number</div><div class="pd-v">@Show(Model.LightBillNumber)</div></div>
+                <div>
+                    <div class="pd-l">Loan Option</div>
+                    <div class="pd-v">@(Model.PmSuryaLoanOption switch { "Loan" => "With Loan", "WithoutLoan" => "Without Loan", _ => "—" })</div>
+                </div>
+                <div><div class="pd-l">PM Surya Ghar App No.</div><div class="pd-v">@Show(Model.PmSuryaApplicationNo)</div></div>
+            </div>
+            <div class="pd-files">
+                @if (!string.IsNullOrWhiteSpace(Model.LightBillPath))
+                {
+                    <a href="javascript:void(0)" onclick="openFileModal('@Model.LightBillPath')" class="btn btn-s btn-sm">📄 Light Bill</a>
+                }
+                @if (Model.LightBillOwnerType == "BloodRelation" && !string.IsNullOrWhiteSpace(Model.LightBillRelationProofPath))
+                {
+                    <a href="javascript:void(0)" onclick="openFileModal('@Model.LightBillRelationProofPath')" class="btn btn-s btn-sm">📄 Relation Proof</a>
+                }
+            </div>
+        </div>
+
+        @* ===== Admin notes ===== *@
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Admin Notes</div>
+            <div class="pd-grid">
+                <div style="grid-column:1/-1"><div class="pd-l">Notes</div><div class="pd-v">@Show(Model.AdminNotes)</div></div>
+                @if (!string.IsNullOrWhiteSpace(Model.RejectionReason))
+                {
+                    <div style="grid-column:1/-1">
+                        <div class="pd-l">Rejection Reason</div>
+                        <div class="pd-v" style="color:var(--red)">@Model.RejectionReason</div>
+                    </div>
+                }
+            </div>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);color:var(--text2);font-size:12.5px">
+                Stage overrides is page par nahi hain — stage badalne ke liye Workflow pages
+                (Meter Dispatch / Site Survey / Material Dispatch / Installation / DCR) use kijiye.
+            </div>
+        </div>
+    </div>
+
+    @* ===== Payments ===== *@
+    <div class="card" style="margin-top:18px">
+        <div class="ct"><span class="ct-dot"></span>Payments (@paymentCount) — Paid ₹@totalPaid.ToString("N0") of ₹@projectAmt.ToString("N0")</div>
+        @if (paymentCount == 0)
+        {
+            <div style="padding:18px;text-align:center;color:var(--text3)">No payments recorded yet.</div>
+        }
+        else
+        {
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Receipt #</th>
+                            <th style="text-align:right">Amount</th>
+                            <th>UTR</th>
+                            <th>Method</th>
+                            <th>Payment Date</th>
+                            <th>Status</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (SolarPortal.Domain.Entities.Payment pay in payments)
+                    {
+                        var payRejected = pay.Status == Domain.Enums.PaymentStatus.Rejected;
+                        <tr>
+                            <td>@Show(pay.ReceiptNumber)</td>
+                            <td style="text-align:right;font-weight:600;color:var(--green)">₹@pay.Amount.ToString("N0")</td>
+                            <td><code style="font-size:11px">@Show(pay.UTRNumber)</code></td>
+                            <td>@Show(pay.PaymentMethod)</td>
+                            <td>@pay.PaymentDate.ToLocalTime().ToString("dd MMM yyyy")</td>
+                            <td>
+                                @if (pay.IsVerified)
+                                {
+                                    <span class="sts sts-act">✓ Verified</span>
+                                }
+                                else if (payRejected)
+                                {
+                                    <span class="sts sts-rej">✕ Rejected</span>
+                                }
+                                else
+                                {
+                                    <span class="sts sts-pend">⏳ Pending</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(pay.ReceiptImagePath))
+                                {
+                                    <a href="javascript:void(0)" onclick="openFileModal('@pay.ReceiptImagePath')" style="color:var(--accent);font-weight:600">View</a>
+                                }
+                                else { <span style="color:var(--text3)">—</span> }
+                            </td>
+                        </tr>
                     }
-                    return reason;
-                }
-            }).then(result => {
-                if (result.isConfirmed) {
-                    const fd = new FormData();
-                    fd.append('id', id);
-                    fd.append('reason', result.value);
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
-                    if (token) fd.append('__RequestVerificationToken', token.value);
-
-                    fetch('/SolarPanelAdmin/Projects/Reject', { method: 'POST', body: fd })
-                        .then(r => r.json())
-                        .then(d => {
-                            if (d.success) {
-                                Swal.fire('Rejected', d.message || 'Rejected', 'success').then(() => location.reload());
-                            } else {
-                                Swal.fire('Error', d.message || 'Failed', 'error');
-                            }
-                        });
-                }
-            });
+                    </tbody>
+                </table>
+            </div>
         }
+    </div>
 
-        function updateStage(id) {
-            Swal.fire({
-                title: 'Override Project Stage',
-                text: 'Select the stage to set this project to',
-                input: 'select',
-                inputOptions: {
-                    '1': 'Registration',
-                    '2': 'Product Selection',
-                    '3': 'Payment',
-                    '4': 'PM Survey',
-                    '5': 'Meter Dispatch',
-                    '7': 'Material Dispatch',
-                    '8': 'Installation',
-                    '9': 'DCR Update',
-                    '10': 'Completed'
-                },
-                showCancelButton: true,
-                confirmButtonText: 'Update Stage',
-                background: '#ffffff',
-                color: '#1f2937'
-            }).then(result => {
-                if (result.isConfirmed && result.value) {
-                    const fd = new FormData();
-                    fd.append('Id', id);
-                    fd.append('NewStage', result.value);
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
-                    if (token) fd.append('__RequestVerificationToken', token.value);
+    @* ===== Workflow stages =====
+       Har stage ka apna card. Jo stage abhi hui nahi, uska card "pending" state
+       mein dikhta hai — taaki admin ko turant pata chale kahan atka hai. *@
+    <div class="pd-section-title">Workflow Records</div>
+    <div class="g2">
 
-                    fetch('/SolarPanelAdmin/Projects/UpdateStage', { method: 'POST', body: fd })
-                        .then(r => r.json())
-                        .then(d => {
-                            if (d.success) {
-                                Swal.fire('Updated', 'Stage updated successfully', 'success').then(() => location.reload());
-                            } else {
-                                Swal.fire('Error', d.message || 'Failed', 'error');
-                            }
-                        });
+        @* --- Meter Dispatch --- *@
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>⚡ Meter Dispatch</div>
+            @if (meter == null)
+            {
+                <div class="pd-empty">Not dispatched yet.</div>
+            }
+            else
+            {
+                <div class="pd-grid">
+                    <div><div class="pd-l">Meter Number</div><div class="pd-v">@Show(meter.MeterNumber)</div></div>
+                    <div><div class="pd-l">Meter Type</div><div class="pd-v">@Show(meter.MeterType)</div></div>
+                    <div><div class="pd-l">Dispatch Date</div><div class="pd-v">@(meter.DispatchDate?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</div></div>
+                    <div><div class="pd-l">Courier</div><div class="pd-v">@Show(meter.CourierDetails)</div></div>
+                    <div style="grid-column:1/-1"><div class="pd-l">Remark</div><div class="pd-v">@Show(meter.Remark)</div></div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(meter.DispatchDocumentPath))
+                {
+                    <div class="pd-files"><a href="javascript:void(0)" onclick="openFileModal('@meter.DispatchDocumentPath')" class="btn btn-s btn-sm">📄 Dispatch Document</a></div>
                 }
-            });
+            }
+        </div>
+
+        @* --- Site Survey --- *@
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>📐 Site Survey</div>
+            @if (survey == null)
+            {
+                <div class="pd-empty">No survey submitted yet.</div>
+            }
+            else
+            {
+                <div class="pd-grid">
+                    <div><div class="pd-l">Survey Date</div><div class="pd-v">@(survey.SurveyDate?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</div></div>
+                    <div><div class="pd-l">Approval</div><div class="pd-v"><span class="sts @GetStatusClass(survey.ApprovalStatus)">@survey.ApprovalStatus</span></div></div>
+                    <div><div class="pd-l">Property Type</div><div class="pd-v">@Show(survey.PropertyType)</div></div>
+                    <div><div class="pd-l">Roof Type</div><div class="pd-v">@Show(survey.RoofType)</div></div>
+                    <div><div class="pd-l">Roof Area</div><div class="pd-v">@(survey.RoofTotalAreaSqft.HasValue ? survey.RoofTotalAreaSqft.Value.ToString("N0") + " sqft" : "—")</div></div>
+                    <div><div class="pd-l">Roof Direction</div><div class="pd-v">@Show(survey.RoofDirection)</div></div>
+                    <div><div class="pd-l">DISCOM</div><div class="pd-v">@Show(survey.DiscomName)</div></div>
+                    <div><div class="pd-l">Consumer Number</div><div class="pd-v">@Show(survey.ConsumerNumber)</div></div>
+                    <div><div class="pd-l">Meter / Grid</div><div class="pd-v">@Show(survey.MeterType) / @Show(survey.GridType)</div></div>
+                    <div><div class="pd-l">Shadow on Roof</div><div class="pd-v">@Show(survey.ShadowOnRoof)</div></div>
+                    <div><div class="pd-l">Earthing</div><div class="pd-v">@Show(survey.EarthingAvailable)</div></div>
+                    <div><div class="pd-l">Internet</div><div class="pd-v">@Show(survey.InternetAvailable)</div></div>
+                    <div style="grid-column:1/-1"><div class="pd-l">Notes</div><div class="pd-v">@Show(survey.SurveyNotes)</div></div>
+                    @if (!string.IsNullOrWhiteSpace(survey.RejectionReason))
+                    {
+                        <div style="grid-column:1/-1"><div class="pd-l">Rejection Reason</div><div class="pd-v" style="color:var(--red)">@survey.RejectionReason</div></div>
+                    }
+                </div>
+                <div class="pd-files">
+                    @if (!string.IsNullOrWhiteSpace(survey.GpsPhotoPath))
+                    {
+                        <a href="javascript:void(0)" onclick="openFileModal('@survey.GpsPhotoPath')" class="btn btn-s btn-sm">📷 GPS Photo</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(survey.RoofPhotoPath))
+                    {
+                        <a href="javascript:void(0)" onclick="openFileModal('@survey.RoofPhotoPath')" class="btn btn-s btn-sm">📷 Roof Photo</a>
+                    }
+                </div>
+            }
+        </div>
+
+        @* --- Material Dispatch --- *@
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>📦 Material Dispatch</div>
+            @if (material == null)
+            {
+                <div class="pd-empty">Material not dispatched yet.</div>
+            }
+            else
+            {
+                <div class="pd-grid">
+                    <div><div class="pd-l">Dispatch Date</div><div class="pd-v">@(material.DispatchDate?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</div></div>
+                    <div>
+                        <div class="pd-l">Installer</div>
+                        <div class="pd-v">@(string.IsNullOrWhiteSpace(materialWorker) ? "— Not assigned —" : "👷 " + materialWorker)</div>
+                    </div>
+                    <div><div class="pd-l">Vehicle / Courier</div><div class="pd-v">@Show(material.VehicleDetails)</div></div>
+                    <div><div class="pd-l">Dispatched</div><div class="pd-v">@(material.IsDispatched ? "Yes" : "No")</div></div>
+                    <div style="grid-column:1/-1"><div class="pd-l">Material Details</div><div class="pd-v">@Show(material.MaterialDetails)</div></div>
+                    <div style="grid-column:1/-1"><div class="pd-l">Remark</div><div class="pd-v">@Show(material.Remark)</div></div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(material.DispatchDocumentPath))
+                {
+                    <div class="pd-files"><a href="javascript:void(0)" onclick="openFileModal('@material.DispatchDocumentPath')" class="btn btn-s btn-sm">📄 Dispatch Document</a></div>
+                }
+            }
+        </div>
+
+        @* --- Installation --- *@
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>🔧 Installation</div>
+            @if (installation == null)
+            {
+                <div class="pd-empty">Installation not started yet.</div>
+            }
+            else
+            {
+                <div class="pd-grid">
+                    <div><div class="pd-l">Installation Date</div><div class="pd-v">@(installation.InstallationDate?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</div></div>
+                    <div>
+                        <div class="pd-l">Installer</div>
+                        <div class="pd-v">@(string.IsNullOrWhiteSpace(installerName) ? "— Not assigned —" : "👷 " + installerName)</div>
+                    </div>
+                    <div>
+                        <div class="pd-l">Completed</div>
+                        <div class="pd-v">
+                            @if (installation.IsCompleted)
+                            {
+                                <span class="sts sts-act">✓ Completed</span>
+                            }
+                            else
+                            {
+                                <span class="sts sts-pend">⏳ In progress</span>
+                            }
+                        </div>
+                    </div>
+                    <div><div class="pd-l">Completed At</div><div class="pd-v">@(installation.CompletedAt?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</div></div>
+                    <div style="grid-column:1/-1"><div class="pd-l">Notes</div><div class="pd-v">@Show(installation.Notes)</div></div>
+                    <div style="grid-column:1/-1"><div class="pd-l">Remark</div><div class="pd-v">@Show(installation.Remark)</div></div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(installation.CompletionPhotoPath))
+                {
+                    <div class="pd-files"><a href="javascript:void(0)" onclick="openFileModal('@installation.CompletionPhotoPath')" class="btn btn-s btn-sm">📷 Completion Photo</a></div>
+                }
+            }
+        </div>
+
+        @* --- DCR --- *@
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>📄 DCR</div>
+            @if (dcr == null)
+            {
+                <div class="pd-empty">No DCR submitted yet.</div>
+            }
+            else
+            {
+                <div class="pd-grid">
+                    <div><div class="pd-l">DCR Number</div><div class="pd-v">@Show(dcr.DCRNumber)</div></div>
+                    <div><div class="pd-l">DCR Date</div><div class="pd-v">@(dcr.DCRDate?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</div></div>
+                    <div><div class="pd-l">Approval</div><div class="pd-v"><span class="sts @GetStatusClass(dcr.ApprovalStatus)">@dcr.ApprovalStatus</span></div></div>
+                    <div><div class="pd-l">Verified</div><div class="pd-v">@(dcr.IsVerified ? "Yes" : "No")</div></div>
+                    <div style="grid-column:1/-1"><div class="pd-l">Remark</div><div class="pd-v">@Show(dcr.Remark)</div></div>
+                    @if (!string.IsNullOrWhiteSpace(dcr.RejectionReason))
+                    {
+                        <div style="grid-column:1/-1"><div class="pd-l">Rejection Reason</div><div class="pd-v" style="color:var(--red)">@dcr.RejectionReason</div></div>
+                    }
+                </div>
+                @if (!string.IsNullOrWhiteSpace(dcr.DocumentPath))
+                {
+                    <div class="pd-files"><a href="javascript:void(0)" onclick="openFileModal('@dcr.DocumentPath')" class="btn btn-s btn-sm">📄 DCR Document</a></div>
+                }
+            }
+        </div>
+
+        @* --- Commission --- *@
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>📈 INC Commission</div>
+            @if (commission == null)
+            {
+                <div class="pd-empty">No commission recorded for this project.</div>
+            }
+            else
+            {
+                <div class="pd-grid">
+                    <div><div class="pd-l">Project Amount</div><div class="pd-v">₹@commission.ProjectAmount.ToString("N0")</div></div>
+                    <div><div class="pd-l">Percentage</div><div class="pd-v">@commission.CommissionPercentage.ToString("0.##")%</div></div>
+                    <div><div class="pd-l">Commission</div><div class="pd-v gold">₹@commission.CommissionAmount.ToString("N0")</div></div>
+                    <div>
+                        <div class="pd-l">Paid</div>
+                        <div class="pd-v">
+                            @if (commission.IsPaid)
+                            {
+                                <span class="sts sts-act">✓ Paid</span>
+                            }
+                            else
+                            {
+                                <span class="sts sts-pend">⏳ Unpaid</span>
+                            }
+                        </div>
+                    </div>
+                    <div><div class="pd-l">Paid At</div><div class="pd-v">@(commission.PaidAt?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</div></div>
+                    <div><div class="pd-l">Reference</div><div class="pd-v">@Show(commission.PaymentReference)</div></div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ===== Documents ===== *@
+    <div class="card" style="margin-top:18px">
+        <div class="ct"><span class="ct-dot"></span>📎 Attached Documents (@Model.Documents.Count)</div>
+        @if (!Model.Documents.Any())
+        {
+            <div style="padding:18px;text-align:center;color:var(--text3)">No documents attached.</div>
         }
-    </script>
-}
+        else
+        {
+            <div class="pd-doc-grid">
+                @foreach (var doc in Model.Documents)
+                {
+                    <div class="pd-doc">
+                        <div style="min-width:0">
+                            <div style="font-size:12.5px;font-weight:600;color:var(--text1)">@doc.DocumentType</div>
+                            <div style="color:var(--text2);font-size:11px;word-break:break-all">@doc.FileName</div>
+                        </div>
+                        <a href="javascript:void(0)" onclick="openFileModal('@doc.FilePath')" class="btn btn-s btn-sm">View</a>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+</div>
+
+<style>
+    /* Summary strip — page kholte hi project ki poori haalat ek nazar mein. */
+    .pd-summary {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+        gap: 12px; margin-bottom: 18px;
+    }
+    .pd-stat {
+        background: var(--card); border: 1px solid var(--border);
+        border-radius: 10px; padding: 14px 16px;
+    }
+    .pd-stat-l {
+        font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+        color: var(--text3); font-weight: 700; margin-bottom: 6px;
+    }
+    .pd-stat-v { font-size: 18px; font-weight: 700; color: var(--text1); line-height: 1.25; }
+    .pd-stat-v.gold { color: var(--sun); }
+    .pd-stat-v.green { color: var(--green); }
+    .pd-stat-v.red { color: var(--red); }
+    .pd-stat-s { font-size: 11px; color: var(--text3); margin-top: 5px; }
+    .pd-prog { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 7px; }
+    .pd-prog > i { display: block; height: 100%; background: var(--green); border-radius: 3px; }
+
+    /* Label/value pairs — pehle 16px values bahut bhaari lagti thi aur ek row
+       mein sirf 2-3 fields aati thi; ab compact grid mein zyada data fit hota hai. */
+    .pd-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px 18px;
+    }
+    .pd-l {
+        font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+        color: var(--text3); font-weight: 700; margin-bottom: 3px;
+    }
+    .pd-v { font-size: 13.5px; color: var(--text1); font-weight: 500; }
+    .pd-v.gold { color: var(--sun); font-weight: 700; }
+    .pd-v.green { color: var(--green); font-weight: 700; }
+
+    .pd-files { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .pd-empty { padding: 16px 0; color: var(--text3); font-size: 13px; }
+
+    .pd-section-title {
+        margin: 26px 0 12px; font-size: 13px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .6px; color: var(--text2);
+    }
+
+    .pd-doc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+    .pd-doc {
+        display: flex; justify-content: space-between; align-items: center; gap: 10px;
+        border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+    }
+</style>
 
 @* In-page file preview modal (no new tab) *@
 @await Html.PartialAsync("_FileModal")

@@ -1,4 +1,4 @@
-@model IEnumerable<SolarPortal.Domain.Entities.Payment>
+﻿@model IEnumerable<SolarPortal.Domain.Entities.Payment>
 @{
     ViewData["Title"] = "Payment Verification";
     var filter = ViewBag.Filter as string ?? "all";
@@ -160,187 +160,304 @@
         </div>
     </div>
 
-    <div class="card" style="border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.05)">
-        <div class="card-body" style="padding:0">
-            <div style="overflow-x:auto">
-            <table class="table table-hover" style="margin:0;font-size:13px">
-                <thead style="background:#f9fafb;border-bottom:2px solid #e5e7eb">
-                    <tr style="height:45px">
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Receipt #</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Member ID</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Request ID</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Member Name</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Plan</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Mobile</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Address</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;text-align:right;font-size:12px">Project Amt</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;text-align:right;font-size:12px">Paid (Total)</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;text-align:right;font-size:12px">Due</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;text-align:right;font-size:12px">This Payment</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">UTR</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Method</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Date</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Uploaded By</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Receipt</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;font-size:12px">Status</th>
-                        <th style="padding:12px;font-weight:600;color:#374151;white-space:nowrap;text-align:center;font-size:12px">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var p in Model)
-                {
-                    requests.TryGetValue(p.SolarRequestId, out var req);
-                    var paidTotal = paidMap.TryGetValue(p.SolarRequestId, out var pv) ? pv : 0m;
-                    var projectAmt = req?.PlanAmount ?? 0m;
-                    var due = System.Math.Max(0, projectAmt - paidTotal);
-                    var isAdminEntry = !string.IsNullOrEmpty(p.Notes) && p.Notes.Contains("[ADMIN ENTRY");
-                    var isRejected = p.Status == SolarPortal.Domain.Enums.PaymentStatus.Rejected;
-                    // ===== Receipt URL normalization =====
-                    string? receiptUrl = null;
-                    if (!string.IsNullOrEmpty(p.ReceiptImagePath))
+    @* Report filter — Member ID / City / State / Request date. *@
+    @{
+        ViewData["FilterTableId"] = "paymentsTable";
+        ViewData["FilterPlaceholder"] = "Search by Member ID, name, mobile, request #, UTR, receipt #...";
+        ViewData["FilterDateLabel"] = "Request Date";
+    }
+    @await Html.PartialAsync("_ReportFilterToolbar")
+
+    @* ===== Payments list (card layout) =====
+       Pehle yahan 20-column ka table tha jise hamesha horizontally scroll karna
+       padta tha. Ab har payment ek card hai: upar 6 scannable fields, aur baaki
+       saari detail (receipt #, UTR, city/state, amounts, dates) "Details" par
+       expand hoti hai. Kuch bhi hataya nahi gaya — sirf chhupa hai jab tak chahiye
+       na ho.
+
+       Table ki jagah CSS grid isliye, kyunki table ke saath header aur body ke
+       columns align nahi ho rahe the; grid mein header strip aur card dono ek hi
+       `--pv-cols` template share karte hain, to alignment kabhi tut nahi sakta. *@
+    <style>
+        .pv-list, .pv-head { --pv-cols: 34px 1.5fr 1.9fr 1.05fr 1.25fr 1fr 1.05fr; }
+
+        .pv-head {
+            display: grid; grid-template-columns: var(--pv-cols); gap: 14px;
+            padding: 11px 16px; background: #f9fafb;
+            border: 1px solid #e5e7eb; border-bottom: 0;
+            border-radius: 8px 8px 0 0;
+            font-size: 11px; font-weight: 600; color: #6b7280;
+            text-transform: uppercase; letter-spacing: .4px;
+        }
+        .pv-list { border: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; background: #fff; overflow: hidden; }
+        .pv-card { border-bottom: 1px solid #f3f4f6; }
+        .pv-card:last-child { border-bottom: 0; }
+        .pv-card:hover { background: #fcfdfe; }
+
+        .pv-main {
+            display: grid; grid-template-columns: var(--pv-cols); gap: 14px;
+            padding: 12px 16px; align-items: start;
+        }
+
+        .pv-toggle {
+            width: 24px; height: 24px; padding: 0; line-height: 1; font-size: 11px;
+            border: 1px solid #e5e7eb; background: #fff; border-radius: 6px;
+            color: #6b7280; cursor: pointer; transition: transform .15s, background .15s;
+        }
+        .pv-toggle:hover { background: #f3f4f6; }
+        .pv-toggle[aria-expanded="true"] {
+            transform: rotate(90deg); background: #ecfdf5; color: #059669; border-color: #a7f3d0;
+        }
+
+        /* Collapse class se hide karte hain, inline display se nahi — report filter
+           toolbar inline display set karta hai, to dono bina takrae saath chalte hain. */
+        .pv-detail.is-collapsed { display: none; }
+        .pv-detail {
+            background: #f9fafb; border-top: 1px dashed #e5e7eb;
+            padding: 14px 16px 16px 54px;
+        }
+        .pv-detail-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px 18px;
+        }
+        .pdl { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; color: #9ca3af; font-weight: 600; margin-bottom: 2px; }
+        .pdv { font-size: 12.5px; color: #1f2937; word-break: break-word; }
+
+        .pv-prog { height: 5px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin: 5px 0 3px; }
+        .pv-prog > i { display: block; height: 100%; background: #10b981; border-radius: 3px; }
+        /* Pagination. Page se bahar wale cards ko class se chhupate hain aur
+           !important lagate hain, kyunki filter toolbar inline `display` set karta
+           hai — bina !important ke inline value class ko haraa deti aur chhupe hue
+           card wapas dikh jaate. */
+        .pv-card.pv-page-hidden { display: none !important; }
+
+        .pv-pager {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px; flex-wrap: wrap; margin-top: 12px;
+            font-size: 12.5px; color: #6b7280;
+        }
+        .pv-pager-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+        .pv-pg {
+            min-width: 32px; height: 32px; padding: 0 10px;
+            border: 1px solid #e5e7eb; background: #fff; border-radius: 6px;
+            color: #374151; font-size: 12.5px; cursor: pointer;
+        }
+        .pv-pg:hover:not(:disabled) { background: #f3f4f6; }
+        .pv-pg.active { background: #10b981; border-color: #10b981; color: #fff; font-weight: 600; }
+        .pv-pg:disabled { opacity: .45; cursor: default; }
+        .pv-pg-gap { align-self: center; color: #9ca3af; padding: 0 2px; }
+
+        /* Chhoti screen: grid ek column mein khul jaata hai aur header strip
+           bemaani ho jaati hai, to use hata dete hain. */
+        @@media (max-width: 1100px) {
+            .pv-head { display: none; }
+            .pv-main { grid-template-columns: 34px 1fr; row-gap: 8px; }
+            .pv-detail { padding-left: 16px; }
+        }
+    </style>
+
+    <div class="pv-head">
+        <span></span>
+        <span>Member</span>
+        <span>Request / Plan</span>
+        <span style="text-align:right">This Payment</span>
+        <span>Payment Progress</span>
+        <span>Status</span>
+        <span style="text-align:center">Actions</span>
+    </div>
+
+    <div id="paymentsTable" class="pv-list">
+    @foreach (var p in Model)
+    {
+        requests.TryGetValue(p.SolarRequestId, out var req);
+        var paidTotal = paidMap.TryGetValue(p.SolarRequestId, out var pv) ? pv : 0m;
+        var projectAmt = req?.PlanAmount ?? 0m;
+        var due = System.Math.Max(0, projectAmt - paidTotal);
+        var paidPct = projectAmt > 0 ? (int)System.Math.Min(100, (double)(paidTotal / projectAmt * 100)) : 0;
+        var isAdminEntry = !string.IsNullOrEmpty(p.Notes) && p.Notes.Contains("[ADMIN ENTRY");
+        var isRejected = p.Status == SolarPortal.Domain.Enums.PaymentStatus.Rejected;
+        var memberName = req == null ? "" :
+            (string.IsNullOrWhiteSpace(req.MemberFullName) ? req.ApplicantName : req.MemberFullName);
+        // Date filter runs on the request date. Payments whose request row isn't
+        // loaded fall back to the payment date so they stay filterable.
+        var rowDate = (req?.CreatedAt ?? p.PaymentDate).ToLocalTime().ToString("yyyy-MM-dd");
+        // ===== Receipt URL normalization =====
+        string? receiptUrl = null;
+        if (!string.IsNullOrEmpty(p.ReceiptImagePath))
+        {
+            var rel = p.ReceiptImagePath.Replace("\\", "/").TrimStart('/');
+            if (rel.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+                rel = rel.Substring("wwwroot/".Length);
+            receiptUrl = "/" + rel;
+        }
+        var receiptIsPdf = receiptUrl != null && receiptUrl.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
+
+        <div class="pv-card"
+             data-search="@($"{p.UserId} {memberName} {req?.MobileNumber} {req?.City} {req?.State} {req?.RequestNumber} {p.UTRNumber} {p.ReceiptNumber}".ToLower())"
+             data-mid="@p.UserId"
+             data-city="@req?.City"
+             data-state="@req?.State"
+             data-date="@rowDate">
+
+            <div class="pv-main">
+                <div>
+                    <button type="button" class="pv-toggle" data-target="pd-@p.Id"
+                            aria-expanded="false" title="Show all details">&#9654;</button>
+                </div>
+
+                <div>
+                    <div style="font-weight:600;color:#1f2937;font-size:13px">@(string.IsNullOrWhiteSpace(memberName) ? "—" : memberName)</div>
+                    <div style="margin-top:4px">
+                        <code style="font-size:10px;color:#0d9488;background:#f0fdfa;padding:2px 6px;border-radius:3px">@p.UserId</code>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(req?.MobileNumber))
                     {
-                        var rel = p.ReceiptImagePath.Replace("\\", "/").TrimStart('/');
-                        if (rel.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
-                            rel = rel.Substring("wwwroot/".Length);
-                        receiptUrl = "/" + rel;
+                        <div style="margin-top:3px">
+                            <a href="tel:@req.MobileNumber" style="color:#6b7280;font-size:11px;text-decoration:none">@req.MobileNumber</a>
+                        </div>
                     }
-                    var receiptIsPdf = receiptUrl != null && receiptUrl.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase);
-                    <tr style="height:48px;border-bottom:1px solid #f3f4f6;transition:background-color 0.1s;font-size:13px">
-                        <td style="padding:12px;vertical-align:middle"><small style="color:#6b7280">@p.ReceiptNumber</small></td>
-                        <td style="padding:12px;vertical-align:middle"><code style="font-size:10px;color:#0d9488;background:#f0fdfa;padding:3px 6px;border-radius:3px">@p.UserId</code></td>
-                        <td style="padding:12px;vertical-align:middle"><strong style="color:#1f2937">@req?.RequestNumber</strong></td>
-                        <td style="padding:12px;vertical-align:middle">
-                            <div style="font-weight:500;color:#1f2937">@req?.ApplicantName</div>
-                        </td>
-                        <td style="padding:12px;vertical-align:middle">
-                            @* Plan column — same as PM Surya Ghar: request-type badge + plan name + capacity/amount *@
-                            @if (req != null)
-                            {
-                                var rtLabel = req.RequestType.ToString() switch
-                                {
-                                    "WithActivation" => "📦 With Activation",
-                                    "OnlySolarWithoutActivation" => "☀️ Without Activation",
-                                    "AlreadyActiveOnlyRequest" => "✅ Already Active",
-                                    _ => req.RequestType.ToString()
-                                };
-                                var rtCls = req.RequestType.ToString() switch
-                                {
-                                    "WithActivation" => "bg-info",
-                                    "OnlySolarWithoutActivation" => "bg-warning",
-                                    "AlreadyActiveOnlyRequest" => "bg-success",
-                                    _ => "bg-secondary"
-                                };
-                                <span class="badge @rtCls" style="display:inline-block;margin-bottom:4px">@rtLabel</span>
-                                @if (!string.IsNullOrWhiteSpace(req.SelectedPlan))
-                                {
-                                    <div style="font-weight:600;color:#1f2937;font-size:12px">@req.SelectedPlan</div>
-                                }
-                                <div style="font-size:11px;color:#6b7280">@req.KVCapacity kV • ₹@req.PlanAmount.ToString("N0")</div>
-                            }
-                            else
-                            {
-                                <span style="color:#9ca3af">—</span>
-                            }
-                        </td>
-                        <td style="padding:12px;vertical-align:middle;white-space:nowrap">
-                            @if (!string.IsNullOrWhiteSpace(req?.MobileNumber))
-                            {
-                                <a href="tel:@req.MobileNumber" style="color:#0d9488;font-weight:500;text-decoration:none;font-size:12px">@req.MobileNumber</a>
-                            }
-                            else { <span style="color:#9ca3af">—</span> }
-                        </td>
-                        <td style="padding:12px;vertical-align:middle;max-width:160px;font-size:12px" title="@req?.Address">
-                            @{
-                                var addr = string.Join(", ",
-                                    new[] { req?.City, req?.State, req?.PinCode }
-                                    .Where(s => !string.IsNullOrWhiteSpace(s)));
-                            }
-                            @if (!string.IsNullOrWhiteSpace(addr))
-                            {
-                                <span style="color:#4b5563">@addr</span>
-                            }
-                            else if (!string.IsNullOrWhiteSpace(req?.Address))
-                            {
-                                <span style="color:#4b5563">@(req.Address.Length > 30 ? req.Address.Substring(0, 30) + "…" : req.Address)</span>
-                            }
-                            else { <span style="color:#9ca3af">—</span> }
-                        </td>
-                        <td style="padding:12px;vertical-align:middle;text-align:right;white-space:nowrap">
-                            <span style="color:#16a34a;font-weight:600;font-size:13px">₹@projectAmt.ToString("N0")</span>
-                        </td>
-                        <td style="padding:12px;vertical-align:middle;text-align:right;white-space:nowrap">
-                            <span style="color:#0d9488;font-weight:600;font-size:13px">₹@paidTotal.ToString("N0")</span>
-                        </td>
-                        <td style="padding:12px;vertical-align:middle;text-align:right;white-space:nowrap">
-                            <span style="color:@(due > 0 ? "#dc2626" : "#16a34a");font-weight:600;font-size:13px">₹@due.ToString("N0")</span>
-                            @if (due == 0 && projectAmt > 0)
-                            {
-                                <div style="font-size:10px;color:#16a34a;margin-top:2px">✓ Fully Paid</div>
-                            }
-                        </td>
-                        <td style="padding:12px;vertical-align:middle;text-align:right;white-space:nowrap">
-                            <strong style="color:#059669;font-size:13px">₹@p.Amount.ToString("N0")</strong>
-                        </td>
-                        <td style="padding:12px;vertical-align:middle;white-space:nowrap">
-                            <code style="background:#f3f4f6;padding:4px 8px;border-radius:4px;font-size:11px;color:#4b5563">@p.UTRNumber</code>
-                        </td>
-                        <td style="padding:12px;vertical-align:middle;white-space:nowrap;font-size:12px;color:#6b7280">@p.PaymentMethod</td>
-                        <td style="padding:12px;vertical-align:middle;white-space:nowrap;font-size:12px;color:#6b7280">@p.PaymentDate.ToLocalTime().ToString("dd MMM yyyy")</td>
-                        <td style="padding:12px;vertical-align:middle;white-space:nowrap">
-                            @if (isAdminEntry)
-                            {
-                                <span style="display:inline-block;background:#dbeafe;color:#0369a1;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500">Admin</span>
-                            }
-                            else
-                            {
-                                <span style="display:inline-block;background:#e5e7eb;color:#374151;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:500">User</span>
-                            }
-                        </td>
-                        <td style="padding:12px;vertical-align:middle;white-space:nowrap">
+                </div>
+
+                <div>
+                    <div style="font-weight:600;color:#1f2937;font-size:12px;margin-bottom:3px">@req?.RequestNumber</div>
+                    @if (req != null)
+                    {
+                        <partial name="_PlanCell" model="req" />
+                    }
+                </div>
+
+                <div style="text-align:right">
+                    <div style="color:#059669;font-weight:700;font-size:14px">&#8377;@p.Amount.ToString("N0")</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:2px">@p.PaymentDate.ToLocalTime().ToString("dd MMM yyyy")</div>
+                    <div style="font-size:11px;color:#9ca3af">@p.PaymentMethod</div>
+                </div>
+
+                <div>
+                    <div style="font-size:11.5px;color:#4b5563">
+                        <strong style="color:#0d9488">&#8377;@paidTotal.ToString("N0")</strong>
+                        <span style="color:#9ca3af"> / &#8377;@projectAmt.ToString("N0")</span>
+                    </div>
+                    <div class="pv-prog"><i style="width:@paidPct%"></i></div>
+                    @if (due > 0)
+                    {
+                        <div style="font-size:11px;color:#dc2626">Due &#8377;@due.ToString("N0")</div>
+                    }
+                    else if (projectAmt > 0)
+                    {
+                        <div style="font-size:11px;color:#16a34a">&#10003; Fully paid</div>
+                    }
+                </div>
+
+                <div>
+                    @if (p.IsVerified)
+                    {
+                        <span style="display:inline-block;background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600">&#10003; Verified</span>
+                    }
+                    else if (isRejected)
+                    {
+                        <span style="display:inline-block;background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600">&#10005; Rejected</span>
+                    }
+                    else
+                    {
+                        <span style="display:inline-block;background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600">&#8987; Pending</span>
+                    }
+                    <div style="margin-top:4px">
+                        <span style="display:inline-block;background:@(isAdminEntry ? "#dbeafe" : "#e5e7eb");color:@(isAdminEntry ? "#0369a1" : "#374151");padding:2px 7px;border-radius:4px;font-size:10px;font-weight:500">
+                            @(isAdminEntry ? "Admin entry" : "User")
+                        </span>
+                    </div>
+                </div>
+
+                <div style="text-align:center">
+                    @if (!p.IsVerified && !isRejected)
+                    {
+                        <button class="btn btn-sm btn-verify" data-id="@p.Id" style="padding:6px 10px;font-size:11px;background:#10b981;border:0;color:white;border-radius:4px;cursor:pointer;font-weight:500">Verify</button>
+                        <button class="btn btn-sm btn-reject" data-id="@p.Id" style="padding:6px 10px;font-size:11px;background:#ef4444;border:0;color:white;border-radius:4px;cursor:pointer;font-weight:500;margin-top:4px">Reject</button>
+                    }
+                    else
+                    {
+                        <small style="color:#9ca3af">Locked</small>
+                    }
+                </div>
+            </div>
+
+            @* Detail panel — jaan-boojh kar iske paas data-search nahi hai, taaki
+               report filter na ise gine na toggle kare. Filter chhoote hi sabhi khule
+               panel band ho jaate hain (collapseAllDetails, Scripts section mein). *@
+            <div id="pd-@p.Id" class="pv-detail is-collapsed">
+                <div class="pv-detail-grid">
+                    <div>
+                        <div class="pdl">Receipt #</div>
+                        <div class="pdv">@(string.IsNullOrWhiteSpace(p.ReceiptNumber) ? "—" : p.ReceiptNumber)</div>
+                    </div>
+                    <div>
+                        <div class="pdl">UTR / Reference</div>
+                        <div class="pdv"><code style="background:#f3f4f6;padding:3px 7px;border-radius:4px;font-size:11px;color:#4b5563">@(string.IsNullOrWhiteSpace(p.UTRNumber) ? "—" : p.UTRNumber)</code></div>
+                    </div>
+                    <div>
+                        <div class="pdl">Payment Method</div>
+                        <div class="pdv">@p.PaymentMethod</div>
+                    </div>
+                    <div>
+                        <div class="pdl">Payment Date</div>
+                        <div class="pdv">@p.PaymentDate.ToLocalTime().ToString("dd MMM yyyy")</div>
+                    </div>
+                    <div>
+                        <div class="pdl">Request Date</div>
+                        <div class="pdv">@(req != null ? req.CreatedAt.ToLocalTime().ToString("dd MMM yyyy") : "—")</div>
+                    </div>
+                    <div>
+                        <div class="pdl">City</div>
+                        <div class="pdv" title="@req?.Address">@(string.IsNullOrWhiteSpace(req?.City) ? "—" : req.City)</div>
+                    </div>
+                    <div>
+                        <div class="pdl">State</div>
+                        <div class="pdv">@(string.IsNullOrWhiteSpace(req?.State) ? "—" : req.State)</div>
+                    </div>
+                    <div>
+                        <div class="pdl">Project Amount</div>
+                        <div class="pdv" style="color:#16a34a;font-weight:600">&#8377;@projectAmt.ToString("N0")</div>
+                    </div>
+                    <div>
+                        <div class="pdl">Paid (Verified)</div>
+                        <div class="pdv" style="color:#0d9488;font-weight:600">&#8377;@paidTotal.ToString("N0")</div>
+                    </div>
+                    <div>
+                        <div class="pdl">Outstanding Due</div>
+                        <div class="pdv" style="color:@(due > 0 ? "#dc2626" : "#16a34a");font-weight:600">&#8377;@due.ToString("N0")</div>
+                    </div>
+                    <div>
+                        <div class="pdl">Uploaded By</div>
+                        <div class="pdv">@(isAdminEntry ? "Admin entry" : "User")</div>
+                    </div>
+                    <div>
+                        <div class="pdl">Receipt</div>
+                        <div class="pdv">
                             @if (receiptUrl != null)
                             {
                                 <a href="javascript:void(0)" class="receipt-preview"
                                    data-url="@receiptUrl" data-pdf="@(receiptIsPdf ? "1" : "0")"
                                    data-utr="@p.UTRNumber"
-                                   style="color:#0d9488;font-size:12px;text-decoration:none;font-weight:500">@(receiptIsPdf ? "📄 PDF" : "🖼️ Image")</a>
+                                   style="color:#0d9488;text-decoration:none;font-weight:500">@(receiptIsPdf ? "📄 View PDF" : "🖼️ View Image")</a>
                             }
-                            else { <small style="color:#9ca3af">—</small> }
-                        </td>
-                        <td style="padding:12px;vertical-align:middle;white-space:nowrap">
-                            @if (p.IsVerified)
-                            {
-                                <span style="display:inline-block;background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600">✓ Verified</span>
-                            }
-                            else if (isRejected)
-                            {
-                                <span style="display:inline-block;background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600">✕ Rejected</span>
-                            }
-                            else
-                            {
-                                <span style="display:inline-block;background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600">⏳ Pending</span>
-                            }
-                        </td>
-                        <td style="padding:12px;vertical-align:middle;text-align:center;white-space:nowrap">
-                            @if (!p.IsVerified && !isRejected)
-                            {
-                                <button class="btn btn-sm btn-verify" data-id="@p.Id" style="padding:6px 10px;font-size:11px;background:#10b981;border:0;color:white;border-radius:4px;cursor:pointer;font-weight:500">Verify</button>
-                                <button class="btn btn-sm btn-reject" data-id="@p.Id" style="padding:6px 10px;font-size:11px;background:#ef4444;border:0;color:white;border-radius:4px;cursor:pointer;font-weight:500;margin-left:4px">Reject</button>
-                            }
-                            else
-                            {
-                                <small style="color:#9ca3af">Locked</small>
-                            }
-                        </td>
-                    </tr>
-                }
-                @if (!Model.Any())
-                {
-                    <tr><td colspan="18" style="padding:20px;text-align:center;color:#9ca3af;font-size:13px">No payments.</td></tr>
-                }
-                </tbody>
-            </table>
+                            else { <span style="color:#9ca3af">—</span> }
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+    }
+    @if (!Model.Any())
+    {
+        <div style="padding:20px;text-align:center;color:#9ca3af;font-size:13px">No payments.</div>
+    }
+    </div>
+
+    @* Pagination — client-side, kyunki filter toolbar bhi client-side hai. Server-side
+       karte to filter sirf current page par lagta aur "28 shown of 28" jhooth bolta. *@
+    <div id="pvPager" class="pv-pager">
+        <div class="pv-pager-info" id="pvPagerInfo"></div>
+        <div class="pv-pager-btns" id="pvPagerBtns"></div>
     </div>
 </div>
 
@@ -369,10 +486,123 @@
 @section Scripts {
 <script>
 const token = $('input[name="__RequestVerificationToken"]').val();
+// === Row detail expander ===
+// 20 columns ki jagah 6 dikhte hain; baaki har row ke neeche expand hote hain.
+function collapseAllDetails() {
+    document.querySelectorAll('.pv-detail').forEach(function (d) { d.classList.add('is-collapsed'); });
+    document.querySelectorAll('.pv-toggle').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+}
+document.querySelectorAll('.pv-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var row = document.getElementById(btn.dataset.target);
+        if (!row) return;
+        var willOpen = row.classList.contains('is-collapsed');
+        row.classList.toggle('is-collapsed', !willOpen);
+        btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    });
+});
+// Detail rows carry no data-search, so the report filter can't hide them. If the
+// admin filters while a row is open, that orphan panel would linger under an
+// unrelated row -- collapse everything whenever a filter field is touched.
+(function () {
+    var bar = document.querySelector('.report-filter');
+    if (!bar) return;
+    bar.addEventListener('input', collapseAllDetails);
+    bar.addEventListener('change', collapseAllDetails);
+})();
+
+// === Pagination ===
+// Filter aur pagination dono client-side hain, aur order maayne rakhta hai:
+// pehle filter decide karta hai kaun-se cards match karte hain (inline display),
+// phir pagination un match karne walon mein se current page dikhata hai (class).
+(function () {
+    var PAGE_SIZE = 10;
+    var page = 1;
+    var list = document.getElementById('paymentsTable');
+    var info = document.getElementById('pvPagerInfo');
+    var btns = document.getElementById('pvPagerBtns');
+    var wrap = document.getElementById('pvPager');
+    if (!list || !info || !btns || !wrap) return;
+
+    var all = Array.prototype.slice.call(list.querySelectorAll('.pv-card'));
+    if (!all.length) { wrap.style.display = 'none'; return; }
+
+    // Filter ne jinhe chhupaya nahi -- unhi par pagination lagti hai.
+    function matching() {
+        return all.filter(function (c) { return c.style.display !== 'none'; });
+    }
+
+    function render() {
+        var cards = matching();
+        var pages = Math.max(1, Math.ceil(cards.length / PAGE_SIZE));
+        if (page > pages) page = pages;
+        if (page < 1) page = 1;
+
+        var from = (page - 1) * PAGE_SIZE;
+        var to = Math.min(from + PAGE_SIZE, cards.length);
+
+        all.forEach(function (c) { c.classList.add('pv-page-hidden'); });
+        cards.slice(from, to).forEach(function (c) { c.classList.remove('pv-page-hidden'); });
+
+        info.textContent = cards.length
+            ? 'Showing ' + (from + 1) + '-' + to + ' of ' + cards.length + ' payments'
+            : 'No payments match the current filter';
+
+        btns.innerHTML = '';
+        if (pages <= 1) return;
+
+        function btn(label, target, opts) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'pv-pg' + (opts && opts.active ? ' active' : '');
+            b.textContent = label;
+            if (opts && opts.disabled) { b.disabled = true; }
+            else {
+                b.addEventListener('click', function () {
+                    page = target;
+                    collapseAllDetails();
+                    render();
+                    list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            }
+            btns.appendChild(b);
+        }
+        function gap() {
+            var s = document.createElement('span');
+            s.className = 'pv-pg-gap';
+            s.textContent = '...';
+            btns.appendChild(s);
+        }
+
+        btn('Prev', page - 1, { disabled: page === 1 });
+        // Bahut saare pages par sirf pehla, aakhri aur current ke aas-paas wale.
+        var shown = [];
+        for (var i = 1; i <= pages; i++) {
+            if (i === 1 || i === pages || Math.abs(i - page) <= 1) { shown.push(i); }
+        }
+        shown.forEach(function (n, idx) {
+            if (idx > 0 && n - shown[idx - 1] > 1) { gap(); }
+            btn(String(n), n, { active: n === page });
+        });
+        btn('Next', page + 1, { disabled: page === pages });
+    }
+
+    // Filter badalte hi page 1 par wapas -- warna user page 3 par hota aur filter
+    // ke baad sirf 1 page bachta, to khaali screen dikhti. Ye listener container
+    // par hai, isliye toolbar ke apne input handlers ke BAAD chalta hai (bubbling).
+    var filterBar = document.querySelector('.report-filter');
+    if (filterBar) {
+        var reset = function () { page = 1; render(); };
+        filterBar.addEventListener('input', reset);
+        filterBar.addEventListener('change', reset);
+    }
+
+    render();
+})();
 
 // Helper: disable both action buttons on the row, show inline spinner
 function lockRow(btn, label) {
-    const $row = $(btn).closest('tr');
+    const $row = $(btn).closest('.pv-card');   // list ab table nahi, cards hain
     $row.find('.btn-verify, .btn-reject').prop('disabled', true).addClass('disabled');
     $(btn).html(`<span class="spinner-border spinner-border-sm"></span> ${label}`);
 }
@@ -381,11 +611,12 @@ $('.btn-verify').on('click', function () {
     const id = $(this).data('id');
     if (!confirm('Verify this payment? This action cannot be undone.')) return;
     lockRow(this, 'Verifying...');
+    // NOTE: the global ajaxSuccess handler (_Toasts) already shows r.message as a
+    // toast. Do NOT alert() here or the "Payment verified…" message appears twice.
     $.post('@Url.Action("Verify")', { id: id, __RequestVerificationToken: token }, function (r) {
-        alert(r.message);
-        if (r.success) location.reload();
-        else location.reload();   // refresh either way so stale state is corrected
-    }).fail(() => { alert('Network error.'); location.reload(); });
+        // Give the toast a moment to display, then refresh so totals/status update.
+        setTimeout(function () { location.reload(); }, 1500);
+    }).fail(() => { location.reload(); });   // global ajaxError shows the error toast
 });
 
 $('.btn-reject').on('click', function () {
@@ -394,10 +625,10 @@ $('.btn-reject').on('click', function () {
     if (reason === null) return;
     if (!reason.trim()) { alert('A reason is required.'); return; }
     lockRow(this, 'Rejecting...');
+    // Global toast (_Toasts) shows r.message; don't alert() or it shows twice.
     $.post('@Url.Action("Reject")', { id: id, reason: reason, __RequestVerificationToken: token }, function (r) {
-        alert(r.message);
-        location.reload();
-    }).fail(() => { alert('Network error.'); location.reload(); });
+        setTimeout(function () { location.reload(); }, 1500);
+    }).fail(() => { location.reload(); });
 });
 
 // === Receipt preview ===

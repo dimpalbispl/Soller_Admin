@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SolarPortal.Application.DTOs;
@@ -67,7 +67,64 @@ public class ProjectsController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        await LoadLifecycleAsync(id, d!);
         return View(result.Data);
+    }
+
+    // Details page ab poora project lifecycle dikhata hai — plan/product, payments,
+    // aur har workflow stage ka record (meter dispatch, site survey, material
+    // dispatch + assigned person, installation + installer, DCR, commission).
+    // Pehle sirf request-level fields dikhte the, isliye admin ko project ki poori
+    // kahani dekhne ke liye alag-alag workflow pages kholne padte the.
+    private async Task LoadLifecycleAsync(int id, SolarRequestDto dto)
+    {
+        var payments = (await _unitOfWork.Payments.FindAsync(x => x.SolarRequestId == id))
+                       .OrderByDescending(x => x.PaymentDate)
+                       .ToList();
+        ViewBag.Payments = payments;
+        // Count yahan se jaata hai kyunki view list ko NON-generic IEnumerable
+        // ke roop mein padhta hai (Razor ka runtime compiler `List<Payment>` ke
+        // `<Payment>` ko HTML tag samajh leta hai aur page 500 de deta hai).
+        ViewBag.PaymentCount = payments.Count;
+        ViewBag.TotalPaid = payments.Where(x => x.IsVerified).Sum(x => x.Amount);
+
+        // Har stage ka LATEST record — re-submission par purani rows bhi rehti hain.
+        ViewBag.MeterDispatch = (await _unitOfWork.MeterDispatches.FindAsync(x => x.SolarRequestId == id))
+                                .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+        ViewBag.SiteSurvey = (await _unitOfWork.SiteSurveys.FindAsync(x => x.SolarRequestId == id))
+                             .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+
+        var material = (await _unitOfWork.MaterialDispatches.FindAsync(x => x.SolarRequestId == id))
+                       .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+        var installation = (await _unitOfWork.Installations.FindAsync(x => x.SolarRequestId == id))
+                           .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+        ViewBag.MaterialDispatch = material;
+        ViewBag.Installation = installation;
+
+        ViewBag.DCR = (await _unitOfWork.DCRDocuments.FindAsync(x => x.SolarRequestId == id))
+                      .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+        ViewBag.Commission = (await _unitOfWork.Commissions.FindAsync(x => x.SolarRequestId == id))
+                             .OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+
+        // FindAsync navigation properties eager-load nahi karta, isliye worker ke
+        // naam alag se laate hain (warna "Assigned person" blank dikhta).
+        var workerIds = new[] { material?.AssignedWorkerId, installation?.AssignedWorkerId }
+                        .Where(x => x.HasValue).Select(x => x!.Value).Distinct().ToList();
+        var workerNames = workerIds.Count == 0
+            ? new Dictionary<int, string>()
+            : (await _unitOfWork.Workers.FindAsync(w => workerIds.Contains(w.Id)))
+              .ToDictionary(w => w.Id, w => w.Name);
+
+        // View ko seedhe do naam bhejte hain — wahan dictionary rakhne ka matlab
+        // generic type argument likhna hota, jo upar wali hi dikkat paida karta.
+        string? NameOf(int? wid) => wid.HasValue && workerNames.TryGetValue(wid.Value, out var n) ? n : null;
+        ViewBag.MaterialWorkerName = NameOf(material?.AssignedWorkerId);
+        ViewBag.InstallerName = NameOf(installation?.AssignedWorkerId);
+
+        // Plan master (SolarProjects) — sirf tab jab request usse bandhi ho.
+        ViewBag.SolarProject = dto.SolarProjectId.HasValue
+            ? await _unitOfWork.SolarProjects.GetByIdAsync(dto.SolarProjectId.Value)
+            : null;
     }
 
     public async Task<IActionResult> Approvals()

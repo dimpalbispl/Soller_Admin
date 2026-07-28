@@ -18,10 +18,22 @@
 
     @if (Model.Any())
     {
+        @* Report filter — free text only. This is the plan master: rows are
+           products, not member requests, so Member ID / City / State / date
+           have nothing to bind to. *@
+        ViewData["FilterTableId"] = "solarProjectsTable";
+        ViewData["FilterPlaceholder"] = "Search by plan name, solar type, connection...";
+        ViewData["FilterShowMemberId"] = false;
+        ViewData["FilterShowCity"] = false;
+        ViewData["FilterShowState"] = false;
+        ViewData["FilterShowDate"] = false;
+
+        <partial name="_ReportFilterToolbar" />
+
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>All Solar Projects (@Model.Count())</div>
             <div class="tbl-wrap">
-                <table>
+                <table id="solarProjectsTable">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -42,7 +54,7 @@
                     <tbody>
                         @foreach (var p in Model)
                         {
-                            <tr>
+                            <tr data-search="@($"{p.Name} {p.SolarTypeKV} {p.ConnectionType} {(p.IsActive ? "active" : "inactive")}".ToLower())">
                                 <td class="td-b">@p.Name</td>
                                 <td>@p.SolarTypeKV kV</td>
                                 <td>@p.ConnectionType</td>

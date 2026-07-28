@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SolarPortal.Application.DTOs;
@@ -122,11 +122,14 @@ public class PaymentsController : Controller
                         .ToDictionary(r => r.Id);
 
         // Per-request paid totals so the row can show Request / Paid / Due alongside this entry.
+        // Only VERIFIED (approved) payments count toward "Paid" — rejected and still-pending
+        // payments must NOT inflate the paid total (they were never confirmed money). This
+        // keeps the column consistent with the "Verified total ₹X of ₹20,000" verify message.
         // Sequential awaits — EF Core forbids concurrent ops on the same DbContext.
         var paidMap = new Dictionary<int, decimal>();
         foreach (var rid in reqIds)
         {
-            paidMap[rid] = await _payments.GetTotalPaidAsync(rid);
+            paidMap[rid] = await _payments.GetVerifiedPaidAsync(rid);
         }
         ViewBag.PaidMap = paidMap;
         ViewBag.Requests = requests;
@@ -240,13 +243,11 @@ public class PaymentsController : Controller
                 }
             }
 
-            var msg = stageAdvanced
-                ? $"Payment verified. Verified total ₹{verifiedTotal:N0} meets ₹{min:N0} minimum — project moved to PM Surya Ghar."
-                : verifiedTotal < min
-                    ? $"Payment verified. Verified total ₹{verifiedTotal:N0} of ₹{min:N0} minimum — needs ₹{min - verifiedTotal:N0} more to advance."
-                    : "Payment verified.";
-            if (autoActivated)
-                msg += " User account auto-activated (Only Solar mode).";
+            // Spec: sirf success ka message dikhna chahiye. Totals, ₹20K minimum
+            // aur stage-advance ki detail toast mein nahi jaati — wo sab page par
+            // already dikhta hai (stat cards + Stage column) aur JSON fields mein
+            // niche bhi bheja ja raha hai agar UI ko kabhi chahiye ho.
+            var msg = "Payment verified.";
 
             return Json(new
             {

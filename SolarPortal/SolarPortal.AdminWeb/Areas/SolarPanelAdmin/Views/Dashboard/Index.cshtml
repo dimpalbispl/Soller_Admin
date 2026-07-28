@@ -1,4 +1,4 @@
-@model AdminDashboardDto
+﻿@model AdminDashboardDto
 @{
     ViewData["Title"] = "Admin Dashboard";
 }
@@ -34,7 +34,7 @@
         </div>
     </div>
 
-    <div class="g2">
+    <div class="g2-wide">
         <!-- Recent Requests -->
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>Recent Applications</div>
@@ -43,7 +43,8 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Applicant</th>
+                            <th>Member ID</th>
+                            <th>Member Name</th>
                             <th>Type</th>
                             <th>Stage</th>
                             <th>Status</th>
@@ -57,12 +58,18 @@
                            informational only. *@
                         @foreach (var r in Model.RecentRequests)
                         {
+                            var memberName = !string.IsNullOrWhiteSpace(r.MemberFullName) ? r.MemberFullName
+                                           : !string.IsNullOrWhiteSpace(r.UserFullName)   ? r.UserFullName
+                                           : r.ApplicantName;
                             <tr>
-                                <td class="td-b">
+                                @* Request number ek hi line mein rehna chahiye — bina
+                                   nowrap ke "SCR-021" do lines mein tut raha tha. *@
+                                <td class="td-b" style="white-space:nowrap">
                                     <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Details"
                                        asp-route-id="@r.Id" style="color:var(--sun)">@r.RequestNumber</a>
                                 </td>
-                                <td>@r.ApplicantName</td>
+                                <td><span class="mid-code">@r.UserId</span></td>
+                                <td>@memberName</td>
                                 <td>@r.ConnectionType</td>
                                 <td>@r.CurrentStage.ToString().Replace("_", " ")</td>
                                 <td>
@@ -91,8 +98,8 @@
             @foreach (var kv in Model.StatusDistribution.OrderBy(x => x.Value).Take(8))
             {
                 var pct = Model.TotalProjects > 0 ? (int)((double)kv.Value / Model.TotalProjects * 100) : 0;
-                <div style="margin-bottom:12px">
-                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                <div style="margin-bottom:9px">
+                    <div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:3px">
                         <span style="color:var(--text2)">@kv.Key.Replace("_", " ")</span>
                         <span style="color:var(--sun)">@kv.Value</span>
                     </div>

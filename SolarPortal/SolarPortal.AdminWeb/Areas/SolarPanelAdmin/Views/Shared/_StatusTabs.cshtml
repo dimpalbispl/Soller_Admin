@@ -21,7 +21,11 @@
 @model string
 
 @{
-    var current = string.IsNullOrWhiteSpace(Model) ? "pending" : Model.ToLowerInvariant();
+    // Default tab is "All" per spec ("sabhi report mein all filter by default
+    // rehna chahiye") — matches the controllers, which now default filter to
+    // "all" too. Keep the two in step or the highlighted tab will lie about
+    // which rows are actually being shown.
+    var current = string.IsNullOrWhiteSpace(Model) ? "all" : Model.ToLowerInvariant();
 
     // Resolve current action/controller/area so links stay on the same page.
     // ViewContext.RouteData.Values has whatever the routing system matched.

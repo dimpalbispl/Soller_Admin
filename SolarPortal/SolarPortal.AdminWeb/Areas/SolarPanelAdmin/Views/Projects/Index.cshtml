@@ -1,4 +1,4 @@
-@model IEnumerable<SolarPortal.Application.DTOs.SolarRequestDto>
+﻿@model IEnumerable<SolarPortal.Application.DTOs.SolarRequestDto>
 @{
     ViewData["Title"] = "All Projects";
 }
@@ -41,15 +41,24 @@
             </div>
         </div>
 
+        @* Report filter — Member ID / City / State / Request date. *@
+        
+        ViewData["FilterTableId"] = "projectsTable";
+        ViewData["FilterPlaceholder"] = "Search by Member ID, name, mobile, request #, plan...";
+        ViewData["FilterDateLabel"] = "Request Date";
+
+        <partial name="_ReportFilterToolbar" />
+
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>Projects List</div>
             <div class="tbl-wrap">
-                <table>
+                <table id="projectsTable">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Member ID</th>
                             <th>Member Name</th>
+                            <th>City / State</th>
                             <th>Plan</th>
                             <th>Type</th>
                             <th style="width:80px">Capacity</th>
@@ -58,7 +67,7 @@
                             <th style="text-align:right">Total Amount</th>
                             <th style="text-align:right">Paid</th>
                             <th style="text-align:right">Due</th>
-                            <th>Date</th>
+                            <th>Request Date</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -67,13 +76,24 @@
                         {
                             var paid = paidMap.TryGetValue(project.Id, out var v) ? v : 0m;
                             var due  = Math.Max(0, project.RequestedAmount - paid);
-                            <tr>
+                            var memberName = !string.IsNullOrWhiteSpace(project.MemberFullName) ? project.MemberFullName
+                                           : !string.IsNullOrWhiteSpace(project.UserFullName)   ? project.UserFullName
+                                           : project.ApplicantName;
+                            <tr data-search="@($"{project.UserId} {memberName} {project.MobileNumber} {project.City} {project.State} {project.RequestNumber} {project.SelectedPlan}".ToLower())"
+                                data-mid="@project.UserId"
+                                data-city="@project.City"
+                                data-state="@project.State"
+                                data-date="@project.CreatedAt.ToString("yyyy-MM-dd")">
                                 <td class="td-b">
                                     <a asp-controller="Projects" asp-action="Details" asp-route-id="@project.Id"
                                        style="color:var(--accent)">@project.RequestNumber</a>
                                 </td>
-                                <td><code style="font-size:11px;color:#0d9488">@project.UserId</code></td>
-                                <td>@project.ApplicantName</td>
+                                <td><span class="mid-code">@project.UserId</span></td>
+                                <td>
+                                    @memberName
+                                    <div class="cell-sub">@project.MobileNumber</div>
+                                </td>
+                                <td>@project.City<div class="cell-sub">@project.State</div></td>
                                 <td><partial name="_PlanCell" model="project" /></td>
                                 <td>@project.ConnectionType</td>
                                 <td>@project.KVCapacity kV</td>

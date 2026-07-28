@@ -1,8 +1,8 @@
-@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
+﻿@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
 @using SolarPortal.Domain.Entities
 @{
     ViewData["Title"] = ViewBag.Title;
-    var pmFilter = (ViewBag.Filter as string) ?? "pending";
+    var pmFilter = (ViewBag.Filter as string) ?? "all";
     var userDict = (Dictionary<string, ApplicationUser>)(ViewBag.UserStatuses ?? new Dictionary<string, ApplicationUser>());
 }
 
@@ -18,6 +18,14 @@
 
     @if (Model.Any())
     {
+        @* Report filter — Member ID / City / State / Request date. *@
+        
+        ViewData["FilterTableId"] = "pmTable";
+        ViewData["FilterPlaceholder"] = "Search by Member ID, name, mobile, request #...";
+        ViewData["FilterDateLabel"] = "Request Date";
+
+        <partial name="_ReportFilterToolbar" />
+
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>PM Surya Ghar Queue (@Model.Count())</div>
             <div class="tbl-wrap">
@@ -26,11 +34,11 @@
                         <tr>
                             <th>Request #</th>
                             <th>Member ID</th>
-                            <th>Applicant</th>
+                            <th>Member Name</th>
                             <th>Plan</th>
                             <th>City / State</th>
                             <th>Connection</th>
-                            <th>Submitted</th>
+                            <th>Request Date</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -39,22 +47,13 @@
                     {
                         var user = userDict.ContainsKey(r.UserId) ? userDict[r.UserId] : null;
                         var isActive = user?.IsActive ?? false;
+                        var memberName = string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName;
 
-                        var requestTypeLabel = r.RequestType.ToString() switch
-                        {
-                            "WithActivation" => "📦 With Activation",
-                            "OnlySolarWithoutActivation" => "☀️ Without Activation",
-                            "AlreadyActiveOnlyRequest" => "✅ Already Active",
-                            _ => r.RequestType.ToString()
-                        };
-                        var requestTypeCls = r.RequestType.ToString() switch
-                        {
-                            "WithActivation" => "bg-info",
-                            "OnlySolarWithoutActivation" => "bg-warning",
-                            "AlreadyActiveOnlyRequest" => "bg-success",
-                            _ => "bg-secondary"
-                        };
-                        <tr>
+                        <tr data-search="@($"{r.UserId} {memberName} {r.MobileNumber} {r.City} {r.State} {r.RequestNumber}".ToLower())"
+                            data-mid="@r.UserId"
+                            data-city="@r.City"
+                            data-state="@r.State"
+                            data-date="@r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")">
                             <td class="td-b">@r.RequestNumber</td>
                             <td>
                                 <span class="mid-code">@r.UserId</span>
@@ -65,14 +64,12 @@
                                 </div>
                             </td>
                             <td>
-                                @(string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName)
+                                @memberName
                                 <div class="cell-sub">@r.MobileNumber</div>
                             </td>
-                            <td>
-                                <span class="badge @requestTypeCls" style="margin-bottom:6px;display:inline-block">@requestTypeLabel</span>
-                                <div class="td-b">@r.SelectedPlan</div>
-                                <div class="cell-sub">@r.KVCapacity kV • ₹@r.PlanAmount.ToString("N0")</div>
-                            </td>
+                            @* Shared cell — same markup as every other report, and it
+                               also resolves the With-Activation product name. *@
+                            <td><partial name="_PlanCell" model="r" /></td>
                             <td>@r.City<div class="cell-sub">@r.State</div></td>
                             <td><span class="badge bg-info">@r.ConnectionType</span></td>
                             <td>@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>

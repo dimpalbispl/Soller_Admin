@@ -1,4 +1,4 @@
-@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
+﻿@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
 @{
     ViewData["Title"] = ViewBag.Title ?? "Operations";
     var op = (string)(ViewBag.Op ?? "");           // meter | material | installation | dcr
@@ -17,7 +17,7 @@
     </div>
 
     @{
-        var opFilter = (ViewBag.Filter as string) ?? "pending";
+        var opFilter = (ViewBag.Filter as string) ?? "all";
     }
     @* 4-tab status filter — Pending / Approved / Rejected / All.
        Per spec ("approve karta hu to pending se ht jata hai wha sb show
@@ -27,7 +27,7 @@
        a reject step). *@
     @await Html.PartialAsync("_StatusTabs", (object)opFilter)
 
-    <!-- Filter card -->
+    <!-- Filter card — server-side, re-queries the whole queue -->
     <div class="card" style="margin-bottom:14px">
         <div class="ct"><span class="ct-dot"></span>Filter</div>
         <form method="get">
@@ -60,6 +60,23 @@
 
     @if (Model.Any())
     {
+        // Client-side report filter — Member ID + Request date + free text.
+        // City / State are switched OFF here because the server-side filter card
+        // above already owns those two; showing both would let the two filters
+        // silently fight each other.
+        ViewData["FilterTableId"] = "operationsTable";
+        ViewData["FilterPlaceholder"] = "Search by Member ID, name, mobile, request #, city, state...";
+        ViewData["FilterDateLabel"] = "Request Date";
+        ViewData["FilterShowCity"] = false;
+        ViewData["FilterShowState"] = false;
+
+        // Assigned-person filter — only the two queues that actually carry a
+        // person — dono jagah wahi installer hai jo Material Dispatch par assign hota hai.
+        ViewData["FilterShowWorker"] = op == "material" || op == "installation";
+        ViewData["FilterWorkerLabel"] = "Installer";
+
+        <partial name="_ReportFilterToolbar" />
+
         // History mode: show extra "Details" column with the data admin filled
         // during the dispatch action. Pulled from ViewBag dictionaries that the
         // controller populated based on `op`.
@@ -72,20 +89,34 @@
         var installMap = ViewBag.InstallationDetails as Dictionary<int, SolarPortal.Domain.Entities.Installation>;
         var dcrMap = ViewBag.DCRDetails as Dictionary<int, SolarPortal.Domain.Entities.DCRDocument>;
 
+        // On the Installation queue this holds the MaterialDispatch row, so the
+        // person assigned at dispatch time can be shown (and pre-selected in the
+        // modal) even before an Installation record exists.
+        var dispatchMap = ViewBag.DispatchAssignments as Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>;
+
+        // Whether this queue shows the "assigned person" column at all.
+        var showPersonCol = op == "material" || op == "installation";
+        var personColTitle = "Installer";
+
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>@ViewBag.Title Queue (@Model.Count())</div>
             <div class="tbl-wrap">
-                <table>
+                <table id="operationsTable">
                     <thead>
                         <tr>
                             <th>Request</th>
                             <th>Member ID</th>
-                            <th>Applicant</th>
+                            <th>Member Name</th>
                             <th>Plan</th>
                             <th>Type</th>
                             <th>Capacity</th>
                             <th>City / State</th>
+                            <th>Request Date</th>
                             <th>Stage</th>
+                            @if (showPersonCol)
+                            {
+                                <th>@personColTitle</th>
+                            }
                             @if (isHistoryMode)
                             {
                                 <th>Details</th>
@@ -96,16 +127,56 @@
                     <tbody>
                         @foreach (var r in Model)
                         {
-                            <tr>
+                            // Live m_membermaster name when the admin controller has enriched
+                            // it, otherwise the stored ApplicantName.
+                            var memberName = string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName;
+
+                            // --- Assigned person for this row -----------------------------
+                            // material      → the installer picked at dispatch time
+                            // installation  → the installer on the Installation record; before
+                            //                 that record exists we show (and pre-select) the
+                            //                 person already assigned in Material Dispatch.
+                            string? personName = null;
+                            int? personId = null;
+                            var personFromDispatch = false;   // true = inherited, not yet confirmed
+                            int? personInstallId = null;      // set only when a row can be edited
+
+                            if (op == "material" && materialMap != null
+                                && materialMap.TryGetValue(r.Id, out var matPerson))
+                            {
+                                personName = matPerson.AssignedWorker?.Name;
+                                personId = matPerson.AssignedWorkerId;
+                            }
+                            else if (op == "installation")
+                            {
+                                if (installMap != null && installMap.TryGetValue(r.Id, out var insPerson))
+                                {
+                                    personName = insPerson.AssignedWorker?.Name;
+                                    personId = insPerson.AssignedWorkerId;
+                                    personInstallId = insPerson.Id;
+                                }
+                                if (personName == null && dispatchMap != null
+                                    && dispatchMap.TryGetValue(r.Id, out var dspPerson))
+                                {
+                                    personName = dspPerson.AssignedWorker?.Name;
+                                    personId = dspPerson.AssignedWorkerId;
+                                    personFromDispatch = true;
+                                }
+                            }
+
+                            <tr data-search="@($"{r.UserId} {memberName} {r.MobileNumber} {r.City} {r.State} {r.RequestNumber} {personName}".ToLower())"
+                                data-mid="@r.UserId"
+                                data-city="@r.City"
+                                data-state="@r.State"
+                                data-worker="@personName"
+                                data-date="@r.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")">
                                 <td class="td-b">
                                     <a asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Details"
                                        asp-route-id="@r.Id" style="color:var(--sun)">@r.RequestNumber</a>
                                 </td>
-                                <td><code style="font-size:11px;color:#0d9488">@r.UserId</code></td>
+                                <td><span class="mid-code">@r.UserId</span></td>
                                 <td>
-                                    @* Live m_membermaster name when admin controller has enriched it,
-                                       otherwise stored ApplicantName. *@
-                                    @(string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName)
+                                    @memberName
                                     <div style="font-size:11px;color:var(--text3)">@r.MobileNumber</div>
                                 </td>
                                 @* Plan cell missing tha — header mein Plan/Type/Capacity
@@ -116,9 +187,34 @@
                                 <td>@r.ConnectionType</td>
                                 <td>@r.KVCapacity kV</td>
                                 <td>@r.City<div style="font-size:11px;color:var(--text3)">@r.State</div></td>
+                                <td>@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
                                 <td>
                                     <span class="sts sts-disp">@r.CurrentStage.ToString().Replace("_", " ")</span>
                                 </td>
+                                @if (showPersonCol)
+                                {
+                                    <td style="font-size:12px">
+                                        @if (!string.IsNullOrWhiteSpace(personName))
+                                        {
+                                            <div class="td-b">👷 @personName</div>
+                                            if (personFromDispatch)
+                                            {
+                                                <div style="font-size:11px;color:var(--text3)">from Material Dispatch</div>
+                                            }
+                                            if (personInstallId.HasValue)
+                                            {
+                                                <button type="button" class="btn btn-s btn-sm" style="margin-top:4px"
+                                                        onclick="openChangeInstaller(@personInstallId.Value, @(personId ?? 0), '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(personName))')">
+                                                    ✏️ Change
+                                                </button>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">— Not assigned —</span>
+                                        }
+                                    </td>
+                                }
                                 @if (isHistoryMode)
                                 {
                                     <td style="font-size:12px;max-width:240px">
@@ -282,7 +378,7 @@
                                                 <button class="btn btn-primary btn-sm" onclick="openMaterialForm(@r.Id, '@r.RequestNumber')">📦 Dispatch Material</button>
                                                 break;
                                             case "installation":
-                                                <button class="btn btn-primary btn-sm" onclick="openInstallForm(@r.Id, '@r.RequestNumber')">🔧 Mark Installation</button>
+                                                <button class="btn btn-primary btn-sm" onclick="openInstallForm(@r.Id, '@r.RequestNumber')">📝 Remark / Check Installer</button>
                                                 break;
                                             case "dcr":
                                                 <button class="btn btn-primary btn-sm" onclick="openDCRForm(@r.Id, '@r.RequestNumber')">📄 Submit DCR</button>
@@ -353,10 +449,50 @@
 }
 <script id="dcrData" type="application/json">@Html.Raw(dcrJson)</script>
 
+@* Person assigned during Material Dispatch, keyed by SolarRequestId. The
+   Installation modal reads this to pre-select the installer instead of asking
+   the admin to pick the same person a second time. *@
+@{
+    var dispatchForJson = ViewBag.DispatchAssignments as Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>;
+    var dispatchJson = System.Text.Json.JsonSerializer.Serialize(
+        (dispatchForJson ?? new Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>())
+        .Where(kv => kv.Value.AssignedWorkerId.HasValue)
+        .ToDictionary(
+            kv => kv.Key.ToString(),
+            kv => new
+            {
+                workerId = kv.Value.AssignedWorkerId!.Value,
+                workerName = kv.Value.AssignedWorker?.Name ?? ""
+            }));
+}
+<script id="dispatchAssignData" type="application/json">@Html.Raw(dispatchJson)</script>
+
+@* Existing Installation rows, keyed by SolarRequestId — the admin modal shows the
+   saved remark and the installer already on record (falling back to the dispatch
+   assignment when no Installation row exists yet). *@
+@{
+    var installForJson = ViewBag.InstallationDetails as Dictionary<int, SolarPortal.Domain.Entities.Installation>;
+    var installJson = System.Text.Json.JsonSerializer.Serialize(
+        (installForJson ?? new Dictionary<int, SolarPortal.Domain.Entities.Installation>())
+        .ToDictionary(
+            kv => kv.Key.ToString(),
+            kv => new
+            {
+                installationId = kv.Value.Id,
+                workerId = kv.Value.AssignedWorkerId,
+                workerName = kv.Value.AssignedWorker?.Name ?? "",
+                remark = kv.Value.Remark ?? "",
+                isCompleted = kv.Value.IsCompleted
+            }));
+}
+<script id="installData" type="application/json">@Html.Raw(installJson)</script>
+
 @section Scripts {
     <script>
         const workerData = JSON.parse(document.getElementById('workerOptions').textContent || '[]');
         const dcrData = JSON.parse(document.getElementById('dcrData').textContent || '{}');
+        const dispatchAssign = JSON.parse(document.getElementById('dispatchAssignData').textContent || '{}');
+        const installData = JSON.parse(document.getElementById('installData').textContent || '{}');
         const csrfToken = document.querySelector('#csrfForm input[name="__RequestVerificationToken"]')?.value || '';
         const today = new Date().toISOString().split('T')[0];
 
@@ -365,9 +501,20 @@
         .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
         .replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-        function workerOptionsHtml(includeBlank=true) {
-        const blank = includeBlank ? '<option value="">— Not assigned —</option>' : '';
-        return blank + workerData.map(w => `<option value="${w.id}">${w.name} (${w.type}, ${w.city || ''})</option>`).join('');
+        // `selectedId` pre-selects a worker (used to carry the Material Dispatch
+        // assignment into Installation). `fallbackName` covers the case where that
+        // worker is no longer in the available list — we still show them selected
+        // instead of silently dropping the existing assignment.
+        function workerOptionsHtml(includeBlank=true, selectedId=null, fallbackName='') {
+        const sel = selectedId ? String(selectedId) : '';
+        const blank = includeBlank ? `<option value="" ${sel ? '' : 'selected'}>— Not assigned —</option>` : '';
+        const known = workerData.some(w => String(w.id) === sel);
+        const extra = (sel && !known)
+        ? `<option value="${esc(sel)}" selected>${esc(fallbackName || 'Currently assigned')}</option>`
+        : '';
+        return blank + extra + workerData.map(w =>
+        `<option value="${w.id}" ${String(w.id) === sel ? 'selected' : ''}>${esc(w.name)} (${esc(w.type)}, ${esc(w.city || '')})</option>`
+        ).join('');
         }
 
         async function postForm(url, formData, msgOnFail='Failed') {
@@ -436,7 +583,7 @@
         <input id="f-mat-date" type="date" class="swal2-input" value="${today}">
         <label>Vehicle / Courier</label>
         <input id="f-mat-veh" type="text" class="swal2-input" placeholder="RJ-14-AB-1234 / DTDC AWB...">
-        <label>Despatch Person (Worker) *</label>
+        <label>Installer (Worker) *</label>
         <select id="f-mat-worker" class="swal2-input">${workerOptionsHtml()}</select>
         <label>Remark</label>
         <textarea id="f-mat-remark" class="swal2-textarea"></textarea>
@@ -449,7 +596,7 @@
         preConfirm: async () => {
         // Worker assignment is mandatory — block submit until assigned.
         const w = document.getElementById('f-mat-worker').value;
-        if (!w) { Swal.showValidationMessage('Please assign a despatch person (worker) before dispatching.'); return false; }
+        if (!w) { Swal.showValidationMessage('Please assign an installer before dispatching.'); return false; }
         const fd = new FormData();
         fd.append('requestId', requestId);
         fd.append('materialDetails', document.getElementById('f-mat-detail').value);
@@ -470,38 +617,98 @@
         });
         }
 
+        // Admin ki Installation screen par ab sirf Remark + assigned installer ka
+        // check hai. Actual "Mark Installation" INC panel (SolarPanelInstaller area)
+        // par hota hai, isliye yahan installer dobara nahi poocha jaata — jo
+        // Material Dispatch mein assign hua tha wahi read-only dikhta hai.
+        //
+        // Complete karne wala button deny-action ke roop mein hai — sirf fallback,
+        // jab tak INC panel se completion na ho jaye.
         function openInstallForm(requestId, requestNumber) {
+        const assigned = dispatchAssign[requestId] || {};
+        const existing = installData[requestId] || {};
+        const who = existing.workerName || assigned.workerName || '';
+        const whoSrc = existing.workerName ? 'Installation record' : 'Material Dispatch';
+
+        const assignedBox = who
+        ? `<div style="border:1px solid #bbf7d0;background:#f0fdf4;border-radius:8px;padding:10px;margin-bottom:10px">
+        <div style="font-size:11px;color:#15803d;text-transform:uppercase;letter-spacing:.4px">Assigned Installer</div>
+        <div style="font-weight:700;color:#166534;font-size:15px">&#128119; ${esc(who)}</div>
+        <div style="font-size:11px;color:#6b7280">source: ${esc(whoSrc)}</div>
+        </div>`
+        : `<div style="border:1px solid #fecaca;background:#fef2f2;border-radius:8px;padding:10px;margin-bottom:10px;color:#b91c1c">
+        &#9888; Koi installer assign nahi hai. Pehle Material Dispatch mein installer assign kijiye.
+        </div>`;
+
         Swal.fire({
-        title: '🔧 Installation — ' + requestNumber,
+        title: '&#128295; Installation — ' + requestNumber,
         html: `
         <div style="text-align:left;font-size:13px">
-        <label>Installation Date *</label>
-        <input id="f-ins-date" type="date" class="swal2-input" value="${today}">
-        <label>Installer (Worker) *</label>
-        <select id="f-ins-worker" class="swal2-input">${workerOptionsHtml()}</select>
-        <label>Notes</label>
-        <textarea id="f-ins-notes" class="swal2-textarea" placeholder="Panels installed, inverter SN, meter reading..."></textarea>
+        ${assignedBox}
         <label>Remark</label>
-        <textarea id="f-ins-remark" class="swal2-textarea"></textarea>
-        <label>Completion Photo (optional)</label>
-        <input id="f-ins-photo" type="file" accept="image/*" class="swal2-file">
+        <textarea id="f-ins-remark" class="swal2-textarea" placeholder="Admin remark for this installation">${esc(existing.remark)}</textarea>
+        <div style="font-size:11px;color:#6b7280;margin-top:6px">
+        Installation "Mark Complete" INC panel se hoti hai. Neeche wala button sirf fallback hai.
+        </div>
         </div>`,
         background: '#ffffff', color: '#1f2937',
         showCancelButton: true,
-        confirmButtonText: 'Submit',
+        showDenyButton: true,
+        confirmButtonText: 'Save Remark',
+        denyButtonText: 'Complete (fallback)',
         preConfirm: async () => {
-        // Worker assignment is mandatory — block submit until assigned.
-        const w = document.getElementById('f-ins-worker').value;
-        if (!w) { Swal.showValidationMessage('Please assign an installer (worker) before submitting.'); return false; }
         const fd = new FormData();
         fd.append('requestId', requestId);
-        fd.append('installationDate', document.getElementById('f-ins-date').value);
-        fd.append('notes', document.getElementById('f-ins-notes').value);
+        fd.append('remark', document.getElementById('f-ins-remark').value);
+        return await postForm('/SolarPanelAdmin/Operations/SaveInstallationRemark', fd);
+        },
+        preDeny: async () => {
+        const w = existing.workerId || assigned.workerId;
+        if (!w) { Swal.showValidationMessage('Installer assign nahi hai — Material Dispatch se assign kijiye.'); return false; }
+        const fd = new FormData();
+        fd.append('requestId', requestId);
+        fd.append('installationDate', today);
         fd.append('remark', document.getElementById('f-ins-remark').value);
         fd.append('workerId', w);
-        const file = document.getElementById('f-ins-photo').files[0];
-        if (file) fd.append('completionPhoto', file);
         return await postForm('/SolarPanelAdmin/Operations/SubmitInstallation', fd);
+        }
+        }).then(r => {
+        const acted = r.isConfirmed || r.isDenied;
+        if (acted && r.value && r.value.success) {
+        Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+        } else if (acted) {
+        Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+        }
+        });
+        }
+
+        // Installation report se installer badalna — Installation row aur uska
+        // WorkerAssignment dono server par sync hote hain.
+        function openChangeInstaller(installationId, currentWorkerId, currentWorkerName) {
+        Swal.fire({
+        title: '✏️ Change Installer',
+        html: `
+        <div style="text-align:left;font-size:13px">
+        <div style="margin-bottom:8px">Current: <strong>${esc(currentWorkerName)}</strong></div>
+        <label>New Installer *</label>
+        <select id="f-chg-worker" class="swal2-input">${workerOptionsHtml(false, currentWorkerId, currentWorkerName)}</select>
+        <label>Reason / Note</label>
+        <textarea id="f-chg-note" class="swal2-textarea" placeholder="Why the installer changed"></textarea>
+        </div>`,
+        background: '#ffffff', color: '#1f2937',
+        showCancelButton: true,
+        confirmButtonText: 'Update Installer',
+        preConfirm: async () => {
+        const w = document.getElementById('f-chg-worker').value;
+        if (!w) { Swal.showValidationMessage('Please choose an installer.'); return false; }
+        if (String(w) === String(currentWorkerId)) {
+        Swal.showValidationMessage('That is already the assigned installer.'); return false;
+        }
+        const fd = new FormData();
+        fd.append('installationId', installationId);
+        fd.append('workerId', w);
+        fd.append('note', document.getElementById('f-chg-note').value);
+        return await postForm('/SolarPanelAdmin/Operations/ChangeInstaller', fd);
         }
         }).then(r => {
         if (r.isConfirmed && r.value && r.value.success) {

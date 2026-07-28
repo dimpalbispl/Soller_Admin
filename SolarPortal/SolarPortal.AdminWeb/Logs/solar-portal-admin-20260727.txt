@@ -1,0 +1,430 @@
+2026-07-27 16:39:53.306 +05:30 [INF] DbSeeder: skipping all DB schema work (live DB managed externally).
+2026-07-27 16:39:53.580 +05:30 [INF] User profile is available. Using 'C:\Users\Claude1\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest.
+2026-07-27 16:39:53.985 +05:30 [INF] Now listening on: http://localhost:5039
+2026-07-27 16:39:54.054 +05:30 [INF] Application started. Press Ctrl+C to shut down.
+2026-07-27 16:39:54.056 +05:30 [INF] Hosting environment: Development
+2026-07-27 16:39:54.058 +05:30 [INF] Content root path: \\localhost\Sadhna\GitHub\Soller_Admin\SolarPortal\SolarPortal.AdminWeb
+2026-07-27 16:39:59.621 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/ - null null
+2026-07-27 16:39:59.960 +05:30 [WRN] Failed to determine the https port for redirect.
+2026-07-27 16:40:00.086 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb)'
+2026-07-27 16:40:00.215 +05:30 [INF] Route matched with {action = "Login", controller = "Account", area = ""}. Executing controller action with signature Microsoft.AspNetCore.Mvc.IActionResult Login(System.String) on controller SolarPortal.AdminWeb.Controllers.AccountController (SolarPortal.AdminWeb).
+2026-07-27 16:41:07.213 +05:30 [INF] Executing ViewResult, running view Login.
+2026-07-27 16:41:09.396 +05:30 [INF] Executed ViewResult - view Login executed in 66713.1318ms.
+2026-07-27 16:41:09.422 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/css/solar-theme.css?v=9JzC85uGvvggmTAYVFXivHaM-YMiylFEGXEjsDfAQWg - null null
+2026-07-27 16:41:09.437 +05:30 [INF] Executed action SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb) in 69209.0156ms
+2026-07-27 16:41:09.437 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/jquery-validation/dist/jquery.validate.min.js - null null
+2026-07-27 16:41:09.438 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js - null null
+2026-07-27 16:41:09.446 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb)'
+2026-07-27 16:41:09.452 +05:30 [INF] The file /lib/jquery-validation/dist/jquery.validate.min.js was not modified
+2026-07-27 16:41:09.453 +05:30 [INF] The file /lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js was not modified
+2026-07-27 16:41:09.460 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/jquery-validation/dist/jquery.validate.min.js - 304 null text/javascript 21.1589ms
+2026-07-27 16:41:09.460 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js - 304 null text/javascript 21.4828ms
+2026-07-27 16:41:09.474 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/ - 200 null text/html; charset=utf-8 69857.1113ms
+2026-07-27 16:41:09.481 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-07-27 16:41:09.487 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-07-27 16:41:09.506 +05:30 [INF] Sending file. Request path: '/css/solar-theme.css'. Physical path: '\\localhost\Sadhna\GitHub\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\wwwroot\css\solar-theme.css'
+2026-07-27 16:41:09.511 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/css/solar-theme.css?v=9JzC85uGvvggmTAYVFXivHaM-YMiylFEGXEjsDfAQWg - 200 35262 text/css 89.0364ms
+2026-07-27 16:41:09.511 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 24.075ms
+2026-07-27 16:41:09.590 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 109.0769ms
+2026-07-27 16:41:33.419 +05:30 [INF] Request starting HTTP/1.1 POST http://localhost:5039/ - application/x-www-form-urlencoded 245
+2026-07-27 16:41:33.435 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb)'
+2026-07-27 16:41:33.454 +05:30 [INF] Route matched with {action = "Login", controller = "Account", area = ""}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Login(SolarPortal.AdminWeb.ViewModels.LoginViewModel, System.String) on controller SolarPortal.AdminWeb.Controllers.AccountController (SolarPortal.AdminWeb).
+2026-07-27 16:41:37.757 +05:30 [WRN] Entity 'SolarRequest' has a global query filter defined and is the required end of a relationship with the entity 'DCRDocument'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-07-27 16:41:37.762 +05:30 [WRN] Entity 'SolarRequest' has a global query filter defined and is the required end of a relationship with the entity 'Installation'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-07-27 16:41:37.771 +05:30 [WRN] Entity 'SolarRequest' has a global query filter defined and is the required end of a relationship with the entity 'MaterialDispatch'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-07-27 16:41:37.775 +05:30 [WRN] Entity 'SolarRequest' has a global query filter defined and is the required end of a relationship with the entity 'MeterDispatch'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-07-27 16:41:37.779 +05:30 [WRN] Entity 'SolarRequest' has a global query filter defined and is the required end of a relationship with the entity 'SiteSurvey'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2026-07-27 16:41:37.876 +05:30 [WRN] The foreign key property 'SolarAccount.SolarRequestId1' was created in shadow state because a conflicting property with the simple name 'SolarRequestId' exists in the entity type, but is either not mapped, is already used for another relationship, or is incompatible with the associated primary key type. See https://aka.ms/efcore-relationships for information on mapping relationships in EF Core.
+2026-07-27 16:41:37.879 +05:30 [WRN] The foreign key property 'WalletTransaction.SolarAccountId1' was created in shadow state because a conflicting property with the simple name 'SolarAccountId' exists in the entity type, but is either not mapped, is already used for another relationship, or is incompatible with the associated primary key type. See https://aka.ms/efcore-relationships for information on mapping relationships in EF Core.
+2026-07-27 16:41:37.956 +05:30 [WRN] No store type was specified for the decimal property 'CommissionAmount' on entity type 'IncConnection'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:37.960 +05:30 [WRN] No store type was specified for the decimal property 'KVCapacity' on entity type 'IncConnection'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:37.963 +05:30 [WRN] No store type was specified for the decimal property 'Amount' on entity type 'IncWithdrawal'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:37.967 +05:30 [WRN] No store type was specified for the decimal property 'MId' on entity type 'MMemberMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:37.971 +05:30 [WRN] The decimal property 'MId' is part of a key on entity type 'MMemberMaster'. If the configured precision and scale don't match the column type in the database, this will cause values to be silently truncated if they do not fit in the default precision and scale. Consider using a different property as the key, or make sure that the database column type matches the model configuration and enable decimal rounding warnings using 'SET NUMERIC_ROUNDABORT ON'.
+2026-07-27 16:41:37.974 +05:30 [WRN] No store type was specified for the decimal property 'BV' on entity type 'MMemberMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:37.976 +05:30 [WRN] No store type was specified for the decimal property 'Mobl' on entity type 'MMemberMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:37.979 +05:30 [WRN] No store type was specified for the decimal property 'StateCode' on entity type 'MMemberMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:37.982 +05:30 [WRN] No store type was specified for the decimal property 'StateCode' on entity type 'MStateDivMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:37.985 +05:30 [WRN] The decimal property 'StateCode' is part of a key on entity type 'MStateDivMaster'. If the configured precision and scale don't match the column type in the database, this will cause values to be silently truncated if they do not fit in the default precision and scale. Consider using a different property as the key, or make sure that the database column type matches the model configuration and enable decimal rounding warnings using 'SET NUMERIC_ROUNDABORT ON'.
+2026-07-27 16:41:37.988 +05:30 [WRN] No store type was specified for the decimal property 'CountryCode' on entity type 'MStateDivMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:37.990 +05:30 [WRN] No store type was specified for the decimal property 'UId' on entity type 'MUserMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:37.993 +05:30 [WRN] The decimal property 'UId' is part of a key on entity type 'MUserMaster'. If the configured precision and scale don't match the column type in the database, this will cause values to be silently truncated if they do not fit in the default precision and scale. Consider using a different property as the key, or make sure that the database column type matches the model configuration and enable decimal rounding warnings using 'SET NUMERIC_ROUNDABORT ON'.
+2026-07-27 16:41:37.997 +05:30 [WRN] No store type was specified for the decimal property 'GroupId' on entity type 'MUserMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:37.999 +05:30 [WRN] No store type was specified for the decimal property 'MobileNo' on entity type 'MUserMaster'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:38.001 +05:30 [WRN] No store type was specified for the decimal property 'RoofTotalAreaSqft' on entity type 'SiteSurvey'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:38.003 +05:30 [WRN] No store type was specified for the decimal property 'ProjectAmount' on entity type 'SolarProject'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:38.005 +05:30 [WRN] No store type was specified for the decimal property 'CommissionPercent' on entity type 'Worker'. This will cause values to be silently truncated if they do not fit in the default precision and scale. Explicitly specify the SQL server column type that can accommodate all the values in 'OnModelCreating' using 'HasColumnType', specify precision and scale using 'HasPrecision', or configure a value converter using 'HasConversion'.
+2026-07-27 16:41:43.790 +05:30 [INF] Executed DbCommand (277ms) [Parameters=[@__trimmedName_0='?' (Size = 4000), @__8__locals1_password_1='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [m].[UId], [m].[ActiveStatus], [m].[CreateDate], [m].[Email], [m].[GroupId], [m].[IsCustomerCare], [m].[MobileNo], [m].[Passw], [m].[UserName]
+FROM [m_usermaster] AS [m]
+WHERE [m].[UserName] IS NOT NULL AND [m].[Passw] IS NOT NULL AND LTRIM(RTRIM([m].[UserName])) = @__trimmedName_0 AND LTRIM(RTRIM([m].[Passw])) = @__8__locals1_password_1
+2026-07-27 16:41:43.873 +05:30 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-07-27 16:41:44.113 +05:30 [INF] Executed DbCommand (46ms) [Parameters=[p0='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [t].[Value]
+FROM (
+    SELECT COUNT(1) AS Value FROM Roles WHERE NormalizedName = @p0
+) AS [t]
+2026-07-27 16:41:44.126 +05:30 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-07-27 16:41:44.350 +05:30 [INF] Executed DbCommand (41ms) [Parameters=[p0='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [t].[Value]
+FROM (
+    SELECT TOP 1 Id AS Value FROM Users WHERE NormalizedEmail = @p0
+) AS [t]
+2026-07-27 16:41:44.355 +05:30 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-07-27 16:41:44.835 +05:30 [INF] Executed DbCommand (311ms) [Parameters=[p0='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [t].[Value]
+FROM (
+    SELECT TOP 1 Id AS Value FROM Roles WHERE NormalizedName = @p0
+) AS [t]
+2026-07-27 16:41:44.841 +05:30 [WRN] The query uses the 'First'/'FirstOrDefault' operator without 'OrderBy' and filter operators. This may lead to unpredictable results.
+2026-07-27 16:41:45.049 +05:30 [INF] Executed DbCommand (40ms) [Parameters=[p0='?' (Size = 4000), p1='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [t].[Value]
+FROM (
+    SELECT COUNT(1) AS Value FROM UserRoles WHERE UserId = @p0 AND RoleId = @p1
+) AS [t]
+2026-07-27 16:41:45.457 +05:30 [INF] Executed DbCommand (69ms) [Parameters=[@__user_Id_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT [u].[Id], [u].[ClaimType], [u].[ClaimValue], [u].[UserId]
+FROM [UserClaims] AS [u]
+WHERE [u].[UserId] = @__user_Id_0
+2026-07-27 16:41:45.622 +05:30 [INF] Executed DbCommand (46ms) [Parameters=[@__userId_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT [r].[Name]
+FROM [UserRoles] AS [u]
+INNER JOIN [Roles] AS [r] ON [u].[RoleId] = [r].[Id]
+WHERE [u].[UserId] = @__userId_0
+2026-07-27 16:41:45.695 +05:30 [INF] Executed DbCommand (47ms) [Parameters=[@__normalizedName_0='?' (Size = 256)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [r].[Id], [r].[ConcurrencyStamp], [r].[Name], [r].[NormalizedName]
+FROM [Roles] AS [r]
+WHERE [r].[NormalizedName] = @__normalizedName_0
+2026-07-27 16:41:46.007 +05:30 [INF] Executed DbCommand (46ms) [Parameters=[@__role_Id_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT [r].[ClaimType], [r].[ClaimValue]
+FROM [RoleClaims] AS [r]
+WHERE [r].[RoleId] = @__role_Id_0
+2026-07-27 16:41:46.378 +05:30 [INF] AuthenticationScheme: Identity.Application signed in.
+2026-07-27 16:41:46.380 +05:30 [INF] Admin admin logged in via live DB bridge.
+2026-07-27 16:41:46.391 +05:30 [INF] Executing RedirectResult, redirecting to /SolarPanelAdmin.
+2026-07-27 16:41:46.395 +05:30 [INF] Executed action SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb) in 12935.9821ms
+2026-07-27 16:41:46.398 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Controllers.AccountController.Login (SolarPortal.AdminWeb)'
+2026-07-27 16:41:46.412 +05:30 [INF] Request finished HTTP/1.1 POST http://localhost:5039/ - 302 null null 12993.4919ms
+2026-07-27 16:41:46.420 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin - null null
+2026-07-27 16:41:46.483 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController.Index (SolarPortal.AdminWeb)'
+2026-07-27 16:41:46.500 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "Dashboard"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index() on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController (SolarPortal.AdminWeb).
+2026-07-27 16:41:48.146 +05:30 [INF] Executed DbCommand (48ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[LightBillNumber], [s].[LightBillOwnerType], [s].[LightBillPath], [s].[LightBillRelationName], [s].[LightBillRelationProofPath], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[PmSuryaApplicationNo], [s].[PmSuryaLoanOption], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-07-27 16:41:50.009 +05:30 [INF] Executed DbCommand (39ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit)
+2026-07-27 16:41:50.282 +05:30 [INF] Executed DbCommand (38ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CommissionPercent], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[LoginPassword], [w].[LoginUsername], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+2026-07-27 16:41:50.813 +05:30 [INF] Executed DbCommand (51ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[CurrentStage], [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[LightBillNumber], [s].[LightBillOwnerType], [s].[LightBillPath], [s].[LightBillRelationName], [s].[LightBillRelationProofPath], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[PmSuryaApplicationNo], [s].[PmSuryaLoanOption], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+ORDER BY [s].[CurrentStage]
+2026-07-27 16:41:51.378 +05:30 [INF] Executed DbCommand (43ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-07-27 16:41:51.674 +05:30 [INF] Executed DbCommand (39ms) [Parameters=[@__p_0='?' (DbType = Int32), @__p_1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[AadharNumber], [t].[Address], [t].[AdminNotes], [t].[AlternateMobile], [t].[ApplicantName], [t].[ApprovalStatus], [t].[City], [t].[ConnectionType], [t].[CreatedAt], [t].[CreatedBy], [t].[CurrentStage], [t].[Email], [t].[ExternalProductId], [t].[IsDeleted], [t].[KVCapacity], [t].[LightBillNumber], [t].[LightBillOwnerType], [t].[LightBillPath], [t].[LightBillRelationName], [t].[LightBillRelationProofPath], [t].[MobileNumber], [t].[PANNumber], [t].[PinCode], [t].[PlanAmount], [t].[PmSuryaApplicationNo], [t].[PmSuryaLoanOption], [t].[RejectionReason], [t].[RequestNumber], [t].[RequestType], [t].[SelectedPlan], [t].[SolarProjectId], [t].[State], [t].[UpdatedAt], [t].[UpdatedBy], [t].[UserId], [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName], [t0].[Id], [t0].[Amount], [t0].[CreatedAt], [t0].[CreatedBy], [t0].[IsDeleted], [t0].[IsVerified], [t0].[Notes], [t0].[PaymentDate], [t0].[PaymentMethod], [t0].[ReceiptImagePath], [t0].[ReceiptNumber], [t0].[ReferenceNumber], [t0].[SolarRequestId], [t0].[Status], [t0].[UTRNumber], [t0].[UpdatedAt], [t0].[UpdatedBy], [t0].[UserId], [t0].[VerifiedAt], [t0].[VerifiedBy]
+FROM (
+    SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[LightBillNumber], [s].[LightBillOwnerType], [s].[LightBillPath], [s].[LightBillRelationName], [s].[LightBillRelationProofPath], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[PmSuryaApplicationNo], [s].[PmSuryaLoanOption], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+    FROM [SolarRequests] AS [s]
+    WHERE [s].[IsDeleted] = CAST(0 AS bit)
+    ORDER BY [s].[CreatedAt] DESC
+    OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+) AS [t]
+INNER JOIN [Users] AS [u] ON [t].[UserId] = [u].[Id]
+LEFT JOIN (
+    SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+    FROM [Payments] AS [p]
+    WHERE [p].[IsDeleted] = CAST(0 AS bit)
+) AS [t0] ON [t].[Id] = [t0].[SolarRequestId]
+ORDER BY [t].[CreatedAt] DESC, [t].[Id], [u].[Id]
+2026-07-27 16:41:53.743 +05:30 [INF] Executing ViewResult, running view Index.
+2026-07-27 16:41:55.114 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-07-27 16:41:56.282 +05:30 [INF] Executed ViewResult - view Index executed in 4183.1415ms.
+2026-07-27 16:41:56.291 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController.Index (SolarPortal.AdminWeb) in 9787.6529ms
+2026-07-27 16:41:56.298 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.DashboardController.Index (SolarPortal.AdminWeb)'
+2026-07-27 16:41:56.306 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin - 200 null text/html; charset=utf-8 9885.8151ms
+2026-07-27 16:41:56.343 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-07-27 16:41:56.343 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-07-27 16:41:56.352 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 8.5177ms
+2026-07-27 16:41:56.396 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 52.7251ms
+2026-07-27 16:43:04.113 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Projects - null null
+2026-07-27 16:43:06.468 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.ProjectsController.Index (SolarPortal.AdminWeb)'
+2026-07-27 16:43:07.600 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "Projects"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index() on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.ProjectsController (SolarPortal.AdminWeb).
+2026-07-27 16:43:10.804 +05:30 [INF] Executed DbCommand (43ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT COUNT(*)
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-07-27 16:43:13.614 +05:30 [INF] Executed DbCommand (206ms) [Parameters=[@__p_0='?' (DbType = Int32), @__p_1='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [t].[Id], [t].[AadharNumber], [t].[Address], [t].[AdminNotes], [t].[AlternateMobile], [t].[ApplicantName], [t].[ApprovalStatus], [t].[City], [t].[ConnectionType], [t].[CreatedAt], [t].[CreatedBy], [t].[CurrentStage], [t].[Email], [t].[ExternalProductId], [t].[IsDeleted], [t].[KVCapacity], [t].[LightBillNumber], [t].[LightBillOwnerType], [t].[LightBillPath], [t].[LightBillRelationName], [t].[LightBillRelationProofPath], [t].[MobileNumber], [t].[PANNumber], [t].[PinCode], [t].[PlanAmount], [t].[PmSuryaApplicationNo], [t].[PmSuryaLoanOption], [t].[RejectionReason], [t].[RequestNumber], [t].[RequestType], [t].[SelectedPlan], [t].[SolarProjectId], [t].[State], [t].[UpdatedAt], [t].[UpdatedBy], [t].[UserId], [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName], [t0].[Id], [t0].[Amount], [t0].[CreatedAt], [t0].[CreatedBy], [t0].[IsDeleted], [t0].[IsVerified], [t0].[Notes], [t0].[PaymentDate], [t0].[PaymentMethod], [t0].[ReceiptImagePath], [t0].[ReceiptNumber], [t0].[ReferenceNumber], [t0].[SolarRequestId], [t0].[Status], [t0].[UTRNumber], [t0].[UpdatedAt], [t0].[UpdatedBy], [t0].[UserId], [t0].[VerifiedAt], [t0].[VerifiedBy]
+FROM (
+    SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[LightBillNumber], [s].[LightBillOwnerType], [s].[LightBillPath], [s].[LightBillRelationName], [s].[LightBillRelationProofPath], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[PmSuryaApplicationNo], [s].[PmSuryaLoanOption], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+    FROM [SolarRequests] AS [s]
+    WHERE [s].[IsDeleted] = CAST(0 AS bit)
+    ORDER BY [s].[CreatedAt] DESC
+    OFFSET @__p_0 ROWS FETCH NEXT @__p_1 ROWS ONLY
+) AS [t]
+INNER JOIN [Users] AS [u] ON [t].[UserId] = [u].[Id]
+LEFT JOIN (
+    SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+    FROM [Payments] AS [p]
+    WHERE [p].[IsDeleted] = CAST(0 AS bit)
+) AS [t0] ON [t].[Id] = [t0].[SolarRequestId]
+ORDER BY [t].[CreatedAt] DESC, [t].[Id], [u].[Id]
+2026-07-27 16:43:17.532 +05:30 [INF] Executed DbCommand (62ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0
+2026-07-27 16:43:25.406 +05:30 [INF] Executed DbCommand (58ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0
+2026-07-27 16:43:37.324 +05:30 [INF] Executed DbCommand (371ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0
+2026-07-27 16:43:41.408 +05:30 [INF] Executed DbCommand (61ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0
+2026-07-27 16:43:43.938 +05:30 [INF] Executed DbCommand (53ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0
+2026-07-27 16:43:45.613 +05:30 [INF] Executed DbCommand (65ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0
+2026-07-27 16:43:46.114 +05:30 [INF] Executed DbCommand (40ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0
+2026-07-27 16:43:48.647 +05:30 [INF] Executed DbCommand (84ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0
+2026-07-27 16:43:54.353 +05:30 [INF] Executing ViewResult, running view Index.
+2026-07-27 16:43:59.990 +05:30 [INF] Executed DbCommand (65ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-07-27 16:44:00.477 +05:30 [INF] Executed ViewResult - view Index executed in 10507.2199ms.
+2026-07-27 16:44:00.480 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.ProjectsController.Index (SolarPortal.AdminWeb) in 51415.2205ms
+2026-07-27 16:44:00.515 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.ProjectsController.Index (SolarPortal.AdminWeb)'
+2026-07-27 16:44:00.511 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-07-27 16:44:00.511 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-07-27 16:44:00.517 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Projects - 200 null text/html; charset=utf-8 56404.9597ms
+2026-07-27 16:44:00.531 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 19.3572ms
+2026-07-27 16:44:00.534 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 22.62ms
+2026-07-27 16:51:40.531 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Payments - null null
+2026-07-27 16:51:40.880 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Index (SolarPortal.AdminWeb)'
+2026-07-27 16:51:40.891 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "Index", controller = "Payments"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Index(System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController (SolarPortal.AdminWeb).
+2026-07-27 16:51:41.134 +05:30 [INF] Executed DbCommand (42ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[LightBillNumber], [s].[LightBillOwnerType], [s].[LightBillPath], [s].[LightBillRelationName], [s].[LightBillRelationProofPath], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[PmSuryaApplicationNo], [s].[PmSuryaLoanOption], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-07-27 16:51:41.389 +05:30 [INF] Executed DbCommand (48ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:41.587 +05:30 [INF] Executed DbCommand (36ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:42.075 +05:30 [INF] Executed DbCommand (43ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:42.268 +05:30 [INF] Executed DbCommand (36ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:42.547 +05:30 [INF] Executed DbCommand (54ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:42.759 +05:30 [INF] Executed DbCommand (40ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:42.987 +05:30 [INF] Executed DbCommand (47ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:43.504 +05:30 [INF] Executed DbCommand (40ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:43.809 +05:30 [INF] Executed DbCommand (58ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:44.070 +05:30 [INF] Executed DbCommand (48ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:44.327 +05:30 [INF] Executed DbCommand (46ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:44.848 +05:30 [INF] Executed DbCommand (318ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit)
+2026-07-27 16:51:45.078 +05:30 [INF] Executed DbCommand (41ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[LightBillNumber], [s].[LightBillOwnerType], [s].[LightBillPath], [s].[LightBillRelationName], [s].[LightBillRelationProofPath], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[PmSuryaApplicationNo], [s].[PmSuryaLoanOption], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit)
+2026-07-27 16:51:45.276 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:45.541 +05:30 [INF] Executed DbCommand (51ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:45.769 +05:30 [INF] Executed DbCommand (44ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:45.984 +05:30 [INF] Executed DbCommand (43ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:46.512 +05:30 [INF] Executed DbCommand (42ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:46.789 +05:30 [INF] Executed DbCommand (47ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:46.999 +05:30 [INF] Executed DbCommand (40ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:47.191 +05:30 [INF] Executed DbCommand (36ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:47.674 +05:30 [INF] Executed DbCommand (36ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:47.872 +05:30 [INF] Executed DbCommand (38ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:48.076 +05:30 [INF] Executed DbCommand (38ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:48.267 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:48.475 +05:30 [INF] Executed DbCommand (43ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:49.712 +05:30 [INF] Executed DbCommand (44ms) [Parameters=[@__requestId_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[Amount], [p].[CreatedAt], [p].[CreatedBy], [p].[IsDeleted], [p].[IsVerified], [p].[Notes], [p].[PaymentDate], [p].[PaymentMethod], [p].[ReceiptImagePath], [p].[ReceiptNumber], [p].[ReferenceNumber], [p].[SolarRequestId], [p].[Status], [p].[UTRNumber], [p].[UpdatedAt], [p].[UpdatedBy], [p].[UserId], [p].[VerifiedAt], [p].[VerifiedBy]
+FROM [Payments] AS [p]
+WHERE [p].[IsDeleted] = CAST(0 AS bit) AND [p].[SolarRequestId] = @__requestId_0 AND [p].[IsVerified] = CAST(1 AS bit)
+2026-07-27 16:51:50.866 +05:30 [INF] Executing ViewResult, running view Index.
+2026-07-27 16:51:51.477 +05:30 [INF] Executed DbCommand (328ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-07-27 16:51:51.789 +05:30 [INF] Executed ViewResult - view Index executed in 2062.9391ms.
+2026-07-27 16:51:51.798 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Index (SolarPortal.AdminWeb) in 10903.9487ms
+2026-07-27 16:51:51.800 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.PaymentsController.Index (SolarPortal.AdminWeb)'
+2026-07-27 16:51:51.803 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Payments - 200 null text/html; charset=utf-8 11271.4728ms
+2026-07-27 16:51:51.851 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-07-27 16:51:51.861 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-07-27 16:51:51.881 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 19.4524ms
+2026-07-27 16:51:51.915 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 64.0758ms
+2026-07-27 17:01:07.364 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/MaterialDispatch - null null
+2026-07-27 17:01:07.432 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaterialDispatch (SolarPortal.AdminWeb)'
+2026-07-27 17:01:07.454 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "MaterialDispatch", controller = "Operations"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] MaterialDispatch(System.String, System.String, System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController (SolarPortal.AdminWeb).
+2026-07-27 17:01:08.032 +05:30 [INF] Executed DbCommand (38ms) [Parameters=[@__stage_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[LightBillNumber], [s].[LightBillOwnerType], [s].[LightBillPath], [s].[LightBillRelationName], [s].[LightBillRelationProofPath], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[PmSuryaApplicationNo], [s].[PmSuryaLoanOption], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[CurrentStage] = @__stage_0
+2026-07-27 17:01:09.565 +05:30 [INF] Executed DbCommand (40ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CommissionPercent], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[LoginPassword], [w].[LoginUsername], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+WHERE [w].[IsAvailable] = CAST(1 AS bit)
+2026-07-27 17:01:20.222 +05:30 [INF] Executing ViewResult, running view OperationsList.
+2026-07-27 17:01:22.480 +05:30 [INF] Executed DbCommand (353ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-07-27 17:01:24.892 +05:30 [INF] Executed ViewResult - view OperationsList executed in 15301.4412ms.
+2026-07-27 17:01:24.968 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaterialDispatch (SolarPortal.AdminWeb) in 17504.602ms
+2026-07-27 17:01:24.978 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaterialDispatch (SolarPortal.AdminWeb)'
+2026-07-27 17:01:24.962 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-07-27 17:01:24.964 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-07-27 17:01:24.982 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/MaterialDispatch - 200 null text/html; charset=utf-8 17617.7673ms
+2026-07-27 17:01:25.003 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 38.3162ms
+2026-07-27 17:01:25.019 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 56.782ms
+2026-07-27 17:01:29.307 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/MaterialDispatch?filter=all - null null
+2026-07-27 17:01:29.352 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaterialDispatch (SolarPortal.AdminWeb)'
+2026-07-27 17:01:29.357 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "MaterialDispatch", controller = "Operations"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] MaterialDispatch(System.String, System.String, System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController (SolarPortal.AdminWeb).
+2026-07-27 17:01:29.605 +05:30 [INF] Executed DbCommand (43ms) [Parameters=[@__stage_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[LightBillNumber], [s].[LightBillOwnerType], [s].[LightBillPath], [s].[LightBillRelationName], [s].[LightBillRelationProofPath], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[PmSuryaApplicationNo], [s].[PmSuryaLoanOption], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[CurrentStage] >= @__stage_0
+2026-07-27 17:01:30.079 +05:30 [INF] Executed DbCommand (48ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CommissionPercent], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[LoginPassword], [w].[LoginUsername], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+WHERE [w].[IsAvailable] = CAST(1 AS bit)
+2026-07-27 17:01:33.408 +05:30 [INF] Executed DbCommand (56ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [m].[Id], [m].[AssignedWorkerId], [m].[CreatedAt], [m].[CreatedBy], [m].[DispatchDate], [m].[DispatchDocumentPath], [m].[DispatchedBy], [m].[IsDeleted], [m].[IsDispatched], [m].[MaterialDetails], [m].[Remark], [m].[SolarRequestId], [m].[UpdatedAt], [m].[UpdatedBy], [m].[VehicleDetails]
+FROM [MaterialDispatches] AS [m]
+WHERE [m].[SolarRequestId] IN (33, 32, 26, 23, 11, 10, 8)
+2026-07-27 17:01:37.299 +05:30 [INF] Executed DbCommand (53ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CommissionPercent], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[LoginPassword], [w].[LoginUsername], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+WHERE [w].[Id] IN (3, 4)
+2026-07-27 17:01:37.311 +05:30 [INF] Executing ViewResult, running view OperationsList.
+2026-07-27 17:01:37.927 +05:30 [INF] Executed DbCommand (49ms) [Parameters=[@__p_0='?' (Size = 450)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[AadharNumber], [u].[AccessFailedCount], [u].[Address], [u].[City], [u].[ConcurrencyStamp], [u].[CreatedAt], [u].[Email], [u].[EmailConfirmed], [u].[FatherName], [u].[FullName], [u].[IsActive], [u].[LockoutEnabled], [u].[LockoutEnd], [u].[MobileNumber], [u].[NormalizedEmail], [u].[NormalizedUserName], [u].[PANNumber], [u].[PasswordHash], [u].[PhoneNumber], [u].[PhoneNumberConfirmed], [u].[PinCode], [u].[SecurityStamp], [u].[State], [u].[TwoFactorEnabled], [u].[UpdatedAt], [u].[UserName]
+FROM [Users] AS [u]
+WHERE [u].[Id] = @__p_0
+2026-07-27 17:01:38.130 +05:30 [INF] Executed ViewResult - view OperationsList executed in 819.2208ms.
+2026-07-27 17:01:38.162 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - null null
+2026-07-27 17:01:38.174 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/_vs/browserLink - null null
+2026-07-27 17:01:38.178 +05:30 [INF] Executed action SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaterialDispatch (SolarPortal.AdminWeb) in 8816.6639ms
+2026-07-27 17:01:38.181 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_framework/aspnetcore-browser-refresh.js - 200 14945 application/javascript; charset=utf-8 19.0445ms
+2026-07-27 17:01:38.189 +05:30 [INF] Executed endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaterialDispatch (SolarPortal.AdminWeb)'
+2026-07-27 17:01:38.197 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/_vs/browserLink - 200 null text/javascript; charset=UTF-8 23.0937ms
+2026-07-27 17:01:38.207 +05:30 [INF] Request finished HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/MaterialDispatch?filter=all - 200 null text/html; charset=utf-8 8900.2215ms
+2026-07-27 18:31:31.742 +05:30 [INF] Request starting HTTP/1.1 GET http://localhost:5039/SolarPanelAdmin/Operations/MaterialDispatch?filter=all - null null
+2026-07-27 18:31:53.358 +05:30 [INF] Executing endpoint 'SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaterialDispatch (SolarPortal.AdminWeb)'
+2026-07-27 18:31:57.458 +05:30 [INF] Route matched with {area = "SolarPanelAdmin", action = "MaterialDispatch", controller = "Operations"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] MaterialDispatch(System.String, System.String, System.String) on controller SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController (SolarPortal.AdminWeb).
+2026-07-27 18:32:24.484 +05:30 [INF] Executed DbCommand (3,804ms) [Parameters=[@__stage_0='?' (DbType = Int32)], CommandType='"Text"', CommandTimeout='30']
+SELECT [s].[Id], [s].[AadharNumber], [s].[Address], [s].[AdminNotes], [s].[AlternateMobile], [s].[ApplicantName], [s].[ApprovalStatus], [s].[City], [s].[ConnectionType], [s].[CreatedAt], [s].[CreatedBy], [s].[CurrentStage], [s].[Email], [s].[ExternalProductId], [s].[IsDeleted], [s].[KVCapacity], [s].[LightBillNumber], [s].[LightBillOwnerType], [s].[LightBillPath], [s].[LightBillRelationName], [s].[LightBillRelationProofPath], [s].[MobileNumber], [s].[PANNumber], [s].[PinCode], [s].[PlanAmount], [s].[PmSuryaApplicationNo], [s].[PmSuryaLoanOption], [s].[RejectionReason], [s].[RequestNumber], [s].[RequestType], [s].[SelectedPlan], [s].[SolarProjectId], [s].[State], [s].[UpdatedAt], [s].[UpdatedBy], [s].[UserId]
+FROM [SolarRequests] AS [s]
+WHERE [s].[IsDeleted] = CAST(0 AS bit) AND [s].[CurrentStage] >= @__stage_0
+2026-07-27 18:32:31.742 +05:30 [INF] Executed DbCommand (37ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CommissionPercent], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[LoginPassword], [w].[LoginUsername], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+WHERE [w].[IsAvailable] = CAST(1 AS bit)
+2026-07-27 18:32:36.188 +05:30 [INF] Executed DbCommand (61ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [m].[Id], [m].[AssignedWorkerId], [m].[CreatedAt], [m].[CreatedBy], [m].[DispatchDate], [m].[DispatchDocumentPath], [m].[DispatchedBy], [m].[IsDeleted], [m].[IsDispatched], [m].[MaterialDetails], [m].[Remark], [m].[SolarRequestId], [m].[UpdatedAt], [m].[UpdatedBy], [m].[VehicleDetails]
+FROM [MaterialDispatches] AS [m]
+WHERE [m].[SolarRequestId] IN (33, 32, 26, 23, 11, 10, 8)
+2026-07-27 18:32:38.105 +05:30 [INF] Executed DbCommand (41ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [w].[Id], [w].[City], [w].[CommissionPercent], [w].[CreatedAt], [w].[CreatedBy], [w].[Email], [w].[IsAvailable], [w].[IsDeleted], [w].[LoginPassword], [w].[LoginUsername], [w].[MobileNumber], [w].[Name], [w].[Specialization], [w].[State], [w].[Type], [w].[UpdatedAt], [w].[UpdatedBy]
+FROM [Workers] AS [w]
+WHERE [w].[Id] IN (3, 4)

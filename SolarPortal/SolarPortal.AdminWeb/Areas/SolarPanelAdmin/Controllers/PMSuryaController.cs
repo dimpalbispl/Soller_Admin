@@ -41,13 +41,14 @@ public class PMSuryaController : Controller
     }
 
     // GET: /Admin/PMSurya/Index
-    // Default view shows only requests pending verification (stage = PMSurvey).
+    // Default view is "all" (full history) per spec — report kholte hi poora
+    // data dikhna chahiye, phir admin tab se narrow kare.
+    // ?filter=pending  → awaiting verification (stage = PMSurvey)
     // ?filter=approved → already-advanced (past PMSurvey)
     // ?filter=rejected → requests whose PM Surya documents were rejected
-    // ?filter=all      → full history (everything ever in PMSurya+)
     public async Task<IActionResult> Index(string? filter)
     {
-        var f = (filter ?? "pending").ToLowerInvariant();
+        var f = (filter ?? "all").ToLowerInvariant();
         IEnumerable<SolarRequest> requests;
 
         if (f == "all")

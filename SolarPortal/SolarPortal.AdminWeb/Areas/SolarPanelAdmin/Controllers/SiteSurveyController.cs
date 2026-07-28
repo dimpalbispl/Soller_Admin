@@ -34,9 +34,10 @@ public class SiteSurveyController : Controller
     }
 
     // GET: /Admin/SiteSurvey
+    // Defaults to "all" per spec — har report kholte hi poora data dikhe.
     public async Task<IActionResult> Index(string? filter)
     {
-        var f = (filter ?? "pending").ToLowerInvariant();
+        var f = (filter ?? "all").ToLowerInvariant();
         IEnumerable<SiteSurvey> surveys;
 
         if (f == "all")

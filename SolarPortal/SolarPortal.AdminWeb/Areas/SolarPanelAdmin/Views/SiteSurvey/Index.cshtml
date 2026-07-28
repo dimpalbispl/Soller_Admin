@@ -1,8 +1,8 @@
-@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
+﻿@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
 @{
     ViewData["Title"] = "Site Survey Approval";
     var surveys = (IEnumerable<SolarPortal.Domain.Entities.SiteSurvey>)ViewBag.Surveys;
-    var ssFilter = (ViewBag.Filter as string) ?? "pending";
+    var ssFilter = (ViewBag.Filter as string) ?? "all";
 }
 
 <div class="page active">
@@ -17,19 +17,29 @@
 
     @if (surveys.Any())
     {
+        @* Report filter — Member ID / City / State / Request date. *@
+        
+        ViewData["FilterTableId"] = "siteSurveyTable";
+        ViewData["FilterPlaceholder"] = "Search by Member ID, name, mobile, request #, DISCOM...";
+        ViewData["FilterDateLabel"] = "Request Date";
+
+        <partial name="_ReportFilterToolbar" />
+
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>Site Survey Queue (@surveys.Count())</div>
             <div class="tbl-wrap">
-                <table>
+                <table id="siteSurveyTable">
                     <thead>
                         <tr>
                             <th>Survey ID</th>
                             <th>Member ID</th>
+                            <th>Member Name</th>
                             <th>Request #</th>
-                            <th>Applicant</th>
+                            <th>City / State</th>
                             <th>Plan</th>
                             <th>Property / Roof</th>
                             <th>DISCOM</th>
+                            <th>Request Date</th>
                             <th>Submitted</th>
                             <th>Files</th>
                             <th>Action</th>
@@ -39,16 +49,27 @@
                     @foreach (var s in surveys)
                     {
                         var req = Model.FirstOrDefault(r => r.Id == s.SolarRequestId);
+                        var memberName = req == null ? "" :
+                            (string.IsNullOrWhiteSpace(req.MemberFullName) ? req.ApplicantName : req.MemberFullName);
+                        // The date filter works on the underlying request date. When a survey has no
+                        // matching request loaded, fall back to the survey's own date so the row
+                        // still participates in range filtering instead of silently disappearing.
+                        var rowDate = (req?.CreatedAt ?? s.CreatedAt).ToLocalTime().ToString("yyyy-MM-dd");
                         // Count attached files across both new (separate) and legacy (combined) paths
                         var fileCount = 0;
                         if (!string.IsNullOrWhiteSpace(s.RoofPhotoPath)) fileCount++;
                         if (!string.IsNullOrWhiteSpace(s.GpsPhotoPath)) fileCount++;
                         fileCount += (s.SurveyPhotoPath ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries).Length;
-                        <tr>
+                        <tr data-search="@($"{req?.UserId} {memberName} {req?.MobileNumber} {req?.City} {req?.State} {req?.RequestNumber} {s.DiscomName}".ToLower())"
+                            data-mid="@req?.UserId"
+                            data-city="@req?.City"
+                            data-state="@req?.State"
+                            data-date="@rowDate">
                             <td class="td-b">#@s.Id</td>
                             <td><span class="mid-code">@req?.UserId</span></td>
+                            <td>@memberName<div class="cell-sub">@req?.MobileNumber</div></td>
                             <td class="td-b">@req?.RequestNumber</td>
-                            <td>@req?.ApplicantName<div class="cell-sub">@req?.MobileNumber</div></td>
+                            <td>@req?.City<div class="cell-sub">@req?.State</div></td>
                             <td>
                                 @if (req != null)
                                 {
@@ -79,6 +100,7 @@
                                     <span class="text-muted">—</span>
                                 }
                             </td>
+                            <td>@(req != null ? req.CreatedAt.ToLocalTime().ToString("dd MMM yyyy") : "—")</td>
                             <td>@s.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
                             <td><span class="badge bg-info">@fileCount file(s)</span></td>
                             <td>

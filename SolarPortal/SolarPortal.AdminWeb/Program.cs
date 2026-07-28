@@ -27,7 +27,30 @@ var mvcBuilder = builder.Services.AddControllersWithViews(options =>
 });
 
 if (builder.Environment.IsDevelopment())
-    mvcBuilder.AddRazorRuntimeCompilation();
+{
+    // Razor runtime compilation watches every .cshtml it compiles so edits show
+    // up without a rebuild. Its default watcher is FileSystemWatcher, which
+    // cannot open a directory handle when the project lives on a UNC / network
+    // share (this repo runs from \\localhost\Sadhna\...). It then NREs inside
+    // FileSystemWatcher.StartRaisingEvents(), and because the failure happens
+    // while *locating a partial view*, the whole page dies with a bare
+    // "Object reference not set to an instance of an object."
+    //
+    // Polling mode gives the same edit-and-refresh behaviour without ever
+    // touching FileSystemWatcher, so it works on UNC paths.
+    var contentRoot = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+        builder.Environment.ContentRootPath)
+    {
+        UsePollingFileWatcher = true,
+        UseActivePolling = true
+    };
+
+    mvcBuilder.AddRazorRuntimeCompilation(options =>
+    {
+        options.FileProviders.Clear();
+        options.FileProviders.Add(contentRoot);
+    });
+}
 
 // ─── Infrastructure (DB, Identity, Services — shared with other sites) ──
 builder.Services.AddInfrastructure(builder.Configuration);

@@ -1,7 +1,9 @@
-@model List<SolarPortal.Domain.Entities.IncConnection>
+﻿@model List<SolarPortal.Domain.Entities.IncConnection>
+@using SolarPortal.Domain.Enums
 @{
     ViewData["Title"] = "INC Connections";
     var workers = ViewBag.Workers as Dictionary<int,string> ?? new();
+    var workerTypes = ViewBag.WorkerTypes as Dictionary<int,WorkerType> ?? new();
     var states = ViewBag.States as List<string> ?? new();
     var cities = ViewBag.Cities as List<string> ?? new();
     string curStatus = ViewBag.Status as string ?? "";
@@ -17,6 +19,8 @@
         "Complete" => "sts-comp",
         _          => "sts-pend"
     };
+    // Worker ka INC/JOB type — commission sirf INC ko milta hai.
+    bool IsInc(int workerId) => workerTypes.TryGetValue(workerId, out var t) && t == WorkerType.INC;
     bool hasFilter = !string.IsNullOrEmpty(curStatus) || !string.IsNullOrEmpty(curState) || !string.IsNullOrEmpty(curCity);
 }
 
@@ -25,7 +29,7 @@
     <div class="ph">
         <div class="ph-bc">🛡️ Admin / <span>INC Connections</span></div>
         <div class="ph-title">🔌 INC Connections</div>
-        <div class="ph-sub">Review installer-registered connections. Approve with commission, or reject.</div>
+        <div class="ph-sub">Review installer-registered connections. Approve with commission, or reject. JOB-type installers get no commission.</div>
     </div>
 
     <form method="get" class="card" style="padding:16px 18px;margin-bottom:18px">
@@ -59,6 +63,23 @@
         </div>
     </form>
 
+    @if (Model.Any())
+    {
+        @* Client-side report filter — free text + registered-date range. State and
+           City are switched off because the server-side filter form above already
+           owns those two; two filters on the same field would fight each other.
+           These rows are installer-registered connections, not member requests, so
+           there is no Member ID to filter on. *@
+        ViewData["FilterTableId"] = "incConnTable";
+        ViewData["FilterPlaceholder"] = "Search by installer, customer, mobile, city, state...";
+        ViewData["FilterDateLabel"] = "Registered";
+        ViewData["FilterShowMemberId"] = false;
+        ViewData["FilterShowCity"] = false;
+        ViewData["FilterShowState"] = false;
+
+        <partial name="_ReportFilterToolbar" />
+    }
+
     <div class="card">
         <div class="ct"><span class="ct-dot"></span>Connections (@Model.Count)</div>
 
@@ -77,15 +98,17 @@
         else
         {
             <div class="tbl-wrap">
-                <table>
+                <table id="incConnTable">
                     <thead>
                         <tr>
                             <th>Installer</th>
+                            <th>Type</th>
                             <th>Customer</th>
                             <th>Mobile</th>
                             <th>Conn.</th>
                             <th>kV</th>
                             <th>City / State</th>
+                            <th>Registered</th>
                             <th>Doc</th>
                             <th>Status</th>
                             <th style="text-align:right">Commission</th>
@@ -95,13 +118,23 @@
                     <tbody>
                     @foreach (var c in Model)
                     {
-                        <tr>
-                            <td>@(workers.TryGetValue(c.WorkerId, out var wn) ? wn : ("#" + c.WorkerId))</td>
+                        var inc = IsInc(c.WorkerId);
+                        var installerName = workers.TryGetValue(c.WorkerId, out var wn) ? wn : ("#" + c.WorkerId);
+                        <tr data-search="@($"{installerName} {c.CustomerName} {c.MobileNumber} {c.City} {c.State} {c.Status}".ToLower())"
+                            data-city="@c.City"
+                            data-state="@c.State"
+                            data-date="@c.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")">
+                            <td>@installerName</td>
+                            <td>
+                                @* Installer ka type — INC ko commission milta hai, JOB ko nahi *@
+                                <span class="sts @(inc ? "sts-act" : "sts-disp")">@(inc ? "INC" : "JOB")</span>
+                            </td>
                             <td class="td-b">@c.CustomerName</td>
                             <td>@c.MobileNumber</td>
                             <td>@c.ConnectionType</td>
                             <td>@c.KVCapacity</td>
                             <td>@c.City, @c.State</td>
+                            <td>@c.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
                             <td>
                                 @if (!string.IsNullOrWhiteSpace(c.DocumentPath))
                                 {
@@ -117,7 +150,15 @@
                             </td>
                             <td><span class="sts @Pill(c.Status)">@c.Status</span></td>
                             <td style="text-align:right;font-weight:600">
-                                @(c.CommissionAmount > 0 ? "₹" + c.CommissionAmount.ToString("N0") : "—")
+                                @if (!inc)
+                                {
+                                    @* JOB worker — no commission *@
+                                    <span style="color:var(--text3)" title="JOB-type installer — commission not applicable">N/A</span>
+                                }
+                                else
+                                {
+                                    @(c.CommissionAmount > 0 ? "₹" + c.CommissionAmount.ToString("N0") : "—")
+                                }
                             </td>
                             <td style="white-space:nowrap">
                                 @if (c.Status == "Pending" || c.Status == "Complete")
@@ -126,8 +167,16 @@
                                           style="display:inline-flex;gap:6px;align-items:center;margin:0">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@c.Id" />
-                                        <input type="number" name="commission" step="0.01" min="0"
-                                               placeholder="₹ Amount" required style="width:110px" />
+                                        @if (inc)
+                                        {
+                                            <input type="number" name="commission" step="0.01" min="0"
+                                                   placeholder="₹ Amount" required style="width:110px" />
+                                        }
+                                        else
+                                        {
+                                            @* JOB worker — commission nahi jayega, seedha approve *@
+                                            <input type="hidden" name="commission" value="0" />
+                                        }
                                         <button class="btn btn-g btn-sm">✓ Approve</button>
                                     </form>
                                     <button class="btn btn-d btn-sm" style="margin-left:6px"

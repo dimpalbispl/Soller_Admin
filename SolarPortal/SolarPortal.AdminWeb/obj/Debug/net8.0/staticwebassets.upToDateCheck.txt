@@ -63,8 +63,8 @@ wwwroot\lib\jquery\dist\jquery.min.map
 wwwroot\uploads\SCR-005\pmsurya-approval\c6ef2f9e-e44e-47d0-aa11-50882370005a.png
 wwwroot\uploads\SCR-014\pmsurya-approval\277c6cb0-35ae-45f1-a6e5-692f49c065a6.pdf
 wwwroot\uploads\SCR-014\pmsurya-approval\491dd1c6-69ea-4278-ac07-36eaf56c25f8.png
-wwwroot\uploads\SCR-014\pmsurya-approval\c226b3e2-c1ca-4f26-9aa6-9a121a6215cc.jpeg
 wwwroot\uploads\dcr\.gitkeep
+wwwroot\uploads\dcr\c5726910-b363-4c90-ad24-bfb65ccc9ed6.png
 wwwroot\uploads\dcr\eaf637c6-fa0e-458d-9240-55b95864b39f.jpg
 wwwroot\uploads\dispatch\material\8fd5f5a1-2b74-46f3-8327-7b707d47fd85.jpg
 wwwroot\uploads\dispatch\material\c997ebeb-06dd-4691-8c04-782883f1327f.png

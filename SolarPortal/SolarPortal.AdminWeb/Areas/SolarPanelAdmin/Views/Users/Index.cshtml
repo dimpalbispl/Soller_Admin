@@ -19,15 +19,25 @@
         <a class="btn @(filter == "active" ? "btn-success" : "btn-outline-success")" asp-route-filter="active">Active</a>
     </div>
 
+    @* Report filter — Member ID / City / State / Joined date. *@
+    @{
+        ViewData["FilterTableId"] = "usersTable";
+        ViewData["FilterPlaceholder"] = "Search by Member ID, name, email, mobile...";
+        ViewData["FilterDateLabel"] = "Joined";
+    }
+    @await Html.PartialAsync("_ReportFilterToolbar")
+
     <div class="card">
         <div class="card-body">
-            <table class="table table-hover">
+            <table id="usersTable" class="table table-hover">
                 <thead>
                     <tr>
-                        <th>Name</th>
+                        <th>Member ID</th>
+                        <th>Member Name</th>
                         <th>Email</th>
                         <th>Mobile</th>
-                        <th>City/State</th>
+                        <th>City</th>
+                        <th>State</th>
                         <th>Roles</th>
                         <th>Status</th>
                         <th>Joined</th>
@@ -37,7 +47,13 @@
                 <tbody>
                 @foreach (var row in Model)
                 {
-                    <tr id="row-@row.User.Id">
+                    <tr id="row-@row.User.Id"
+                        data-search="@($"{row.User.Id} {row.User.FullName} {row.User.Email} {row.User.MobileNumber} {row.User.City} {row.User.State}".ToLower())"
+                        data-mid="@row.User.Id"
+                        data-city="@row.User.City"
+                        data-state="@row.User.State"
+                        data-date="@row.User.CreatedAt.ToLocalTime().ToString("yyyy-MM-dd")">
+                        <td><span class="mid-code">@row.User.Id</span></td>
                         <td>
                             <strong>@row.User.FullName</strong>
                             @if (!string.IsNullOrEmpty(row.User.FatherName))
@@ -47,7 +63,8 @@
                         </td>
                         <td>@row.User.Email</td>
                         <td>@row.User.MobileNumber</td>
-                        <td>@row.User.City, @row.User.State</td>
+                        <td>@(string.IsNullOrWhiteSpace(row.User.City) ? "—" : row.User.City)</td>
+                        <td>@(string.IsNullOrWhiteSpace(row.User.State) ? "—" : row.User.State)</td>
                         <td><span class="badge bg-info">@row.Roles</span></td>
                         <td>
                             @if (row.User.IsActive)
@@ -75,7 +92,7 @@
                 }
                 @if (!Model.Any())
                 {
-                    <tr><td colspan="8" class="text-center text-muted py-3">No users to show.</td></tr>
+                    <tr><td colspan="10" class="text-center text-muted py-3">No users to show.</td></tr>
                 }
                 </tbody>
             </table>

@@ -178,6 +178,17 @@ public class OperationsController : Controller
                 // Task 17 (same latent bug): attach the installer worker too.
                 await AttachWorkersAsync(installs.Values.Select(i => (i.AssignedWorkerId, (Action<Worker>)(w => i.AssignedWorker = w))));
                 ViewBag.InstallationDetails = installs;
+
+                // Spec: "material dispatch mein jo person assign kiya, installation
+                // mein wahi pre-selected aana chahiye" — Installation queue par
+                // MaterialDispatch ki assignment bhi load karo taaki modal use
+                // pre-select kar sake aur list mein naam dikh sake (installation
+                // row banne se pehle bhi).
+                var dispatchAssign = (await _uow.MaterialDispatches.FindAsync(m => ids.Contains(m.SolarRequestId)))
+                                     .GroupBy(m => m.SolarRequestId)
+                                     .ToDictionary(g => g.Key, g => g.OrderByDescending(m => m.CreatedAt).First());
+                await AttachWorkersAsync(dispatchAssign.Values.Select(m => (m.AssignedWorkerId, (Action<Worker>)(w => m.AssignedWorker = w))));
+                ViewBag.DispatchAssignments = dispatchAssign;
                 break;
             case "dcr":
                 var dcrs = (await _uow.DCRDocuments.FindAsync(d => ids.Contains(d.SolarRequestId)))
@@ -213,7 +224,7 @@ public class OperationsController : Controller
     // After admin approves PM Surya Ghar, the project's CurrentStage becomes MeterDispatch.
     public async Task<IActionResult> MeterDispatch(string? state, string? city, string? filter)
     {
-        var f = (filter ?? "pending").ToLowerInvariant();
+        var f = (filter ?? "all").ToLowerInvariant();
         var showHistory = f == "all";
         ViewBag.Filter = f;
         var requests = await FilterAsync(ProjectStatus.MeterDispatch, state, city, showHistory: showHistory, filterMode: f, op: "meter");
@@ -277,7 +288,7 @@ public class OperationsController : Controller
     // --- Material Dispatch ---
     public async Task<IActionResult> MaterialDispatch(string? state, string? city, string? filter)
     {
-        var f = (filter ?? "pending").ToLowerInvariant();
+        var f = (filter ?? "all").ToLowerInvariant();
         var showHistory = f == "all";
         ViewBag.Filter = f;
         var requests = await FilterAsync(ProjectStatus.MaterialDispatch, state, city, showHistory: showHistory, filterMode: f, op: "material");
@@ -295,9 +306,9 @@ public class OperationsController : Controller
     {
         try
         {
-            // Worker assignment is mandatory (also enforced on the client).
+            // Installer assignment is mandatory (also enforced on the client).
             if (!workerId.HasValue || workerId.Value <= 0)
-                return Json(new { success = false, message = "Please assign a despatch person (worker) before dispatching." });
+                return Json(new { success = false, message = "Please assign an installer before dispatching." });
 
             string? docPath = null;
             if (dispatchDoc != null)
@@ -345,7 +356,7 @@ public class OperationsController : Controller
     // --- Installation ---
     public async Task<IActionResult> Installation(string? state, string? city, string? filter)
     {
-        var f = (filter ?? "pending").ToLowerInvariant();
+        var f = (filter ?? "all").ToLowerInvariant();
         var showHistory = f == "all";
         ViewBag.Filter = f;
         var requests = await FilterAsync(ProjectStatus.Installation, state, city, showHistory: showHistory, filterMode: f, op: "installation");
@@ -363,9 +374,19 @@ public class OperationsController : Controller
     {
         try
         {
-            // Worker assignment is mandatory (also enforced on the client).
+            // Spec: installer Material Dispatch mein pehle hi assign ho chuka hai, so
+            // the modal opens pre-selected. If the client sends nothing anyway, fall
+            // back to that dispatch assignment instead of rejecting the submit.
             if (!workerId.HasValue || workerId.Value <= 0)
-                return Json(new { success = false, message = "Please assign an installer (worker) before submitting." });
+            {
+                workerId = (await _uow.MaterialDispatches.FindAsync(m => m.SolarRequestId == requestId))
+                           .OrderByDescending(m => m.CreatedAt)
+                           .FirstOrDefault()?.AssignedWorkerId;
+            }
+
+            // Installer assignment is mandatory (also enforced on the client).
+            if (!workerId.HasValue || workerId.Value <= 0)
+                return Json(new { success = false, message = "Please assign an installer before submitting." });
 
             string? photoPath = null;
             if (completionPhoto != null)
@@ -437,10 +458,120 @@ public class OperationsController : Controller
         }
     }
 
+    // Admin ki Installation screen ab sirf do kaam karti hai (spec):
+    //   1. Remark likhna
+    //   2. Material Dispatch se aaya hua installer check karna
+    // Actual "Mark Installation" INC panel (SolarPanelInstaller area, alag app)
+    // par chala gaya hai. Ye action installation row ko *assigned* state mein
+    // banata/update karta hai — complete NAHI karta aur stage aage nahi badhata,
+    // taaki INC worker use apne panel mein utha sake.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveInstallationRemark(int requestId, string? remark)
+    {
+        try
+        {
+            var installation = (await _uow.Installations.FindAsync(i => i.SolarRequestId == requestId))
+                               .OrderByDescending(i => i.CreatedAt)
+                               .FirstOrDefault();
+
+            // Installer hamesha Material Dispatch wali assignment se aata hai —
+            // admin yahan sirf verify karta hai, dobara select nahi karta.
+            var dispatchWorkerId = (await _uow.MaterialDispatches.FindAsync(m => m.SolarRequestId == requestId))
+                                   .OrderByDescending(m => m.CreatedAt)
+                                   .FirstOrDefault()?.AssignedWorkerId;
+
+            if (installation == null)
+            {
+                installation = new Installation
+                {
+                    SolarRequestId = requestId,
+                    AssignedWorkerId = dispatchWorkerId,
+                    Remark = remark,
+                    IsCompleted = false
+                };
+                await _uow.Installations.AddAsync(installation);
+            }
+            else
+            {
+                installation.Remark = remark;
+                installation.AssignedWorkerId ??= dispatchWorkerId;
+                _uow.Installations.Update(installation);
+            }
+
+            await _uow.SaveChangesAsync();
+            return Json(new { success = true, message = "Remark saved. Installation is with the INC panel." });
+        }
+        catch (Exception ex)
+        {
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            return Json(new { success = false, message = $"Could not save remark: {detail}" });
+        }
+    }
+
+    // Change the installer on an already-recorded Installation.
+    // Spec: "installation report mein installer name change ka option bhi dena hai."
+    // The Installation row is the source of truth for the report column; we also
+    // keep the WorkerAssignment audit row in sync so worker-side queries agree.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangeInstaller(int installationId, int workerId, string? note)
+    {
+        try
+        {
+            if (workerId <= 0)
+                return Json(new { success = false, message = "Please choose an installer." });
+
+            var installation = await _uow.Installations.GetByIdAsync(installationId);
+            if (installation == null)
+                return Json(new { success = false, message = "Installation record not found." });
+
+            var worker = await _uow.Workers.GetByIdAsync(workerId);
+            if (worker == null)
+                return Json(new { success = false, message = "Selected worker not found." });
+
+            installation.AssignedWorkerId = workerId;
+            _uow.Installations.Update(installation);
+
+            // Keep the assignment log in step: update the existing row if there is
+            // one, else create it (older installations may predate the log).
+            var assignment = (await _uow.WorkerAssignments.FindAsync(a => a.InstallationId == installationId))
+                             .OrderByDescending(a => a.Id)
+                             .FirstOrDefault();
+            if (assignment == null)
+            {
+                await _uow.WorkerAssignments.AddAsync(new WorkerAssignment
+                {
+                    InstallationId = installationId,
+                    WorkerId = workerId,
+                    AssignedByUserId = _userManager.GetUserId(User) ?? "system",
+                    AssignedDate = DateTime.UtcNow,
+                    Notes = note
+                });
+            }
+            else
+            {
+                assignment.WorkerId = workerId;
+                assignment.AssignedByUserId = _userManager.GetUserId(User) ?? "system";
+                assignment.AssignedDate = DateTime.UtcNow;
+                if (!string.IsNullOrWhiteSpace(note)) assignment.Notes = note;
+                _uow.WorkerAssignments.Update(assignment);
+            }
+
+            await _uow.SaveChangesAsync();
+            return Json(new { success = true, message = $"Installer changed to {worker.Name}." });
+        }
+        catch (Exception ex)
+        {
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            return Json(new { success = false, message = $"Installer change failed: {detail}" });
+        }
+    }
+
     // --- DCR Update (Domestic only) ---
     public async Task<IActionResult> DCRUpdate(string? state, string? city, string? filter)
     {
-        var f = (filter ?? "pending").ToLowerInvariant();
+        var f = (filter ?? "all").ToLowerInvariant();
         var showHistory = f == "all";
         ViewBag.Filter = f;
         var requests = await FilterAsync(ProjectStatus.DCRUpdate, state, city, ConnectionType.Domestic, showHistory: showHistory, filterMode: f, op: "dcr");

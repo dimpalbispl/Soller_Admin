@@ -19,10 +19,20 @@
 
     @if (Model.Any())
     {
+        @* Report filter — City / State + free text. Workers aren't members and
+           the DTO carries no registration date, so Member ID and the date range
+           are switched off here. *@
+        ViewData["FilterTableId"] = "workersTable";
+        ViewData["FilterPlaceholder"] = "Search by name, mobile, specialization, username...";
+        ViewData["FilterShowMemberId"] = false;
+        ViewData["FilterShowDate"] = false;
+
+        <partial name="_ReportFilterToolbar" />
+
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>Active Workers (@Model.Count())</div>
             <div class="tbl-wrap">
-                <table>
+                <table id="workersTable">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -30,6 +40,7 @@
                             <th>Type</th>
                             <th>Specialization</th>
                             <th>City</th>
+                            <th>State</th>
                             <th>Username</th>
                             <th>Password</th>
                             <th>Is Available</th>
@@ -40,7 +51,9 @@
                     <tbody>
                         @foreach (var worker in Model)
                         {
-                            <tr>
+                            <tr data-search="@($"{worker.Name} {worker.MobileNumber} {worker.Specialization} {worker.City} {worker.State} {worker.LoginUsername}".ToLower())"
+                                data-city="@worker.City"
+                                data-state="@worker.State">
                                 <td class="td-b">@worker.Name</td>
                                 <td>@worker.MobileNumber</td>
                                 <td>
@@ -51,7 +64,8 @@
                                 <td>
                                     <span class="chip chip-s">@worker.Specialization</span>
                                 </td>
-                                <td>@worker.City</td>
+                                <td>@(string.IsNullOrWhiteSpace(worker.City) ? "—" : worker.City)</td>
+                                <td>@(string.IsNullOrWhiteSpace(worker.State) ? "—" : worker.State)</td>
                                 @* INC panel login credentials — report mein wapas
                                    dikhaye gaye (admin ko worker ko batane hote hain). *@
                                 <td><code style="font-size:12px;color:#0d9488">@(string.IsNullOrWhiteSpace(worker.LoginUsername) ? "—" : worker.LoginUsername)</code></td>

@@ -40,6 +40,21 @@
         </div>
     </form>
 
+    @if (Model.Any())
+    {
+        @* Client-side report filter — free text + request-date range. Withdrawals
+           are raised by installers, not members, and carry no city/state, so those
+           three fields are switched off. *@
+        ViewData["FilterTableId"] = "incWdTable";
+        ViewData["FilterPlaceholder"] = "Search by request #, installer, bank / UPI...";
+        ViewData["FilterDateLabel"] = "Request Date";
+        ViewData["FilterShowMemberId"] = false;
+        ViewData["FilterShowCity"] = false;
+        ViewData["FilterShowState"] = false;
+
+        <partial name="_ReportFilterToolbar" />
+    }
+
     <div class="card">
         <div class="ct"><span class="ct-dot"></span>Withdrawal Requests (@Model.Count)</div>
 
@@ -58,7 +73,7 @@
         else
         {
             <div class="tbl-wrap">
-                <table>
+                <table id="incWdTable">
                     <thead>
                         <tr>
                             <th>Req #</th>
@@ -73,9 +88,11 @@
                     <tbody>
                     @foreach (var w in Model)
                     {
-                        <tr>
+                        var installerName = workers.TryGetValue(w.WorkerId, out var wn) ? wn : ("#" + w.WorkerId);
+                        <tr data-search="@($"{w.RequestNumber} {installerName} {w.BankDetails} {w.Status}".ToLower())"
+                            data-date="@w.RequestedAt.ToLocalTime().ToString("yyyy-MM-dd")">
                             <td class="td-b">@(w.RequestNumber ?? ("#" + w.Id))</td>
-                            <td>@(workers.TryGetValue(w.WorkerId, out var wn) ? wn : ("#" + w.WorkerId))</td>
+                            <td>@installerName</td>
                             <td style="text-align:right;font-weight:600">₹@w.Amount.ToString("N2")</td>
                             <td>
                                 @if (string.IsNullOrWhiteSpace(w.BankDetails))

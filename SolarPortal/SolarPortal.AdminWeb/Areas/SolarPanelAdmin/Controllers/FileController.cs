@@ -104,6 +104,20 @@ public class FileController : Controller
             }
         }
 
+        // ── Cross-server fallback ─────────────────────────────────────────
+        // The file wasn't found in any local root. User-submitted receipts /
+        // documents live on the SEPARATE user-panel host (config
+        // "UserPanelBaseUrl", e.g. https://solar.solfit.in), which serves
+        // /uploads/... publicly. Redirect the browser there so the <img>/<iframe>
+        // in the preview modal loads the file directly. Admin-uploaded files were
+        // already served locally above, so this only affects user-panel files.
+        var userPanelBase = _config["UserPanelBaseUrl"];
+        if (!string.IsNullOrWhiteSpace(userPanelBase))
+        {
+            var redirectUrl = userPanelBase.TrimEnd('/') + "/" + rel;
+            return Redirect(redirectUrl);
+        }
+
         return NotFound();
     }
 

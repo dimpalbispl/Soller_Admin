@@ -3,10 +3,17 @@
     exactly like the PM Surya Ghar report. Used by every admin report table so the
     "Plan" column looks identical everywhere.
 
+    For "With Activation" requests the user picks a basic product from the legacy
+    V#SpProductDetail view; only its ProdId is stored (SolarRequest.ExternalProductId).
+    We resolve that to the product NAME here so every report shows *which product*
+    was taken, not just the plan.
+
     Model is dynamic because callers pass different shapes that all share the same
     property names: SolarRequest (entity) and SolarRequestDto. Guard for null at the
     call site: @if (req != null) { <partial name="_PlanCell" model="req" /> }
 *@
+@using SolarPortal.Application.Services
+@inject IBasicProductService BasicProducts
 @model dynamic
 @{
     string rtStr = Model.RequestType.ToString();
@@ -27,10 +34,56 @@
     string plan = Model.SelectedPlan as string;
     decimal kv = (decimal)Model.KVCapacity;
     decimal amt = (decimal)Model.PlanAmount;
+
+    // ── Resolve the chosen basic product (With Activation flow) ──────────────
+    // The product list lives in a legacy DB view, so we fetch it ONCE per HTTP
+    // request and memoise it in HttpContext.Items. Without this the partial
+    // would hit the DB for every row of every report (N+1).
+    int prodId = (int?)Model.ExternalProductId ?? 0;
+    string? productName = null;
+
+    if (prodId > 0)
+    {
+        const string cacheKey = "__basicProductNames";
+        var items = ViewContext.HttpContext.Items;
+        var names = items[cacheKey] as Dictionary<int, string>;
+
+        // The legacy view lives in a different DB; if it is unreachable we still
+        // want the report to render — just without the product name.
+        try
+        {
+            if (names == null)
+            {
+                names = (await BasicProducts.GetActiveAsync())
+                        .GroupBy(p => p.ProdId)
+                        .ToDictionary(g => g.Key, g => g.First().ProductName);
+                items[cacheKey] = names;
+            }
+
+            if (!names.TryGetValue(prodId, out productName))
+            {
+                // GetActiveAsync() only returns in-stock rows, so a product that
+                // has since gone out of stock needs a direct lookup. Cache the
+                // result (even a miss) so we ask at most once per product.
+                productName = (await BasicProducts.GetByIdAsync(prodId))?.ProductName;
+                names[prodId] = productName ?? string.Empty;
+            }
+        }
+        catch
+        {
+            productName = null;
+        }
+    }
 }
 <span class="badge @rtCls" style="display:inline-block;margin-bottom:4px">@rtLabel</span>
 @if (!string.IsNullOrWhiteSpace(plan))
 {
     <div style="font-weight:600;color:#1f2937;font-size:12px">@plan</div>
+}
+@if (prodId > 0)
+{
+    <div style="font-size:11px;color:#0d9488;font-weight:600">
+        🛒 @(string.IsNullOrWhiteSpace(productName) ? $"Product #{prodId}" : productName)
+    </div>
 }
 <div style="font-size:11px;color:#6b7280">@kv kV • ₹@amt.ToString("N0")</div>

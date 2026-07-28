@@ -1,6 +1,7 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SolarPortal.Domain.Enums;
 using SolarPortal.Infrastructure.Data;
 
 namespace SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers;
@@ -26,7 +27,11 @@ public class IncController : Controller
         ViewBag.States = await _db.IncConnections.Where(c => !c.IsDeleted && c.State != null).Select(c => c.State!).Distinct().OrderBy(x => x).ToListAsync();
         ViewBag.Cities = await _db.IncConnections.Where(c => !c.IsDeleted && c.City != null).Select(c => c.City!).Distinct().OrderBy(x => x).ToListAsync();
         var wids = list.Select(c => c.WorkerId).Distinct().ToList();
-        ViewBag.Workers = await _db.Workers.Where(w => wids.Contains(w.Id)).ToDictionaryAsync(w => w.Id, w => w.Name);
+        var workers = await _db.Workers.Where(w => wids.Contains(w.Id)).ToListAsync();
+        ViewBag.Workers = workers.ToDictionary(w => w.Id, w => w.Name);
+        // Worker type (JOB / INC) — report mein type dikhane aur JOB ke liye
+        // commission hide karne ke liye.
+        ViewBag.WorkerTypes = workers.ToDictionary(w => w.Id, w => w.Type);
         return View(list);
     }
 
@@ -37,12 +42,19 @@ public class IncController : Controller
         var c = await _db.IncConnections.FirstOrDefaultAsync(x => x.Id == id);
         if (c != null)
         {
+            // Commission sirf INC-type worker ko milta hai — JOB worker ke
+            // liye hamesha 0 (chahe form se kuch bhi aaye).
+            var worker = await _db.Workers.FirstOrDefaultAsync(w => w.Id == c.WorkerId);
+            if (worker == null || worker.Type != WorkerType.INC) commission = 0;
+
             c.Status = "Approved";
             c.CommissionAmount = commission;
             c.AdminRemark = remark;
             c.UpdatedAt = System.DateTime.UtcNow;
             await _db.SaveChangesAsync();
-            TempData["Success"] = $"Connection approved. Commission {commission:N0} set.";
+            TempData["Success"] = commission > 0
+                ? $"Connection approved. Commission {commission:N0} set."
+                : "Connection approved.";
         }
         return RedirectToAction(nameof(Connections));
     }

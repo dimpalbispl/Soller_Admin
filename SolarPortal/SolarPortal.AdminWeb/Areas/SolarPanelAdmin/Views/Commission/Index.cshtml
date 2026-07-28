@@ -1,4 +1,4 @@
-@model IEnumerable<SolarPortal.Domain.Entities.Commission>
+﻿@model IEnumerable<SolarPortal.Domain.Entities.Commission>
 @{
     ViewData["Title"] = "INC Commission";
     var filter = ViewBag.Filter as string ?? "all";
@@ -113,20 +113,31 @@
 
     @if (Model.Any())
     {
+        @* Report filter — Member ID / City / State / Request date. *@
+        
+        ViewData["FilterTableId"] = "commissionTable";
+        ViewData["FilterPlaceholder"] = "Search by Member ID, member name, request #, INC worker...";
+        ViewData["FilterDateLabel"] = "Request Date";
+
+        <partial name="_ReportFilterToolbar" />
+
         <div class="card">
             <div class="ct"><span class="ct-dot"></span>Commission Records (@Model.Count())</div>
             <div class="tbl-wrap">
-                <table class="table table-hover">
+                <table id="commissionTable" class="table table-hover">
                     <thead>
                         <tr>
                             <th>Request</th>
                             <th>Member ID</th>
+                            <th>Member Name</th>
+                            <th>City / State</th>
                             <th>Plan</th>
                             <th>INC Worker</th>
                             <th style="text-align:right">Project Amount</th>
                             <th>%</th>
                             <th style="text-align:right">Commission</th>
                             <th>Status</th>
+                            <th>Request Date</th>
                             <th>Paid On</th>
                             <th>Actions</th>
                         </tr>
@@ -134,13 +145,31 @@
                     <tbody>
                         @foreach (var c in Model)
                         {
-                            <tr>
-                                <td><strong>@(c.SolarRequest?.RequestNumber ?? ("#" + c.SolarRequestId))</strong></td>
-                                <td><code style="font-size:11px;color:#0d9488">@c.UserId</code></td>
+                            var req = c.SolarRequest;
+                            var memberName = req == null ? "" :
+                                (string.IsNullOrWhiteSpace(req.MemberFullName) ? req.ApplicantName : req.MemberFullName);
+                            // Date filter runs on the request date; commissions whose request
+                            // isn't loaded fall back to the commission's own creation date.
+                            var rowDate = (req?.CreatedAt ?? c.CreatedAt).ToLocalTime().ToString("yyyy-MM-dd");
+                            <tr data-search="@($"{c.UserId} {memberName} {req?.MobileNumber} {req?.City} {req?.State} {req?.RequestNumber} {c.Worker?.Name}".ToLower())"
+                                data-mid="@c.UserId"
+                                data-city="@req?.City"
+                                data-state="@req?.State"
+                                data-date="@rowDate">
+                                <td><strong>@(req?.RequestNumber ?? ("#" + c.SolarRequestId))</strong></td>
+                                <td><span class="mid-code">@c.UserId</span></td>
                                 <td>
-                                    @if (c.SolarRequest != null)
+                                    @(string.IsNullOrWhiteSpace(memberName) ? "—" : memberName)
+                                    <div class="cell-sub">@req?.MobileNumber</div>
+                                </td>
+                                <td>
+                                    @(string.IsNullOrWhiteSpace(req?.City) ? "—" : req.City)
+                                    <div class="cell-sub">@req?.State</div>
+                                </td>
+                                <td>
+                                    @if (req != null)
                                     {
-                                        <partial name="_PlanCell" model="c.SolarRequest" />
+                                        <partial name="_PlanCell" model="req" />
                                     }
                                     else
                                     {
@@ -176,6 +205,7 @@
                                         <span class="badge bg-warning">Pending</span>
                                     }
                                 </td>
+                                <td>@(req != null ? req.CreatedAt.ToLocalTime().ToString("dd MMM yyyy") : "—")</td>
                                 <td>@(c.PaidAt?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</td>
                                 <td>
                                     @if (!c.IsPaid)
