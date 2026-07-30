@@ -13,9 +13,15 @@ public class HomeController : Controller
         _logger = logger;
     }
 
+    // "/" must land on the admin dashboard, not the scaffolded welcome view.
+    // There is no public landing page in this app, so a signed-out visitor goes
+    // to login and comes back here afterwards.
     public IActionResult Index()
     {
-        return View();
+        if (User.Identity?.IsAuthenticated != true)
+            return RedirectToAction("Login", "Account");
+
+        return RedirectToAction("Index", "Dashboard", new { area = "SolarPanelAdmin" });
     }
 
     public IActionResult Privacy()
