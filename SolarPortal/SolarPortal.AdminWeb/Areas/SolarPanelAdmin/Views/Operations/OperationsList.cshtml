@@ -1,4 +1,4 @@
-﻿@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
+@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
 @{
     ViewData["Title"] = ViewBag.Title ?? "Operations";
     var op = (string)(ViewBag.Op ?? "");           // meter | material | installation | dcr
@@ -637,7 +637,7 @@
         <div style="font-size:11px;color:#6b7280">source: ${esc(whoSrc)}</div>
         </div>`
         : `<div style="border:1px solid #fecaca;background:#fef2f2;border-radius:8px;padding:10px;margin-bottom:10px;color:#b91c1c">
-        &#9888; Koi installer assign nahi hai. Pehle Material Dispatch mein installer assign kijiye.
+                                    &#9888; No installer is assigned. Assign an installer in Material Dispatch first.
         </div>`;
 
         Swal.fire({
@@ -648,7 +648,7 @@
         <label>Remark</label>
         <textarea id="f-ins-remark" class="swal2-textarea" placeholder="Admin remark for this installation">${esc(existing.remark)}</textarea>
         <div style="font-size:11px;color:#6b7280;margin-top:6px">
-        Installation "Mark Complete" INC panel se hoti hai. Neeche wala button sirf fallback hai.
+                                    Installation is marked complete from the INC panel. The button below is only a fallback.
         </div>
         </div>`,
         background: '#ffffff', color: '#1f2937',
@@ -664,7 +664,7 @@
         },
         preDeny: async () => {
         const w = existing.workerId || assigned.workerId;
-        if (!w) { Swal.showValidationMessage('Installer assign nahi hai — Material Dispatch se assign kijiye.'); return false; }
+                if (!w) { Swal.showValidationMessage('No installer is assigned — assign one from Material Dispatch.'); return false; }
         const fd = new FormData();
         fd.append('requestId', requestId);
         fd.append('installationDate', today);

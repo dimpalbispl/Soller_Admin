@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SolarPortal.Domain.Entities;
 using SolarPortal.Domain.Enums;
 using SolarPortal.Infrastructure.Data;
 
@@ -89,7 +90,7 @@ public class IncController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ApproveWithdrawal(int id)
+    public async Task<IActionResult> ApproveWithdrawal(int id, string? remark)
     {
         var w = await _db.IncWithdrawals.FirstOrDefaultAsync(x => x.Id == id);
         if (w != null && w.Status == "Pending")
@@ -97,8 +98,9 @@ public class IncController : Controller
             w.Status = "Approved";
             w.ProcessedAt = System.DateTime.UtcNow;
             w.ProcessedBy = User.Identity?.Name;
+            w.AdminNotes = remark;   // shown to the installer on their Withdraw page
             await _db.SaveChangesAsync();
-            TempData["Success"] = "Withdrawal approved.";
+            TempData["Success"] = $"Withdrawal of ₹{w.Amount:N2} approved.";
         }
         return RedirectToAction(nameof(Withdrawals));
     }
@@ -110,13 +112,86 @@ public class IncController : Controller
         var w = await _db.IncWithdrawals.FirstOrDefaultAsync(x => x.Id == id);
         if (w != null && w.Status == "Pending")
         {
+            // Status flip + wallet voucher must land together. If the voucher
+            // insert fails we do NOT want a Rejected withdrawal with no credit
+            // entry behind it, so both go in one transaction.
+            await using var tx = await _db.Database.BeginTransactionAsync();
+
             w.Status = "Rejected";
             w.RejectionReason = reason;
             w.ProcessedAt = System.DateTime.UtcNow;
             w.ProcessedBy = User.Identity?.Name;
             await _db.SaveChangesAsync();
-            TempData["Success"] = "Withdrawal rejected.";
+
+            await CreditIncWalletAsync(w, reason);
+
+            await tx.CommitAsync();
+
+            TempData["Success"] = $"Withdrawal rejected. ₹{w.Amount:N2} credited back to the INC wallet.";
         }
         return RedirectToAction(nameof(Withdrawals));
+    }
+
+    /// <summary>
+    /// Writes the "money returned" credit into IncTrnvoucher — the INC wallet
+    /// ledger (IncVouchertype: Acid 1, "INC Wallet", Actype 'I').
+    ///
+    /// Column conventions are copied from the existing TrnVoucher ledger:
+    ///   • credit  → DrTo = '0', CrTo = account holder, VType = 'C'
+    ///   • debit   → DrTo = account holder, CrTo = '0', VType = 'W' / 'D'
+    ///   • AcType  → wallet the row belongs to; 'I' is the INC wallet
+    ///   • VoucherId is IDENTITY; VoucherNo is not, so it is taken as MAX+1
+    ///
+    /// The account holder is the INC WORKER id. Every INC table
+    /// (IncWithdrawals, IncConnections, IncCommissionLedger) is keyed by
+    /// WorkerId, and a withdrawal carries nothing else that identifies the
+    /// payee — there is no Worker → member Formno link in this schema.
+    ///
+    /// Raw SQL rather than EF: IncTrnvoucher is a legacy table with no entity,
+    /// same as the other legacy writes in LegacyMlmApprovalService.
+    /// </summary>
+    private async Task CreditIncWalletAsync(IncWithdrawal w, string? reason)
+    {
+        var account   = w.WorkerId.ToString();
+        var refNo     = string.IsNullOrWhiteSpace(w.RequestNumber) ? $"IWD-{w.Id}" : w.RequestNumber!;
+        var narration = $"Withdrawal request {refNo} rejected — amount returned to INC wallet."
+                      + (string.IsNullOrWhiteSpace(reason) ? "" : $" Reason: {reason.Trim()}");
+
+        // Guarded by RefNo so a replayed reject can never credit twice. The
+        // Status == "Pending" check above already prevents it; this is the
+        // belt-and-braces version, because a double credit is real money.
+        const string sql = @"
+IF NOT EXISTS (SELECT 1 FROM IncTrnvoucher WHERE RefNo = @refNo AND VType = 'C' AND AcType = 'I')
+BEGIN
+    INSERT INTO IncTrnvoucher
+        (VoucherNo, VoucherDate, DrTo, CrTo, Amount, Narration, RefNo,
+         AcType, RecTimeStamp, VType, SessID, WSessID, Balance, UserId, FromID)
+    SELECT
+        ISNULL(MAX(VoucherNo), 0) + 1,
+        CAST(CONVERT(varchar(8), GETDATE(), 112) AS datetime),
+        '0',
+        @account,
+        @amount,
+        @narration,
+        @refNo,
+        'I',
+        GETDATE(),
+        'C',
+        CAST(CONVERT(varchar(8), GETDATE(), 112) AS numeric(18,0)),
+        1,
+        (SELECT ISNULL(SUM(CASE WHEN VType = 'C' AND CrTo = @account THEN Amount
+                                WHEN VType <> 'C' AND DrTo = @account THEN -Amount
+                                ELSE 0 END), 0)
+           FROM IncTrnvoucher WHERE AcType = 'I') + @amount,
+        0,
+        NULL
+    FROM IncTrnvoucher;
+END";
+
+        await _db.Database.ExecuteSqlRawAsync(sql,
+            new Microsoft.Data.SqlClient.SqlParameter("@account",   account),
+            new Microsoft.Data.SqlClient.SqlParameter("@amount",    w.Amount),
+            new Microsoft.Data.SqlClient.SqlParameter("@narration", narration),
+            new Microsoft.Data.SqlClient.SqlParameter("@refNo",     refNo));
     }
 }

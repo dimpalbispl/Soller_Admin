@@ -1,0 +1,185 @@
+================================================================================
+SOLAR PORTAL - SQL TABLE REFERENCE
+================================================================================
+Source : SolarPortal/SolarPortal.Infrastructure/Data/ApplicationDbContext.cs
+         SolarPortal/SolarPortal.Infrastructure/Data/Migrations/
+                                        ApplicationDbContextModelSnapshot.cs
+Total  : 31 tables (+ __EFMigrationsHistory)
+         7 Identity | 19 Application | 3 Legacy read-only | 2 Unmigrated
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1. ASP.NET IDENTITY TABLES (renamed from AspNet* defaults)
+--------------------------------------------------------------------------------
+TABLE                 ENTITY                            NOTES
+--------------------------------------------------------------------------------
+Users                 ApplicationUser                   was AspNetUsers
+Roles                 IdentityRole                      was AspNetRoles
+UserRoles             IdentityUserRole<string>          was AspNetUserRoles
+UserClaims            IdentityUserClaim<string>         was AspNetUserClaims
+UserLogins            IdentityUserLogin<string>         was AspNetUserLogins
+RoleClaims            IdentityRoleClaim<string>         was AspNetRoleClaims
+UserTokens            IdentityUserToken<string>         was AspNetUserTokens
+
+Configured at ApplicationDbContext.cs lines 66-72.
+
+
+--------------------------------------------------------------------------------
+2. APPLICATION TABLES (EF-managed, created by migrations)
+--------------------------------------------------------------------------------
+TABLE                 ENTITY                PURPOSE
+--------------------------------------------------------------------------------
+SolarRequests         SolarRequest          Core solar request record.
+                                            Unique index on RequestNumber.
+                                            FK -> Users (Restrict)
+                                            FK -> SolarProjects (SetNull)
+                                            Soft delete (IsDeleted filter)
+
+SolarProjects         SolarProject          Project / plan master with amount
+                                            breakdown: SolarTypeKV, DiscomWork,
+                                            DealClose, SCZMenue, SportainTeam,
+                                            TotalAmount
+
+SolarAccounts         SolarAccount          Account ledger per request.
+                                            Unique index on AccountNumber.
+                                            ProjectAmount / DepositAmount /
+                                            DueAmount
+                                            FK -> Users (Restrict)
+                                            FK -> SolarRequests (Cascade)
+
+Payments              Payment               Payments booked against a request.
+                                            FK -> SolarRequests (Cascade)
+
+Commissions           Commission            One-to-one with SolarRequest.
+                                            ProjectAmount, CommissionAmount,
+                                            CommissionPercentage
+                                            FK -> SolarRequests (Cascade)
+
+Documents             Document              General request documents.
+                                            FK -> SolarRequests (Cascade)
+
+DCRDocuments          DCRDocument           DCR paperwork per request.
+
+PMDocuments           PMDocument            PM Surya Ghar documents.
+                                            FileName(255), FilePath(500)
+                                            FK -> SolarRequests (Cascade)
+
+SiteSurveys           SiteSurvey            Site survey workflow stage.
+
+MeterDispatches       MeterDispatch         Meter dispatch workflow stage.
+
+MaterialDispatches    MaterialDispatch      Material dispatch workflow stage.
+
+Installations         Installation          Installation workflow stage.
+
+Workers               Worker                Worker / installer master.
+
+WorkerAssignments     WorkerAssignment      Worker-to-job assignment.
+                                            FK -> Workers (Restrict)
+
+Wallets               Wallet                Per-user wallet: TotalIncome, TDS,
+                                            NetAmount, WithdrawnAmount,
+                                            PendingBalance
+                                            FK -> Users (Cascade)
+
+WalletTransactions    WalletTransaction     Wallet ledger entries.
+                                            FK -> Wallets (Cascade)
+                                            FK -> SolarAccounts (SetNull)
+
+Withdrawals           Withdrawal            Withdrawal requests against wallet.
+                                            FK -> Wallets (Cascade)
+
+Notifications         Notification          Per-user notifications.
+
+ActivityLogs          ActivityLog           Audit trail.
+                                            Action(100), EntityName(100),
+                                            EntityId(50), IpAddress(45)
+
+__EFMigrationsHistory (system)              EF Core migration bookkeeping.
+
+All application tables above use a soft-delete query filter (IsDeleted = 0)
+and inherit CreatedAt / UpdatedAt from BaseEntity, stamped in
+ApplicationDbContext.SaveChangesAsync().
+
+
+--------------------------------------------------------------------------------
+3. LEGACY READ-ONLY TABLES (ExcludeFromMigrations)
+--------------------------------------------------------------------------------
+TABLE                 ENTITY                PRIMARY KEY
+--------------------------------------------------------------------------------
+m_membermaster        MMemberMaster         MId
+m_usermaster          MUserMaster           UId
+m_statedivmaster      MStateDivMaster       StateCode
+
+These map to the existing live database. EF will NEVER generate
+CREATE / ALTER / DROP statements for them - they exist as queryable entities
+only, so the portal can authenticate against them and read state data.
+Configured at ApplicationDbContext.cs lines 46-60.
+
+
+--------------------------------------------------------------------------------
+4. MAPPED BUT NOT IN ANY MIGRATION
+--------------------------------------------------------------------------------
+TABLE                 ENTITY                NOTES
+--------------------------------------------------------------------------------
+IncConnections        IncConnection         DbSet registered, but no ToTable()
+                                            call and absent from the migration
+                                            snapshot. Falls back to the EF
+                                            convention name (DbSet property).
+                                            Solar connection registered by an
+                                            INC/Installer worker.
+
+IncWithdrawals        IncWithdrawal         Source comment states it maps to a
+                                            pre-existing IncWithdrawals table.
+                                            Does not derive from BaseEntity,
+                                            so no CreatedAt/UpdatedAt/IsDeleted.
+
+WARNING
+  These two are neither in the migration snapshot nor marked
+  ExcludeFromMigrations(). Two consequences:
+    1. If the tables do not already exist in the target database, queries
+       against them fail at runtime.
+    2. The next `dotnet ef migrations add` will try to emit CREATE TABLE for
+       both. If the tables already exist in the live DB, that migration will
+       fail on apply.
+  Fix: either add them to a migration deliberately, or mark them
+  ExcludeFromMigrations() alongside the m_* legacy tables.
+
+
+================================================================================
+QUICK LIST (all table names)
+================================================================================
+ActivityLogs
+Commissions
+DCRDocuments
+Documents
+IncConnections
+IncWithdrawals
+Installations
+m_membermaster
+m_statedivmaster
+m_usermaster
+MaterialDispatches
+MeterDispatches
+Notifications
+Payments
+PMDocuments
+RoleClaims
+Roles
+SiteSurveys
+SolarAccounts
+SolarProjects
+SolarRequests
+UserClaims
+UserLogins
+UserRoles
+Users
+UserTokens
+WalletTransactions
+Wallets
+WorkerAssignments
+Workers
+Withdrawals
+__EFMigrationsHistory
+================================================================================

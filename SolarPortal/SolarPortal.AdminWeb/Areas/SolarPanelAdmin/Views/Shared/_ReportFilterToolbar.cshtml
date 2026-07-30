@@ -10,6 +10,7 @@
                                (off by default — switch on with FilterShowWorker)
         • From / To date     → matches each row's `data-date` (YYYY-MM-DD)
         • Clear button + live "N shown of M" count
+        • OPTIONAL pagination → set FilterPageSize to a row count
 
     USAGE — in your view, do TWO things:
 
@@ -24,6 +25,7 @@
                 ViewData["FilterShowDate"]     = false;           // optional, default true
                 ViewData["FilterShowWorker"]   = true;            // optional, default FALSE
                 ViewData["FilterWorkerLabel"]  = "Installer";     // optional, default "Worker"
+                ViewData["FilterPageSize"]     = 10;              // optional, default 0 = no paging
             }
             @await Html.PartialAsync("_ReportFilterToolbar")
 
@@ -41,6 +43,11 @@
 
     Works on card lists too: point FilterTableId at a container <div> and give
     each direct child card the same data-* attributes.
+
+    PAGINATION is opt-in and off by default, so existing reports are unchanged.
+    It runs AFTER filtering — the pager pages through the matching rows, not the
+    raw list, so filter + paging stay consistent. Rows without `data-search`
+    (e.g. expandable detail rows) are never touched by either.
 
     The JS is fully self-contained. It defers to DOMContentLoaded, so the
     toolbar can sit ABOVE the table it filters. Multiple toolbars on one page
@@ -63,6 +70,9 @@
     var showWorker  = ViewData["FilterShowWorker"]  as bool? ?? false;
     var workerLabel = ViewData["FilterWorkerLabel"] as string ?? "Worker";
 
+    // Pagination is opt-IN. 0 (the default) keeps the old show-everything behaviour.
+    var pageSize = ViewData["FilterPageSize"] as int? ?? 0;
+
     // ViewData is shared for the whole view, so a second toolbar on the same
     // page would inherit the first one's switches. Reset them after reading.
     ViewData.Remove("FilterShowMemberId");
@@ -73,6 +83,7 @@
     ViewData.Remove("FilterWorkerLabel");
     ViewData.Remove("FilterDateLabel");
     ViewData.Remove("FilterPlaceholder");
+    ViewData.Remove("FilterPageSize");
 
     // Unique element ids derived from the table id so multiple toolbars on
     // the same page don't collide.
@@ -85,7 +96,20 @@
     var idTo     = $"rf_{tableId}_to";
     var idClear  = $"rf_{tableId}_clear";
     var idCount  = $"rf_{tableId}_count";
+    var idPager  = $"rf_{tableId}_pager";
 }
+
+<style>
+    /* Pager — only rendered when FilterPageSize is set. */
+    .rf-pager { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:10px 14px; }
+    .rf-pager .rf-pg-info { font-size:12px; color:var(--text2); margin-right:auto; }
+    .rf-pager button { border:1px solid var(--border2); background:var(--bg2); color:var(--text1);
+                       border-radius:7px; padding:4px 10px; font-size:12.5px; font-weight:600; cursor:pointer; }
+    .rf-pager button:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+    .rf-pager button.is-current { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .rf-pager button:disabled { opacity:.45; cursor:default; }
+    .rf-pager .rf-pg-gap { color:var(--text3); padding:0 2px; }
+</style>
 
 <div class="report-filter">
     <div class="rf-field rf-field-grow">
@@ -170,6 +194,20 @@
         var $clear  = document.getElementById('@idClear');
         var $count  = document.getElementById('@idCount');
 
+        var pageSize = @pageSize;
+        var currentPage = 1;
+
+        // Pager lives BELOW the table. Built here rather than in markup so the
+        // partial stays a single drop-in above the table.
+        var $pager = null;
+        if (pageSize > 0) {
+            $pager = document.createElement('div');
+            $pager.className = 'rf-pager';
+            $pager.id = '@idPager';
+            var anchor = (host.closest && host.closest('.tbl-wrap')) || host;
+            anchor.parentNode.insertBefore($pager, anchor.nextSibling);
+        }
+
         // Build the City / State dropdowns from the values actually present in
         // the table, so the options can never drift out of sync with the data.
         function fillSelect($sel, attr, allLabel) {
@@ -204,7 +242,7 @@
             $worker.appendChild(oNone);
         }
 
-        function apply() {
+        function matches(r) {
             var q     = (($search && $search.value) || '').trim().toLowerCase();
             var mid   = (($mid    && $mid.value)    || '').trim().toLowerCase();
             var city  = (($city   && $city.value)   || '').trim().toLowerCase();
@@ -212,26 +250,91 @@
             var wrk   = (($worker && $worker.value) || '').trim().toLowerCase();
             var from  = ($from && $from.value) || '';
             var to    = ($to   && $to.value)   || '';
-            var shown = 0;
 
-            rows.forEach(function (r) {
-                var hay  = r.getAttribute('data-search') || '';
-                var date = r.getAttribute('data-date')   || '';
-                var ok = true;
-                if (q     && hay.indexOf(q) === -1) ok = false;
-                if (ok && mid   && (r.getAttribute('data-mid')   || '').toLowerCase().indexOf(mid) === -1) ok = false;
-                if (ok && city  && (r.getAttribute('data-city')  || '').toLowerCase() !== city)  ok = false;
-                if (ok && state && (r.getAttribute('data-state') || '').toLowerCase() !== state) ok = false;
-                if (ok && wrk) {
-                    var rw = (r.getAttribute('data-worker') || '').trim().toLowerCase();
-                    if (wrk === '__none__' ? rw !== '' : rw !== wrk) ok = false;
+            var hay  = r.getAttribute('data-search') || '';
+            var date = r.getAttribute('data-date')   || '';
+            var ok = true;
+            if (q     && hay.indexOf(q) === -1) ok = false;
+            if (ok && mid   && (r.getAttribute('data-mid')   || '').toLowerCase().indexOf(mid) === -1) ok = false;
+            if (ok && city  && (r.getAttribute('data-city')  || '').toLowerCase() !== city)  ok = false;
+            if (ok && state && (r.getAttribute('data-state') || '').toLowerCase() !== state) ok = false;
+            if (ok && wrk) {
+                var rw = (r.getAttribute('data-worker') || '').trim().toLowerCase();
+                if (wrk === '__none__' ? rw !== '' : rw !== wrk) ok = false;
+            }
+            if (ok && from  && date && date < from) ok = false;
+            if (ok && to    && date && date > to)   ok = false;
+            return ok;
+        }
+
+        function renderPager(totalMatches, totalPages) {
+            if (!$pager) return;
+            $pager.innerHTML = '';
+            if (totalMatches === 0) return;
+
+            var first = (currentPage - 1) * pageSize + 1;
+            var last  = Math.min(currentPage * pageSize, totalMatches);
+
+            var info = document.createElement('span');
+            info.className = 'rf-pg-info';
+            info.textContent = 'Showing ' + first + '–' + last + ' of ' + totalMatches;
+            $pager.appendChild(info);
+
+            if (totalPages <= 1) return;
+
+            function pageBtn(label, target, disabled, current) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.textContent = label;
+                if (disabled) b.disabled = true;
+                if (current) b.className = 'is-current';
+                if (!disabled && !current) {
+                    b.addEventListener('click', function () { currentPage = target; apply(false); });
                 }
-                if (ok && from  && date && date < from) ok = false;
-                if (ok && to    && date && date > to)   ok = false;
-                r.style.display = ok ? '' : 'none';
-                if (ok) shown++;
-            });
-            if ($count) $count.textContent = shown + ' shown of ' + rows.length;
+                $pager.appendChild(b);
+            }
+            function gap() {
+                var s = document.createElement('span');
+                s.className = 'rf-pg-gap';
+                s.textContent = '…';
+                $pager.appendChild(s);
+            }
+
+            pageBtn('‹ Prev', currentPage - 1, currentPage === 1, false);
+
+            // Window the page numbers so 200 pages don't blow up the bar.
+            var winFrom = Math.max(1, currentPage - 2);
+            var winTo   = Math.min(totalPages, currentPage + 2);
+            if (winFrom > 1) { pageBtn('1', 1, false, currentPage === 1); if (winFrom > 2) gap(); }
+            for (var p = winFrom; p <= winTo; p++) pageBtn(String(p), p, false, p === currentPage);
+            if (winTo < totalPages) { if (winTo < totalPages - 1) gap(); pageBtn(String(totalPages), totalPages, false, currentPage === totalPages); }
+
+            pageBtn('Next ›', currentPage + 1, currentPage === totalPages, false);
+        }
+
+        // resetPage=false keeps the current page (used by the pager buttons);
+        // any filter change resets to page 1 so you never land on an empty page.
+        function apply(resetPage) {
+            if (resetPage !== false) currentPage = 1;
+
+            var matched = rows.filter(matches);
+
+            // Hide everything, then reveal only what should be on screen. Doing
+            // it in two passes keeps filtering and paging from fighting over
+            // the same inline style.
+            rows.forEach(function (r) { r.style.display = 'none'; });
+
+            var visible = matched;
+            var totalPages = 1;
+            if (pageSize > 0) {
+                totalPages = Math.max(1, Math.ceil(matched.length / pageSize));
+                if (currentPage > totalPages) currentPage = totalPages;
+                visible = matched.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+            }
+            visible.forEach(function (r) { r.style.display = ''; });
+
+            renderPager(matched.length, totalPages);
+            if ($count) $count.textContent = matched.length + ' shown of ' + rows.length;
         }
 
         [$search, $mid].forEach(function (el) { if (el) el.addEventListener('input', apply); });

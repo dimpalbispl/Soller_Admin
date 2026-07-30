@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "8hQRAeshAYo=",
+  "dgSpecHash": "c4McJo4A7lw=",
   "success": true,
-  "projectFilePath": "\\\\localhost\\Sadhna\\GitHub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\SolarPortal.Application.csproj",
+  "projectFilePath": "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\SolarPortal.Application.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Claude1\\.nuget\\packages\\automapper\\13.0.1\\automapper.13.0.1.nupkg.sha512",
     "C:\\Users\\Claude1\\.nuget\\packages\\fluentvalidation\\11.9.0\\fluentvalidation.11.9.0.nupkg.sha512",
@@ -11,8 +11,8 @@
     "C:\\Users\\Claude1\\.nuget\\packages\\microsoft.extensions.options\\6.0.0\\microsoft.extensions.options.6.0.0.nupkg.sha512",
     "C:\\Users\\Claude1\\.nuget\\packages\\microsoft.extensions.primitives\\6.0.0\\microsoft.extensions.primitives.6.0.0.nupkg.sha512",
     "C:\\Users\\Claude1\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512",
-    "C:\\Users\\Claude1\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.25\\microsoft.windowsdesktop.app.ref.8.0.25.nupkg.sha512",
     "C:\\Users\\Claude1\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.25\\microsoft.netcore.app.ref.8.0.25.nupkg.sha512",
+    "C:\\Users\\Claude1\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.25\\microsoft.windowsdesktop.app.ref.8.0.25.nupkg.sha512",
     "C:\\Users\\Claude1\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.25\\microsoft.aspnetcore.app.ref.8.0.25.nupkg.sha512"
   ],
   "logs": []

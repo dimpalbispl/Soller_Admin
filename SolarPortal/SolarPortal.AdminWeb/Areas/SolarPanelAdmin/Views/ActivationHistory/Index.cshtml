@@ -1,0 +1,429 @@
+@model IEnumerable<MemberActivationHistoryDto>
+@{
+    ViewData["Title"] = "Activation History";
+
+    var filter = (ViewBag.Filter as string) ?? "all";
+    var rows = Model.ToList();
+
+    // Canonical order of the three request modes. Every member row shows ALL
+    // three — the ones never used are rendered as "Not taken" rather than being
+    // silently absent, which otherwise reads as "the report lost my request".
+    var allModes = new[]
+    {
+        RequestType.OnlySolarWithoutActivation,
+        RequestType.WithActivation,
+        RequestType.AlreadyActiveOnlyRequest
+    };
+
+    string TabCls(string name) => filter == name ? "btn btn-p btn-sm" : "btn btn-outline btn-sm";
+
+    string ModeLabel(RequestType t) => t switch
+    {
+        RequestType.WithActivation => "With Activation",
+        RequestType.OnlySolarWithoutActivation => "Without Activation",
+        RequestType.AlreadyActiveOnlyRequest => "Active Now",
+        _ => t.ToString()
+    };
+
+    string ModeIcon(RequestType t) => t switch
+    {
+        RequestType.WithActivation => "🔌",
+        RequestType.OnlySolarWithoutActivation => "⚡",
+        RequestType.AlreadyActiveOnlyRequest => "✅",
+        _ => "•"
+    };
+
+    string ModeCls(RequestType t) => t switch
+    {
+        RequestType.WithActivation => "sts-disp",
+        RequestType.OnlySolarWithoutActivation => "sts-pend",
+        RequestType.AlreadyActiveOnlyRequest => "sts-act",
+        _ => "sts-pend"
+    };
+
+    string ApprovalCls(ApprovalStatus s) => s switch
+    {
+        ApprovalStatus.Approved => "sts-act",
+        ApprovalStatus.Rejected => "sts-rej",
+        _ => "sts-pend"
+    };
+
+    string EventIcon(ActivationEventKind k) => k switch
+    {
+        ActivationEventKind.RequestSubmitted => "📝",
+        ActivationEventKind.PaymentSubmitted => "🧾",
+        ActivationEventKind.PaymentVerified => "💰",
+        ActivationEventKind.PaymentRejected => "❌",
+        ActivationEventKind.ActivationRequested => "📤",
+        ActivationEventKind.Activated => "🔓",
+        ActivationEventKind.ActivationRejected => "🚫",
+        _ => "•"
+    };
+
+    string EventCls(ActivationEventKind k) => k switch
+    {
+        ActivationEventKind.Activated => "ev-act",
+        ActivationEventKind.PaymentVerified => "ev-pay",
+        ActivationEventKind.PaymentRejected => "ev-bad",
+        ActivationEventKind.ActivationRejected => "ev-bad",
+        _ => "ev-def"
+    };
+
+    string D(DateTime? d) => d.HasValue ? d.Value.ToString("dd MMM yyyy") : "—";
+}
+
+<style>
+    /* ── Activation History report ──────────────────────────────────────── */
+    .jrny { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .jrny-step { display:inline-flex; flex-direction:column; gap:1px; padding:4px 9px; border-radius:8px;
+                 border:1px solid var(--border2); background:var(--bg3); white-space:nowrap; }
+    .jrny-step .jl { font-size:11px; font-weight:700; color:var(--text1); line-height:1.2; }
+    .jrny-step .jd { font-size:10.5px; color:var(--text2); line-height:1.2; }
+    .jrny-step.is-act { border-color:var(--green); background:var(--green3); }
+    .jrny-arw { color:var(--text3); font-size:12px; }
+    .jrny-none { color:var(--text3); font-size:12px; }
+    .jrny-missing { margin-top:5px; font-size:10.5px; color:var(--text3); }
+    .jrny-missing b { color:var(--text2); font-weight:600; }
+
+    .btn-tl { border:1px solid var(--accent); color:var(--accent); background:transparent; border-radius:7px;
+              padding:3px 10px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+    .btn-tl:hover { background:var(--accent); color:#fff; }
+
+    .tl-tr > td { background:var(--bg3) !important; padding:0 !important; }
+    .tl-box { padding:16px 18px; }
+    .tl-h { font-size:12px; font-weight:700; color:var(--accent-dark); text-transform:uppercase;
+            letter-spacing:.5px; margin:0 0 10px; }
+    .tl-h.mt { margin-top:18px; }
+
+    .tl { list-style:none; margin:0; padding:0 0 0 4px; }
+    .tl li { position:relative; padding:0 0 14px 26px; border-left:2px solid var(--border2); }
+    .tl li:last-child { border-left-color:transparent; padding-bottom:0; }
+    .tl li .dot { position:absolute; left:-11px; top:0; width:20px; height:20px; border-radius:50%;
+                  background:var(--bg2); border:1px solid var(--border2); display:flex;
+                  align-items:center; justify-content:center; font-size:10px; }
+    .tl li.ev-act .dot { border-color:var(--green); background:var(--green3); }
+    .tl li.ev-pay .dot { border-color:var(--green); }
+    .tl li.ev-bad .dot { border-color:var(--red); }
+    .tl .ev-when { font-size:11px; color:var(--text2); }
+    .tl .ev-ttl  { font-size:13px; font-weight:600; color:var(--text1); }
+    .tl li.ev-act .ev-ttl { color:var(--green); }
+    .tl .ev-sub  { font-size:11.5px; color:var(--text2); }
+    .tl .ev-amt  { font-weight:700; color:var(--green); }
+    .approx { font-size:10px; color:var(--orange); font-weight:700; }
+
+    .mini-tbl { width:100%; border-collapse:collapse; background:var(--bg2);
+                border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    .mini-tbl th { font-size:10.5px; letter-spacing:.4px; text-transform:uppercase; color:var(--text2);
+                   text-align:left; padding:7px 10px; background:var(--bg3); border-bottom:1px solid var(--border); }
+    .mini-tbl td { padding:8px 10px; font-size:12.5px; border-bottom:1px solid var(--border); }
+    .mini-tbl tr.mode-none td { opacity:.55; }
+    .phase-tag { font-size:10px; font-weight:700; padding:1px 7px; border-radius:999px; }
+    .phase-pre { background:#fef3c7; color:#92400e; }
+    .phase-post { background:var(--green3); color:#065f46; }
+    .not-taken { font-size:11px; font-weight:700; color:var(--text3); }
+</style>
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Reports</span></div>
+        <div class="ph-title">🔓 Activation History</div>
+        <div class="ph-sub">
+            Every member's activation journey — <b>Without Activation</b> taken first, then payment verified,
+            the ID <b>activated</b>, and after that projects taken via <b>Active Now</b>. Every step with its date.
+            A mode the member never used is still listed, marked <b>"Not taken"</b>.
+        </div>
+    </div>
+
+    <div class="g4" style="margin-bottom:14px">
+        <div class="sc">
+            <div class="sc-label">Members Tracked</div>
+            <div class="sc-val blue">@ViewBag.CountAll</div>
+            <div class="sc-sub">With at least one real request</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Without → Activated</div>
+            <div class="sc-val gold">@ViewBag.CountJourney</div>
+            <div class="sc-sub">Started without activation, active now</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Currently Active</div>
+            <div class="sc-val green">@ViewBag.CountActive</div>
+            <div class="sc-sub">m_membermaster ActiveStatus = Y</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Not Activated Yet</div>
+            <div class="sc-val red">@ViewBag.CountInactive</div>
+            <div class="sc-sub">ID still deactivated</div>
+        </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+        <a class="@TabCls("all")" asp-action="Index" asp-route-filter="all">📋 All (@ViewBag.CountAll)</a>
+        <a class="@TabCls("journey")" asp-action="Index" asp-route-filter="journey">🔄 Without → Activated (@ViewBag.CountJourney)</a>
+        <a class="@TabCls("active")" asp-action="Index" asp-route-filter="active">✅ Active (@ViewBag.CountActive)</a>
+        <a class="@TabCls("inactive")" asp-action="Index" asp-route-filter="inactive">⏳ Not Activated (@ViewBag.CountInactive)</a>
+        <span style="flex:1"></span>
+        <a class="btn btn-s btn-sm" asp-action="Export" asp-route-filter="@filter">⬇️ Export CSV</a>
+    </div>
+
+    @if (rows.Any())
+    {
+        ViewData["FilterTableId"] = "activationTable";
+        ViewData["FilterPlaceholder"] = "Search by Member ID, name, mobile, city...";
+        ViewData["FilterDateLabel"] = "Last Request";
+
+        <partial name="_ReportFilterToolbar" />
+
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Member Activation Journey</div>
+            <div class="tbl-wrap">
+                <table id="activationTable">
+                    <thead>
+                        <tr>
+                            <th>Member ID</th>
+                            <th>Member</th>
+                            <th>City / State</th>
+                            <th style="min-width:340px">Journey (in order)</th>
+                            <th>ID Activated On</th>
+                            <th style="text-align:center">Requests<div class="cell-sub">before / after</div></th>
+                            <th style="text-align:right">Verified Paid</th>
+                            <th>Status</th>
+                            <th>Timeline</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ var idx = 0; }
+                        @foreach (var m in rows)
+                        {
+                            idx++;
+                            // Milestones in the order they actually happened — this
+                            // strip IS the answer to "pehle kya liya, fir kya liya".
+                            var milestones = new List<(DateTime When, string Label, bool Highlight)>();
+                            if (m.FirstWithoutActivationOn.HasValue)
+                                milestones.Add((m.FirstWithoutActivationOn.Value, "⚡ Without Activation", false));
+                            if (m.FirstWithActivationOn.HasValue)
+                                milestones.Add((m.FirstWithActivationOn.Value, "🔌 With Activation", false));
+                            if (m.ActivatedOn.HasValue)
+                                milestones.Add((m.ActivatedOn.Value, "🔓 ID Activated" + (m.ActivatedOnApproximate ? " ≈" : ""), true));
+                            if (m.FirstAlreadyActiveOn.HasValue)
+                                milestones.Add((m.FirstAlreadyActiveOn.Value, "✅ Active Now", false));
+                            milestones = milestones.OrderBy(x => x.When).ToList();
+
+                            // Modes this member never used. Showing them explicitly
+                            // stops "mera Without Activation kahan gaya?" — the answer
+                            // is that no such request exists, not that it was dropped.
+                            var takenModes = m.Requests.Select(r => r.RequestType).ToHashSet();
+                            var notTaken = allModes.Where(t => !takenModes.Contains(t)).ToList();
+
+                            <tr data-search="@($"{m.MemberIdNo} {m.MemberName} {m.Mobile} {m.City} {m.State}".ToLower())"
+                                data-mid="@m.MemberIdNo"
+                                data-city="@m.City"
+                                data-state="@m.State"
+                                data-date="@((m.LastRequestOn ?? DateTime.MinValue).ToString("yyyy-MM-dd"))">
+                                <td><span class="mid-code">@m.MemberIdNo</span></td>
+                                <td class="td-b">
+                                    @m.MemberName
+                                    <div class="cell-sub">@m.Mobile</div>
+                                </td>
+                                <td>@m.City<div class="cell-sub">@m.State</div></td>
+                                <td>
+                                    @if (milestones.Any())
+                                    {
+                                        <div class="jrny">
+                                            @for (var s = 0; s < milestones.Count; s++)
+                                            {
+                                                if (s > 0)
+                                                {
+                                                    <span class="jrny-arw">→</span>
+                                                }
+                                                <span class="jrny-step @(milestones[s].Highlight ? "is-act" : "")">
+                                                    <span class="jl">@milestones[s].Label</span>
+                                                    <span class="jd">@milestones[s].When.ToString("dd MMM yyyy")</span>
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="jrny-none">No dated milestone yet</span>
+                                    }
+                                    @if (notTaken.Any())
+                                    {
+                                        <div class="jrny-missing">
+                                            Not taken:
+                                            <b>@string.Join(" · ", notTaken.Select(t => ModeIcon(t) + " " + ModeLabel(t)))</b>
+                                        </div>
+                                    }
+                                </td>
+                                <td style="white-space:nowrap">
+                                    @D(m.ActivatedOn)
+                                    @if (m.ActivatedOn.HasValue && m.ActivatedOnApproximate)
+                                    {
+                                        <div class="approx" title="No legacy activation record — inferred from the verified payment">≈ inferred</div>
+                                    }
+                                </td>
+                                <td style="text-align:center">
+                                    <span class="phase-tag phase-pre">@m.RequestsBeforeActivation</span>
+                                    <span style="color:var(--text3)">/</span>
+                                    <span class="phase-tag phase-post">@m.RequestsAfterActivation</span>
+                                </td>
+                                <td style="text-align:right;color:var(--green);font-weight:600">₹@m.TotalVerifiedPaid.ToString("N0")</td>
+                                <td>
+                                    <span class="sts @(m.IsActiveNow ? "sts-act" : "sts-pend")">
+                                        @(m.IsActiveNow ? "Active" : "Not Active")
+                                    </span>
+                                    <div class="cell-sub">@m.Phase</div>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn-tl" onclick="toggleTimeline('tl-@idx', this)">▸ Timeline</button>
+                                </td>
+                            </tr>
+                            <tr id="tl-@idx" class="tl-tr" style="display:none">
+                                <td colspan="9">
+                                    <div class="tl-box">
+                                        @* All three modes, always — taken ones with their figures,
+                                           untaken ones explicitly marked. *@
+                                        <div class="tl-h">🔀 Modes — which mode was used, and when</div>
+                                        <table class="mini-tbl">
+                                            <thead>
+                                                <tr>
+                                                    <th>Mode</th>
+                                                    <th>First Taken</th>
+                                                    <th>Last Taken</th>
+                                                    <th style="text-align:center">Requests</th>
+                                                    <th style="text-align:right">Project Amount</th>
+                                                    <th style="text-align:right">Verified Paid</th>
+                                                    <th>Requests #</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var mode in allModes)
+                                                {
+                                                    var mr = m.Requests.Where(r => r.RequestType == mode)
+                                                                       .OrderBy(r => r.CreatedAt).ToList();
+                                                    <tr class="@(mr.Any() ? "" : "mode-none")">
+                                                        <td><span class="sts @ModeCls(mode)">@ModeIcon(mode) @ModeLabel(mode)</span></td>
+                                                        <td>@(mr.Any() ? mr.First().CreatedAt.ToString("dd MMM yyyy") : "—")</td>
+                                                        <td>@(mr.Any() ? mr.Last().CreatedAt.ToString("dd MMM yyyy") : "—")</td>
+                                                        <td style="text-align:center">@mr.Count</td>
+                                                        <td style="text-align:right">@(mr.Any() ? "₹" + mr.Sum(x => x.PlanAmount).ToString("N0") : "—")</td>
+                                                        <td style="text-align:right">@(mr.Any() ? "₹" + mr.Sum(x => x.VerifiedPaid).ToString("N0") : "—")</td>
+                                                        <td>
+                                                            @if (mr.Any())
+                                                            {
+                                                                @string.Join(", ", mr.Select(x => x.RequestNumber))
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="not-taken">Not taken</span>
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+
+                                        <div class="tl-h mt">🗓️ Full timeline — @m.MemberName (@m.MemberIdNo)</div>
+                                        <ul class="tl">
+                                            @foreach (var e in m.Events)
+                                            {
+                                                <li class="@EventCls(e.Kind)">
+                                                    <span class="dot">@EventIcon(e.Kind)</span>
+                                                    <div class="ev-when">
+                                                        @e.When.ToString("dd MMM yyyy · HH:mm")
+                                                        @if (e.IsApproximate)
+                                                        {
+                                                            <span class="approx">≈ inferred</span>
+                                                        }
+                                                    </div>
+                                                    <div class="ev-ttl">
+                                                        @e.Title
+                                                        @if (e.Amount.HasValue)
+                                                        {
+                                                            <span class="ev-amt">— ₹@e.Amount.Value.ToString("N0")</span>
+                                                        }
+                                                    </div>
+                                                    @if (!string.IsNullOrWhiteSpace(e.Detail) || !string.IsNullOrWhiteSpace(e.Reference))
+                                                    {
+                                                        <div class="ev-sub">
+                                                            @e.Detail
+                                                            @if (!string.IsNullOrWhiteSpace(e.Reference))
+                                                            {
+                                                                <text> · </text><code style="font-size:11px">@e.Reference</code>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </li>
+                                            }
+                                        </ul>
+
+                                        <div class="tl-h mt">🗂️ Requests taken</div>
+                                        <table class="mini-tbl">
+                                            <thead>
+                                                <tr>
+                                                    <th>Request #</th>
+                                                    <th>Mode</th>
+                                                    <th>Phase</th>
+                                                    <th>Plan</th>
+                                                    <th style="text-align:right">Amount</th>
+                                                    <th style="text-align:right">Paid</th>
+                                                    <th>Stage</th>
+                                                    <th>Approval</th>
+                                                    <th>Taken On</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var r in m.Requests)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <a asp-controller="Projects" asp-action="Details" asp-route-id="@r.Id"
+                                                               style="color:var(--accent);font-weight:600">@r.RequestNumber</a>
+                                                        </td>
+                                                        <td><span class="sts @ModeCls(r.RequestType)">@ModeIcon(r.RequestType) @ModeLabel(r.RequestType)</span></td>
+                                                        <td>
+                                                            <span class="phase-tag @(r.AfterActivation ? "phase-post" : "phase-pre")">
+                                                                @(r.AfterActivation ? "After activation" : "Before activation")
+                                                            </span>
+                                                        </td>
+                                                        <td>@(string.IsNullOrWhiteSpace(r.SelectedPlan) ? "—" : r.SelectedPlan)</td>
+                                                        <td style="text-align:right">₹@r.PlanAmount.ToString("N0")</td>
+                                                        <td style="text-align:right;color:var(--green)">₹@r.VerifiedPaid.ToString("N0")</td>
+                                                        <td><span class="sts sts-disp">@r.CurrentStage</span></td>
+                                                        <td><span class="sts @ApprovalCls(r.ApprovalStatus)">@r.ApprovalStatus</span></td>
+                                                        <td style="white-space:nowrap">@r.CreatedAt.ToString("dd MMM yyyy")</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>No Records</div>
+            <div style="text-align:center;padding:40px;color:var(--text3)">
+                <div style="font-size:48px;margin-bottom:16px">🔓</div>
+                <div style="font-size:18px;margin-bottom:8px">No members match this filter</div>
+                <div>A member appears here once they have submitted a real solar request.</div>
+            </div>
+        </div>
+    }
+</div>
+
+<script>
+    function toggleTimeline(id, btn) {
+        var row = document.getElementById(id);
+        if (!row) return;
+        var open = row.style.display !== 'none';
+        row.style.display = open ? 'none' : 'table-row';
+        if (btn) btn.innerHTML = open ? '▸ Timeline' : '▾ Hide';
+    }
+</script>

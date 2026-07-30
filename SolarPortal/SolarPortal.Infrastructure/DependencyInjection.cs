@@ -110,6 +110,11 @@ public static class DependencyInjection
         // TrnProductorderDetail table — keeps the existing SolFit
         // VB workflow (reports, activation processing) working.
         services.AddScoped<ILegacyProductRequestService, LegacyProductRequestService>();
+        // Activation History report - stitches SolarRequests + Payments together
+        // with the legacy activation order (TrnProductorderDetail ForType='A')
+        // so admin can see when a member moved from "Without Activation" to an
+        // activated ID taking "Active Now" projects.
+        services.AddScoped<IActivationHistoryService, ActivationHistoryService>();
 
         return services;
     }

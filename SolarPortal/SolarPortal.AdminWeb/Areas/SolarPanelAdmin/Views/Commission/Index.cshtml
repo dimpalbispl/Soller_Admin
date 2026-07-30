@@ -1,20 +1,24 @@
-﻿@model IEnumerable<SolarPortal.Domain.Entities.Commission>
+@model IEnumerable<SolarPortal.Domain.Entities.Commission>
 @{
     ViewData["Title"] = "INC Commission";
     var filter = ViewBag.Filter as string ?? "all";
     var totalPending = (decimal)(ViewBag.TotalPending ?? 0m);
     var totalPaid    = (decimal)(ViewBag.TotalPaid ?? 0m);
+    var autoCreated  = (int)(ViewBag.AutoCreated ?? 0);
+    var waitingCount = (int)(ViewBag.WaitingForRate ?? 0);
     var incWorkers = (ViewBag.IncWorkers as List<SolarPortal.Domain.Entities.Worker>)
                      ?? new List<SolarPortal.Domain.Entities.Worker>();
-    var uncommissioned = (ViewBag.UncommissionedCompleted as List<SolarPortal.Domain.Entities.SolarRequest>)
-                         ?? new List<SolarPortal.Domain.Entities.SolarRequest>();
+    var plans = (ViewBag.Plans as List<SolarPortal.Domain.Entities.SolarProject>)
+                ?? new List<SolarPortal.Domain.Entities.SolarProject>();
+    var planAmounts = (ViewBag.PlanAmounts as Dictionary<int, decimal>) ?? new Dictionary<int, decimal>();
+
+    var ratedCount = plans.Count(p => planAmounts.ContainsKey(p.Id));
 }
 
 <div class="page active">
     <div class="ph">
         <div class="ph-bc">🛡️ Admin / <span>INC Commission</span></div>
         <div class="ph-title">📈 INC Commission Management</div>
-        <div class="ph-sub">Generate, assign and pay commissions for INC-type workers on completed projects</div>
     </div>
 
     <!-- Summary -->
@@ -32,13 +36,27 @@
             <div class="sc-val green">₹@totalPaid.ToString("N0")</div>
         </div>
         <div class="sc">
-            <div class="sc-label">Uncommissioned Completed</div>
-            <div class="sc-val gold">@uncommissioned.Count</div>
-            <div class="sc-sub">Eligible for generation</div>
+            <div class="sc-label">Plans With Commission</div>
+            <div class="sc-val gold">@ratedCount / @plans.Count</div>
+            <div class="sc-sub">Commission ₹ set on these plans</div>
         </div>
     </div>
 
     @Html.AntiForgeryToken()
+
+    @if (autoCreated > 0)
+    {
+        <div class="alert alert-success">
+            ✓ @autoCreated payout record(s) generated automatically — the plan's commission amount has been applied.
+        </div>
+    }
+    @if (waitingCount > 0)
+    {
+        <div class="alert alert-warning">
+            ⚠ @waitingCount assigned project(s) are waiting for a payout — their plan has no commission amount set yet
+            (or they are not linked to any plan). Set that plan's commission below.
+        </div>
+    }
 
     <div class="mb-3" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div>
@@ -46,65 +64,116 @@
             <a class="btn @(filter == "pending" ? "btn-warning" : "btn-outline-warning")" asp-route-filter="pending">Pending</a>
             <a class="btn @(filter == "paid" ? "btn-success" : "btn-outline-success")" asp-route-filter="paid">Paid</a>
         </div>
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createCommissionModal">
-            ➕ Generate Commission
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#planCommissionModal">
+            ➕ Set Plan Commission
         </button>
     </div>
 
-    <!-- Generate-commission modal -->
-    <div class="modal fade" id="createCommissionModal" tabindex="-1">
+    @* ── Plan-wise commission amounts ──────────────────────────────────── *@
+    <div class="card mb-3">
+        <div class="ct" style="display:flex;align-items:center;gap:8px">
+            <span class="ct-dot"></span>
+            <span>Solar Project Commission (@ratedCount of @plans.Count set)</span>
+            @* Collapsed by default — the rate table is a master list the admin
+               only opens when changing an amount, and leaving it expanded made
+               the page very long. Last state is remembered per browser. *@
+            <button type="button" id="btnTogglePlans" class="btn btn-sm btn-outline-primary"
+                    style="margin-left:auto">&#9656; Show</button>
+        </div>
+        <div id="plansWrap" class="tbl-wrap" style="display:none">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Solar Project</th>
+                        <th>Capacity</th>
+                        <th>Connection</th>
+                        <th style="text-align:right">Project Amount</th>
+                        <th style="text-align:right">Commission ₹ / project</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in plans)
+                    {
+                        var hasAmt = planAmounts.TryGetValue(p.Id, out var amt);
+                        <tr>
+                            <td class="td-b">@p.Name</td>
+                            <td>@p.SolarTypeKV.ToString("0.##") kV</td>
+                            <td>@p.ConnectionType</td>
+                            <td style="text-align:right">₹@p.ProjectAmount.ToString("N0")</td>
+                            <td style="text-align:right">
+                                @if (hasAmt)
+                                {
+                                    <span class="badge bg-success" style="font-size:12.5px">₹@amt.ToString("N0")</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Not set</span>
+                                }
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-edit-rate"
+                                        data-id="@p.Id" data-amt="@(hasAmt ? amt.ToString("0.##") : "")">
+                                    @(hasAmt ? "Edit" : "Set")
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Set-plan-commission modal -->
+    <div class="modal fade" id="planCommissionModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form id="createCommissionForm">
+                <form id="planCommissionForm">
                     @Html.AntiForgeryToken()
                     <div class="modal-header">
-                        <h5 class="modal-title">Generate Commission</h5>
+                        <h5 class="modal-title">Set Commission for a Solar Project</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        @if (!uncommissioned.Any())
-                        {
-                            <div class="alert alert-info">
-                                No completed projects without commission records.
-                                Projects must be in <strong>Completed</strong> stage to generate a commission.
-                            </div>
-                        }
                         <div class="mb-3">
-                            <label class="form-label">Completed Project <span class="text-danger">*</span></label>
-                            <select class="form-select" name="solarRequestId" required>
-                                <option value="">-- pick a project --</option>
-                                @foreach (var r in uncommissioned)
+                            <label class="form-label">Solar Project <span class="text-danger">*</span></label>
+                            <select class="form-select" name="solarProjectId" id="planSelect" required>
+                                <option value="">-- pick a solar project --</option>
+                                @foreach (var p in plans)
                                 {
-                                    <option value="@r.Id" data-amount="@r.PlanAmount">
-                                        @r.RequestNumber — @r.ApplicantName (₹@r.PlanAmount.ToString("N0"))
+                                    var hasAmt = planAmounts.TryGetValue(p.Id, out var amt);
+                                    <option value="@p.Id" data-project="@p.ProjectAmount"
+                                            data-amt="@(hasAmt ? amt.ToString("0.##") : "")">
+                                        @p.Name — @p.SolarTypeKV.ToString("0.##") kV (₹@p.ProjectAmount.ToString("N0"))@(hasAmt ? $" · currently ₹{amt:N0}" : "")
                                     </option>
                                 }
                             </select>
+                            <small class="form-text text-muted">
+                                Solar Projects master ke saare active plans. Jo chunoge, commission usi plan par set hoga.
+                            </small>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">INC Worker</label>
-                            <select class="form-select" name="workerId">
-                                <option value="">-- unassigned (assign later) --</option>
-                                @foreach (var w in incWorkers)
-                                {
-                                    <option value="@w.Id">@w.Name (@(w.MobileNumber))</option>
-                                }
-                            </select>
-                            <small class="form-text text-muted">Only INC-type workers earn commission.</small>
+                            <label class="form-label">Commission ₹ (per project) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="amount" id="planAmt"
+                                   min="1" step="1" placeholder="e.g. 2000" required />
+                            <small class="form-text text-muted">
+                                Plain rupees — for example 2000, 100 or 30. This full amount is paid to every INC
+                                worker on every project under this plan. It is not calculated from the project value.
+                            </small>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Commission %</label>
-                            <input type="number" class="form-control" name="percentage"
-                                   value="0" placeholder="0" min="0" max="100" step="0.01" required />
+                            <label class="form-label">Summary</label>
+                            <div class="form-control-plaintext" id="planPreview"
+                                 style="font-weight:700;color:var(--green)">—</div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Notes</label>
-                            <textarea class="form-control" name="notes" rows="2"></textarea>
+                        <div class="alert alert-info" style="font-size:12.5px">
+                            On save, payout records are generated automatically for every project on this plan
+                            that already has an INC worker assigned. Existing records are left unchanged.
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">Generate</button>
+                        <button type="submit" class="btn btn-success">Save Commission</button>
                     </div>
                 </form>
             </div>
@@ -114,15 +183,16 @@
     @if (Model.Any())
     {
         @* Report filter — Member ID / City / State / Request date. *@
-        
+
         ViewData["FilterTableId"] = "commissionTable";
         ViewData["FilterPlaceholder"] = "Search by Member ID, member name, request #, INC worker...";
         ViewData["FilterDateLabel"] = "Request Date";
+        ViewData["FilterPageSize"] = 10;   // payouts grow unbounded — page them
 
         <partial name="_ReportFilterToolbar" />
 
         <div class="card">
-            <div class="ct"><span class="ct-dot"></span>Commission Records (@Model.Count())</div>
+            <div class="ct"><span class="ct-dot"></span>Commission Payouts (@Model.Count())</div>
             <div class="tbl-wrap">
                 <table id="commissionTable" class="table table-hover">
                     <thead>
@@ -134,7 +204,6 @@
                             <th>Plan</th>
                             <th>INC Worker</th>
                             <th style="text-align:right">Project Amount</th>
-                            <th>%</th>
                             <th style="text-align:right">Commission</th>
                             <th>Status</th>
                             <th>Request Date</th>
@@ -151,12 +220,20 @@
                             // Date filter runs on the request date; commissions whose request
                             // isn't loaded fall back to the commission's own creation date.
                             var rowDate = (req?.CreatedAt ?? c.CreatedAt).ToLocalTime().ToString("yyyy-MM-dd");
+                            // Payout is gated on the project actually being finished.
+                            var canPay = req == null || req.CurrentStage == ProjectStatus.Completed;
                             <tr data-search="@($"{c.UserId} {memberName} {req?.MobileNumber} {req?.City} {req?.State} {req?.RequestNumber} {c.Worker?.Name}".ToLower())"
                                 data-mid="@c.UserId"
                                 data-city="@req?.City"
                                 data-state="@req?.State"
                                 data-date="@rowDate">
-                                <td><strong>@(req?.RequestNumber ?? ("#" + c.SolarRequestId))</strong></td>
+                                <td>
+                                    <strong>@(req?.RequestNumber ?? ("#" + c.SolarRequestId))</strong>
+                                    @if (req != null)
+                                    {
+                                        <div class="cell-sub">@req.CurrentStage</div>
+                                    }
+                                </td>
                                 <td><span class="mid-code">@c.UserId</span></td>
                                 <td>
                                     @(string.IsNullOrWhiteSpace(memberName) ? "—" : memberName)
@@ -193,7 +270,6 @@
                                     }
                                 </td>
                                 <td style="text-align:right">₹@c.ProjectAmount.ToString("N0")</td>
-                                <td>@c.CommissionPercentage.ToString("0.##")%</td>
                                 <td style="text-align:right;color:var(--sun);font-weight:600">₹@c.CommissionAmount.ToString("N0")</td>
                                 <td>
                                     @if (c.IsPaid)
@@ -208,7 +284,11 @@
                                 <td>@(req != null ? req.CreatedAt.ToLocalTime().ToString("dd MMM yyyy") : "—")</td>
                                 <td>@(c.PaidAt?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</td>
                                 <td>
-                                    @if (!c.IsPaid)
+                                    @if (c.IsPaid)
+                                    {
+                                        <small class="text-muted">Ref: @(c.PaymentReference ?? "—")</small>
+                                    }
+                                    else if (canPay)
                                     {
                                         <button class="btn btn-sm btn-success btn-mark-paid" data-id="@c.Id">
                                             Mark Paid
@@ -216,7 +296,10 @@
                                     }
                                     else
                                     {
-                                        <small class="text-muted">Ref: @(c.PaymentReference ?? "—")</small>
+                                        <button class="btn btn-sm btn-outline-secondary" disabled
+                                                title="Payout unlocks when the project reaches Completed">
+                                            🔒 Till Completed
+                                        </button>
                                     }
                                 </td>
                             </tr>
@@ -229,11 +312,11 @@
     else
     {
         <div class="card">
-            <div class="ct"><span class="ct-dot"></span>No Commissions</div>
+            <div class="ct"><span class="ct-dot"></span>No Commission Payouts</div>
             <div style="text-align:center;padding:40px;color:var(--text3)">
                 <div style="font-size:48px;margin-bottom:16px">📈</div>
-                <div style="font-size:18px;margin-bottom:8px">No commissions to display</div>
-                <div>Generate a commission from a completed project using the button above.</div>
+                <div style="font-size:18px;margin-bottom:8px">No payout records yet</div>
+                <div>Set a commission amount on any solar project above — records are generated automatically for projects that already have an INC worker assigned.</div>
             </div>
         </div>
     }
@@ -273,51 +356,172 @@
 <script>
 const token = $('input[name="__RequestVerificationToken"]').first().val();
 
+// ── Plan table show/hide ───────────────────────────────────────────────
+// Kept collapsed by default so the page stays short; the choice sticks per
+// browser so an admin who works in the rate table isn't re-opening it.
+(function () {
+    var KEY = 'incPlansOpen';
+    var $wrap = document.getElementById('plansWrap');
+    var $btn  = document.getElementById('btnTogglePlans');
+    if (!$wrap || !$btn) return;
+
+    function paint(open) {
+        $wrap.style.display = open ? '' : 'none';
+        $btn.innerHTML = open ? '▾ Hide' : '▸ Show';
+    }
+    var open = false;
+    try { open = localStorage.getItem(KEY) === '1'; } catch (e) { /* private mode */ }
+    paint(open);
+
+    $btn.addEventListener('click', function () {
+        open = !open;
+        paint(open);
+        try { localStorage.setItem(KEY, open ? '1' : '0'); } catch (e) { /* ignore */ }
+    });
+})();
+
+// Toasts, never alert().
+//
+// _Toasts.cshtml (included from _Layout) wires a global $(document).ajaxSuccess
+// handler that turns any { success, message } JSON response into a SweetAlert2
+// toast, and ajaxError into an error toast. So AJAX callbacks here must NOT
+// raise their own message — that would show it twice. `notify` exists only for
+// client-side validation, which never touches the server.
+function notify(kind, msg) {
+    if (window.SolarToast && typeof window.SolarToast[kind] === 'function') {
+        window.SolarToast[kind](msg);
+    } else {
+        // SweetAlert2 is CDN-loaded; fall back so a blocked CDN doesn't
+        // swallow validation feedback entirely.
+        alert(msg);
+    }
+}
+
 function postJson(url, data, cb) {
     $.post(url, $.extend({ __RequestVerificationToken: token }, data), cb)
      .fail(() => cb({ success: false, message: 'Network error.' }));
 }
 
-// Generate
-$('#createCommissionForm').on('submit', function (e) {
+// ── Plan commission (flat ₹ per project) ───────────────────────────────
+function refreshPlanPreview() {
+    const $opt = $('#planSelect').find('option:selected');
+    const project = parseFloat($opt.data('project') || 0);
+    const amt = parseFloat($('#planAmt').val() || 0);
+    if (project > 0 && amt > 0) {
+        $('#planPreview').text(
+            'Project ₹' + project.toLocaleString('en-IN') +
+            ' → commission ₹' + amt.toLocaleString('en-IN') + ' per project');
+    } else if (amt > 0) {
+        $('#planPreview').text('₹' + amt.toLocaleString('en-IN') + ' per project');
+    } else {
+        $('#planPreview').text('—');
+    }
+}
+
+// Picking a plan pre-fills whatever amount it already has, so editing is a
+// tweak rather than a re-entry.
+$('#planSelect').on('change', function () {
+    const existing = $(this).find('option:selected').data('amt');
+    $('#planAmt').val(existing !== undefined && existing !== '' ? existing : '');
+    refreshPlanPreview();
+});
+$('#planAmt').on('input', refreshPlanPreview);
+
+// Row-level Set/Edit opens the same modal with that plan preselected.
+$(document).on('click', '.btn-edit-rate', function () {
+    $('#planSelect').val(String($(this).data('id')));
+    const amt = $(this).data('amt');
+    $('#planAmt').val(amt !== undefined && amt !== '' ? amt : '');
+    refreshPlanPreview();
+    new bootstrap.Modal(document.getElementById('planCommissionModal')).show();
+});
+
+// Single-flight guard. A double-click (or Enter pressed twice) used to fire two
+// POSTs; the second could race the first and write a duplicate row. The flag is
+// checked BEFORE anything async starts and is only cleared on failure — on
+// success the page reloads, so it stays locked.
+var planSaveInFlight = false;
+
+$('#planCommissionForm').on('submit', function (e) {
     e.preventDefault();
-    // Multi-click guard: disable Generate on first click so rapid double/triple
-    // clicks can't create duplicate commission records.
-    var $btn = $(this).find('button[type="submit"]');
-    if ($btn.prop('disabled')) return;
-    $btn.prop('disabled', true).data('label', $btn.text()).text('Generating…');
-    const fd = $(this).serializeArray().reduce((a, x) => (a[x.name] = x.value, a), {});
-    postJson('@Url.Action("Create")', fd, function (r) {
-        alert(r.message);
-        if (r.success) { location.reload(); }
-        else { $btn.prop('disabled', false).text($btn.data('label') || 'Generate'); }
+    if (planSaveInFlight) return;
+
+    var $form = $(this);
+    var $btn  = $form.find('button[type="submit"]');
+
+    var planId = $('#planSelect').val();
+    if (!planId) { notify('error', 'Please select a solar project first.'); return; }
+
+    var amt = parseFloat($('#planAmt').val());
+    if (!(amt > 0)) { notify('error', 'Commission amount must be greater than 0.'); return; }
+
+    var project = parseFloat($('#planSelect').find('option:selected').data('project') || 0);
+    if (project > 0 && amt > project) {
+        notify('error', 'Commission cannot exceed the project value (₹' + project.toLocaleString('en-IN') + ').');
+        return;
+    }
+
+    planSaveInFlight = true;
+    $btn.prop('disabled', true).data('label', $btn.text()).text('Saving…');
+    $form.find('input, select').prop('disabled', true);
+
+    postJson('@Url.Action("SavePlanCommission")', { solarProjectId: planId, amount: amt }, function (r) {
+        // r.message is already toasted by the global ajaxSuccess/ajaxError handler.
+        if (r.success) {
+            location.reload();
+        } else {
+            planSaveInFlight = false;
+            $form.find('input, select').prop('disabled', false);
+            $btn.prop('disabled', false).text($btn.data('label') || 'Save Commission');
+        }
     });
 });
 
-// Mark paid
+// ── Payouts ────────────────────────────────────────────────────────────
 $('.btn-mark-paid').on('click', function () {
-    const id = $(this).data('id');
+    var $btn = $(this);
+    if ($btn.prop('disabled')) return;
+
+    const id = $btn.data('id');
     const ref = prompt('Payment reference / UTR? (optional)') ?? '';
     if (!confirm('Mark this commission as paid? This cannot be undone.')) return;
-    $(this).prop('disabled', true).text('Saving...');
+
+    $btn.prop('disabled', true).text('Saving...');
     postJson('@Url.Action("MarkPaid")', { id: id, reference: ref }, function (r) {
-        alert(r.message);
-        location.reload();
+        if (r.success) { location.reload(); }
+        else { $btn.prop('disabled', false).text('Mark Paid'); }
     });
 });
 
-// Assign worker (re-assign)
 $(document).on('click', '.btn-assign', function () {
     $('#assignCommissionId').val($(this).data('id'));
     new bootstrap.Modal(document.getElementById('assignWorkerModal')).show();
 });
 
+var assignInFlight = false;
+
 $('#assignWorkerForm').on('submit', function (e) {
     e.preventDefault();
-    const fd = $(this).serializeArray().reduce((a, x) => (a[x.name] = x.value, a), {});
+    if (assignInFlight) return;
+
+    var $form = $(this);
+    var $btn  = $form.find('button[type="submit"]');
+    if (!$form.find('select[name="workerId"]').val()) {
+        notify('error', 'Please select an INC worker first.');
+        return;
+    }
+
+    assignInFlight = true;
+    $btn.prop('disabled', true).data('label', $btn.text()).text('Assigning…');
+
+    const fd = $form.serializeArray().reduce((a, x) => (a[x.name] = x.value, a), {});
     postJson('@Url.Action("AssignWorker")', fd, function (r) {
-        alert(r.message);
-        if (r.success) location.reload();
+        if (r.success) {
+            location.reload();
+        } else {
+            assignInFlight = false;
+            $btn.prop('disabled', false).text($btn.data('label') || 'Assign');
+        }
     });
 });
 </script>

@@ -51,11 +51,21 @@ public class PMSuryaController : Controller
         var f = (filter ?? "all").ToLowerInvariant();
         IEnumerable<SolarRequest> requests;
 
+        // Requests still sitting at PMSurvey are only worth showing once the user
+        // has actually uploaded something. Admin-uploaded PMApprovalDocument rows
+        // don't count — woh approval ke time bante hain, user ke docs nahi hote.
+        var requestIdsWithUserDocs = (await _uow.PMDocuments.GetAllAsync())
+            .Where(d => d.DocumentType != DocumentType.PMApprovalDocument)
+            .Select(d => d.SolarRequestId)
+            .ToHashSet();
+
         if (f == "all")
         {
             // Show every request that has at least reached PM Surya stage,
-            // including those that have already advanced past it.
-            requests = await _uow.SolarRequests.FindAsync(x =>
+            // including those that have already advanced past it. Stage-PMSurvey
+            // rows without any uploaded document are skipped — unka verify karne
+            // ke liye kuch hai hi nahi.
+            var all = await _uow.SolarRequests.FindAsync(x =>
                 x.CurrentStage == ProjectStatus.PMSurvey ||
                 x.CurrentStage == ProjectStatus.MeterDispatch ||
                 x.CurrentStage == ProjectStatus.SiteSurvey ||
@@ -63,6 +73,9 @@ public class PMSuryaController : Controller
                 x.CurrentStage == ProjectStatus.Installation ||
                 x.CurrentStage == ProjectStatus.DCRUpdate ||
                 x.CurrentStage == ProjectStatus.Completed);
+
+            requests = all.Where(r => r.CurrentStage != ProjectStatus.PMSurvey ||
+                                      requestIdsWithUserDocs.Contains(r.Id));
         }
         else if (f == "approved")
         {
@@ -93,9 +106,7 @@ public class PMSuryaController : Controller
             // the admin to verify yet — and showing empty requests in the queue
             // creates noise.
             var atStage = await _uow.SolarRequests.FindAsync(x => x.CurrentStage == ProjectStatus.PMSurvey);
-            var docs    = await _uow.PMDocuments.GetAllAsync();
-            var withDocs = docs.Select(d => d.SolarRequestId).ToHashSet();
-            requests = atStage.Where(r => withDocs.Contains(r.Id));
+            requests = atStage.Where(r => requestIdsWithUserDocs.Contains(r.Id));
         }
 
         ViewBag.Title = "PM Surya Ghar Verification";
@@ -224,6 +235,22 @@ public class PMSuryaController : Controller
             {
                 success = false,
                 message = "PM Surya Ghar ID No. is required. Enter the ID before final approval."
+            });
+        }
+
+        // ── Approval document bhi mandatory hai (spec: "PM Surya Ghar ID aur
+        //    document upload nahi karta tab tak next stage me nahi ja sakta").
+        //    Satisfy hota hai ya to abhi attach ki gayi file se, ya request par
+        //    pehle se maujood PMApprovalDocument se. ─────────────────────────
+        var hasNewApprovalDoc = approvalDocs != null &&
+                                approvalDocs.Any(f => f != null && f.Length > 0);
+        var hasExistingApprovalDoc = docs.Any(d => d.DocumentType == DocumentType.PMApprovalDocument);
+        if (!hasNewApprovalDoc && !hasExistingApprovalDoc)
+        {
+            return Json(new
+            {
+                success = false,
+                message = "PM Surya Ghar approval document is required. Attach at least one document before final approval."
             });
         }
 

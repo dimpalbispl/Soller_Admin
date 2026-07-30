@@ -86,18 +86,19 @@
         </div>
         <div class="col-lg-4">
             @{
-                // Per spec: agar saare documents approve ho gaye aur project
-                // stage PMSurvey ke aage badh chuka hai, to "Approve All" button
-                // nahi dikhna chahiye — sirf "Already Approved" status dikhe.
+                // Per spec: "Approve All" card sirf tab hide hona chahiye jab request
+                // actually PMSurvey se AAGE badh chuki ho.
                 //
-                // Two conditions for "already advanced":
-                //   (a) Stage is past PMSurvey (MeterDispatch, SiteSurvey, etc.) — workflow moved on
-                //   (b) All uploaded docs are approved AND there's at least one doc — batch done
+                // Pehle yeh flag tab bhi true ho jaata tha jab saare uploaded documents
+                // Approved the. Matlab admin documents ek-ek karke approve karta tha, aur
+                // aakhri doc approve hote hi yeh card gayab — PM Surya Ghar ID ka field
+                // aur approval-document upload dono chhup jaate the, jabki request abhi
+                // bhi PMSurvey par hi khadi thi aur ID kabhi save hui hi nahi thi.
                 //
-                // If only some docs are approved (mixed pending), keep the
-                // Approve & Advance card visible so admin can finish the batch.
+                // Document status batch-complete ka signal nahi hai; stage advance hi
+                // asli signal hai.
                 var stage = req.CurrentStage;
-                var advancedPastPMSurvey =
+                var alreadyApproved =
                     stage == SolarPortal.Domain.Enums.ProjectStatus.MeterDispatch ||
                     stage == SolarPortal.Domain.Enums.ProjectStatus.SiteSurvey ||
                     stage == SolarPortal.Domain.Enums.ProjectStatus.MaterialDispatch ||
@@ -105,10 +106,10 @@
                     stage == SolarPortal.Domain.Enums.ProjectStatus.DCRUpdate ||
                     stage == SolarPortal.Domain.Enums.ProjectStatus.Completed;
 
-                var allDocsApproved = docs.Any() &&
-                    docs.All(d => d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Approved);
-
-                var alreadyApproved = advancedPastPMSurvey || allDocsApproved;
+                // Progress hints shown inside the Approve & Advance card.
+                var pendingDocCount  = docs.Count(d => d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Pending);
+                var rejectedDocCount = docs.Count(d => d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Rejected);
+                var hasApprovalDoc   = docs.Any(d => d.DocumentType == SolarPortal.Domain.Enums.DocumentType.PMApprovalDocument);
             }
 
             @if (alreadyApproved)
@@ -117,16 +118,13 @@
                     <div class="card-header bg-success text-white">✓ Already Approved</div>
                     <div class="card-body">
                         <p class="mb-2">
-                            All PM Surya Ghar documents are <strong>approved</strong>.
-                            @if (advancedPastPMSurvey)
-                            {
-                                <span>Project has advanced to <strong>@stage.ToString().Replace("_", " ")</strong>.</span>
-                            }
-                            else
-                            {
-                                <span>You can now move it to <strong>Meter Dispatch</strong> from the workflow.</span>
-                            }
+                            PM Surya Ghar verification is <strong>complete</strong>.
+                            Project has advanced to <strong>@stage.ToString().Replace("_", " ")</strong>.
                         </p>
+                        @if (!string.IsNullOrWhiteSpace(req.PmSuryaApplicationNo))
+                        {
+                            <p class="mb-2"><strong>PM Surya Ghar ID:</strong> <code>@req.PmSuryaApplicationNo</code></p>
+                        }
                         <p class="text-muted small mb-2">
                             Approval is locked, but you can still manage the approval document(s) below.
                         </p>
@@ -139,11 +137,43 @@
                 <div class="card">
                     <div class="card-header bg-success text-white">Approve &amp; Advance</div>
                     <div class="card-body">
-                        <p>Verify all documents, then enter the PM Surya Ghar ID and (optionally) attach the approval document(s) the user can download. Approval opens <strong>Meter Dispatch</strong> &amp; <strong>Site Survey</strong> together. The user's mobile and email are shown at the top for quick contact.</p>
-                        <label class="form-label mb-1">PM Surya Ghar ID No.</label>
+                        <p>
+                            Verify all documents, then enter the PM Surya Ghar ID <strong>and</strong> attach the
+                            approval document(s) the user can download. <strong>Both are required</strong> — the
+                            project cannot move to the next stage without them. Approval opens
+                            <strong>Meter Dispatch</strong> &amp; <strong>Site Survey</strong> together.
+                            The user's mobile and email are shown at the top for quick contact.
+                        </p>
+
+                        @* Document-status hint. Approving docs one-by-one no longer hides this
+                           card, so the admin needs to see at a glance where the batch stands. *@
+                        @if (rejectedDocCount > 0)
+                        {
+                            <div class="alert alert-warning py-2 small mb-2">
+                                @rejectedDocCount document(s) rejected — the user must re-upload before final approval.
+                            </div>
+                        }
+                        else if (pendingDocCount > 0)
+                        {
+                            <div class="alert alert-info py-2 small mb-2">
+                                @pendingDocCount document(s) still pending review.
+                            </div>
+                        }
+                        else if (docs.Any())
+                        {
+                            <div class="alert alert-success py-2 small mb-2">
+                                ✓ All documents approved. Enter the PM Surya Ghar ID and attach the approval document to finish.
+                            </div>
+                        }
+
+                        <label class="form-label mb-1">PM Surya Ghar ID No. <span class="text-danger">*</span></label>
                         <input id="pmAppNo" class="form-control mb-2" placeholder="e.g., RJ-PMSG-2026-000123" value="@(req.PmSuryaApplicationNo ?? "")" />
-                        <label class="form-label mb-1">Approval Document(s) — user downloadable</label>
-                        <input id="approvalDocs" type="file" class="form-control mb-2" multiple accept=".pdf,.png,.jpg,.jpeg" />
+                        <label class="form-label mb-1">Approval Document(s) — user downloadable <span class="text-danger">*</span></label>
+                        <input id="approvalDocs" type="file" class="form-control mb-1" multiple accept=".pdf,.png,.jpg,.jpeg" />
+                        @if (hasApprovalDoc)
+                        {
+                            <p class="text-muted small mb-2">An approval document is already attached — leave this empty to keep it.</p>
+                        }
                         <textarea id="advanceNotes" class="form-control mb-2" placeholder="Optional notes"></textarea>
                         <button id="btnAdvance" class="btn btn-success w-100">Approve All &amp; Open Meter Dispatch + Site Survey</button>
                     </div>
@@ -255,15 +285,31 @@ $('#btnReUpload').on('click', function () {
 });
 
 $('#btnAdvance').on('click', function () {
+    // Front-end mirror of the server-side gate in ApproveAndAdvance — fail fast
+    // with a pointer at the offending field instead of a round-trip toast.
+    var pmId = ($('#pmAppNo').val() || '').trim();
+    if (!pmId) {
+        alert('PM Surya Ghar ID No. is required before approval.');
+        $('#pmAppNo').focus();
+        return;
+    }
+
+    var files = document.getElementById('approvalDocs').files;
+    var hasExistingApprovalDoc = @(docs.Any(d => d.DocumentType == SolarPortal.Domain.Enums.DocumentType.PMApprovalDocument) ? "true" : "false");
+    if ((!files || files.length === 0) && !hasExistingApprovalDoc) {
+        alert('Attach at least one PM Surya Ghar approval document before approval.');
+        document.getElementById('approvalDocs').focus();
+        return;
+    }
+
     if (!confirm('Approve all PM Surya Ghar docs and open Meter Dispatch + Site Survey?')) return;
     $(this).prop('disabled', true).text('Approving…');
 
     var fd = new FormData();
     fd.append('requestId', @req.Id);
     fd.append('notes', $('#advanceNotes').val());
-    fd.append('pmSuryaApplicationNo', $('#pmAppNo').val());
+    fd.append('pmSuryaApplicationNo', pmId);
     fd.append('__RequestVerificationToken', token);
-    var files = document.getElementById('approvalDocs').files;
     for (var i = 0; i < files.length; i++) { fd.append('approvalDocs', files[i]); }
 
     $.ajax({

@@ -50,6 +50,50 @@ public class SolarRequest : BaseEntity
     // this case. Only ONE of the two should be populated per request.
     public int? ExternalProductId { get; set; }
 
+
+    // ─── Mode history (which mode was taken, and when) ───────────────────
+    // "Activate Now" upgrades a Without-Activation request by OVERWRITING
+    // RequestType on this same row. Without the stamps below, nothing left in
+    // the schema shows the member ever started without activation, so the
+    // admin Activation History report cannot tell "started without activation,
+    // activated later" from "always with activation".
+    //
+    // Each date is stamped ONCE, the first time that mode is entered, so an
+    // upgrade adds WithActivationOn without disturbing WithoutActivationOn.
+    // Columns added by ADD-SolarRequestModeHistory.sql.
+    public RequestType? OriginalRequestType { get; set; }
+    public DateTime? WithoutActivationOn { get; set; }
+    public DateTime? WithActivationOn { get; set; }
+    public DateTime? AlreadyActiveOn { get; set; }
+
+    /// <summary>
+    /// Moves the request into <paramref name="type"/> and records when that
+    /// happened, keeping every earlier mode's date intact. Call this instead of
+    /// assigning RequestType directly.
+    /// </summary>
+    public void StampMode(RequestType type, DateTime whenUtc)
+    {
+        RequestType = type;
+        OriginalRequestType ??= type;
+        switch (type)
+        {
+            case RequestType.OnlySolarWithoutActivation:
+                WithoutActivationOn ??= whenUtc;
+                break;
+            case RequestType.WithActivation:
+                WithActivationOn ??= whenUtc;
+                break;
+            case RequestType.AlreadyActiveOnlyRequest:
+                AlreadyActiveOn ??= whenUtc;
+                break;
+        }
+    }
+
+    /// <summary>True when this started as Without Activation and was upgraded later.</summary>
+    public bool WasUpgradedToActivation =>
+        OriginalRequestType == RequestType.OnlySolarWithoutActivation &&
+        WithActivationOn.HasValue;
+
     // Status
     public ProjectStatus CurrentStage { get; set; } = ProjectStatus.Registration;
     public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Pending;

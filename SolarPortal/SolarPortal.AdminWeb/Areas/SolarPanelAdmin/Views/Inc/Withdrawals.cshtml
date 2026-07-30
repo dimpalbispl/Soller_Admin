@@ -12,6 +12,7 @@
         "Rejected" => "sts-rej",
         _          => "sts-pend"
     };
+    string Dash(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v;
     bool hasFilter = !string.IsNullOrEmpty(curStatus);
 }
 
@@ -79,7 +80,11 @@
                             <th>Req #</th>
                             <th>Installer</th>
                             <th style="text-align:right">Amount</th>
-                            <th>Bank / UPI</th>
+                            <th>Bank Name</th>
+                            <th>A/c No</th>
+                            <th>IFSC Code</th>
+                            <th>Branch</th>
+                            <th>UPI / Note</th>
                             <th>Requested</th>
                             <th>Status</th>
                             <th>Action</th>
@@ -89,21 +94,16 @@
                     @foreach (var w in Model)
                     {
                         var installerName = workers.TryGetValue(w.WorkerId, out var wn) ? wn : ("#" + w.WorkerId);
-                        <tr data-search="@($"{w.RequestNumber} {installerName} {w.BankDetails} {w.Status}".ToLower())"
+                        <tr data-search="@($"{w.RequestNumber} {installerName} {w.BankName} {w.AccountNo} {w.IFSCode} {w.BranchName} {w.BankDetails} {w.Status}".ToLower())"
                             data-date="@w.RequestedAt.ToLocalTime().ToString("yyyy-MM-dd")">
                             <td class="td-b">@(w.RequestNumber ?? ("#" + w.Id))</td>
                             <td>@installerName</td>
                             <td style="text-align:right;font-weight:600">₹@w.Amount.ToString("N2")</td>
-                            <td>
-                                @if (string.IsNullOrWhiteSpace(w.BankDetails))
-                                {
-                                    <span style="color:var(--text3)">—</span>
-                                }
-                                else
-                                {
-                                    <span class="hint" style="margin-top:0">@w.BankDetails</span>
-                                }
-                            </td>
+                            <td style="font-size:12.5px">@Dash(w.BankName)</td>
+                            <td style="font-size:12.5px"><code>@Dash(w.AccountNo)</code></td>
+                            <td style="font-size:12.5px"><code>@Dash(w.IFSCode)</code></td>
+                            <td style="font-size:12.5px">@Dash(w.BranchName)</td>
+                            <td style="font-size:12px;max-width:220px">@Dash(w.BankDetails)</td>
                             <td>@w.RequestedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
                             <td>
                                 <span class="sts @Pill(w.Status)">@w.Status</span>
@@ -111,15 +111,15 @@
                                 {
                                     <div class="hint" style="color:var(--red)">@w.RejectionReason</div>
                                 }
+                                @if (w.Status == "Approved" && !string.IsNullOrWhiteSpace(w.AdminNotes))
+                                {
+                                    <div class="hint">@w.AdminNotes</div>
+                                }
                             </td>
                             <td style="white-space:nowrap">
                                 @if (w.Status == "Pending")
                                 {
-                                    <form asp-action="ApproveWithdrawal" method="post" style="display:inline;margin:0">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@w.Id" />
-                                        <button class="btn btn-g btn-sm">✓ Approve</button>
-                                    </form>
+                                    <button class="btn btn-g btn-sm" onclick="apvWd(@w.Id)">&#10003; Approve</button>
                                     <button class="btn btn-d btn-sm" style="margin-left:6px"
                                             onclick="rejWd(@w.Id)">✕ Reject</button>
                                 }
@@ -151,6 +151,29 @@
         if (t) { f.appendChild(t.cloneNode(true)); }
         document.body.appendChild(f);
         f.submit();
+    }
+
+    // Approve also captures a remark, same as reject — the installer sees it
+    // on their Withdraw page, so an approval is never a bare status flip.
+    function apvWd(id) {
+        Swal.fire({
+            title: 'Approve Withdrawal?',
+            input: 'text',
+            inputLabel: 'Approval remark',
+            inputPlaceholder: 'UTR / payment mode / any note for the installer',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Approve',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#059669',
+            inputValidator: function (v) {
+                if (!v || !v.trim()) { return 'Please enter a remark'; }
+            }
+        }).then(function (r) {
+            if (r.isConfirmed) {
+                postForm('@Url.Action("ApproveWithdrawal")', { id: id, remark: r.value });
+            }
+        });
     }
 
     function rejWd(id) {

@@ -18,5 +18,17 @@ public class SolarProject : BaseEntity
     public decimal ProjectAmount { get; set; }             // amount shown to user as "Project Amount" (e.g., 1 kW = ₹10,000)
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// Flat INC commission in rupees earned on EVERY project taken on this plan
+    /// (admin spec: "commission rupee me set hoga % me nahi — har project par
+    /// 2000 ya 100 ya 30"). Not a rate: ProjectAmount does not scale it.
+    /// NULL = commission not configured yet, so no payout is generated.
+    ///
+    /// Column added to the live DB by hand (ALTER TABLE), matching how the rest
+    /// of that schema was built — __EFMigrationsHistory is empty there, so the
+    /// migrations in this repo are never applied.
+    /// </summary>
+    public decimal? IncCommissionAmount { get; set; }
+
     public virtual ICollection<SolarRequest> Requests { get; set; } = new List<SolarRequest>();
 }
