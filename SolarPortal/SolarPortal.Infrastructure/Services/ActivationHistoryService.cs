@@ -264,7 +264,7 @@ public class ActivationHistoryService : IActivationHistoryService
                                 When = when.Value,
                                 Kind = ActivationEventKind.Activated,
                                 Title = "ID ACTIVATED",
-                                Detail = "Admin approved the activation order — Sp_ActivateMember_New ran.",
+                                Detail = "Legacy activation order is marked approved (TrnProductorderDetail.IsApprove = 'Y').",
                                 Amount = amount > 0 ? amount : null,
                                 Reference = orderRef,
                                 IsApproximate = !head.ApprovedOn.HasValue

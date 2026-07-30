@@ -63,10 +63,37 @@
                                 </td>
                                 <td>@d.Remarks</td>
                                 <td style="white-space:nowrap">
-                                    @if (d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Pending)
+                                    @* Admin can flip a user document's verdict at ANY time and at any
+                                       project stage. Earlier these buttons only appeared while the doc
+                                       was Pending, so once approved there was no way to send it back —
+                                       and the user had no way to replace a wrong file.
+
+                                       Rejecting does NOT move the project: PMDocumentService only
+                                       changes the document status, and the user panel gates uploads on
+                                       "stage >= PMSurvey", so the user can re-upload from whatever stage
+                                       the project is currently at. Their re-upload arrives as a new
+                                       Pending row which is approved here individually. *@
+                                    @if (!adminUploaded)
                                     {
-                                        <button class="btn btn-sm btn-success btn-approve" data-id="@d.Id">Approve</button>
-                                        <button class="btn btn-sm btn-danger btn-reject"   data-id="@d.Id">Reject</button>
+                                        if (d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Pending)
+                                        {
+                                            <button class="btn btn-sm btn-success btn-approve" data-id="@d.Id">Approve</button>
+                                            <button class="btn btn-sm btn-danger btn-reject" data-id="@d.Id">Reject</button>
+                                        }
+                                        else if (d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Approved)
+                                        {
+                                            @* Approved can still be sent back — admin may spot a problem later. *@
+                                            <button class="btn btn-sm btn-danger btn-reject" data-id="@d.Id">Reject</button>
+                                        }
+                                        else
+                                        {
+                                            @* Rejected: deliberately NO Approve button. The file that was
+                                               rejected is the wrong one, so approving it would undo the
+                                               rejection on the same bad document. The user must re-upload
+                                               from their panel, which arrives as a fresh Pending row that
+                                               gets its own Approve / Reject. *@
+                                            <span class="text-muted" style="font-size:12px">Waiting for user re-upload</span>
+                                        }
                                     }
                                     @if (canDelete)
                                     {

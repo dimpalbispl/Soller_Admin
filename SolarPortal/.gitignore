@@ -1,0 +1,28 @@
+﻿## .NET build output — generated, must never be committed.
+## These folders were tracked earlier, which is why every merge produced
+## conflict markers INSIDE generated files (MSB3541 "Files has invalid value
+## <<<<<<< HEAD") and broke the build until they were deleted by hand.
+[Bb]in/
+[Oo]bj/
+
+## Visual Studio / Rider local state
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Publish / packaging
+[Pp]ublish/
+*.publishsettings
+*.nupkg
+*.snupkg
+
+## Logs & local artifacts
+[Ll]ogs/
+*.log
+
+## Local secrets — never commit connection strings
+appsettings.Development.json
+appsettings.Local.json

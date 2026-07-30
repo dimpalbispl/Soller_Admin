@@ -487,12 +487,31 @@
 }
 <script id="installData" type="application/json">@Html.Raw(installJson)</script>
 
+@* Plan commission state per request, so the Material Dispatch modal can warn
+   when the project's plan has no INC commission configured. *@
+@{
+    var plansById = ViewBag.PlansById as Dictionary<int, SolarPortal.Domain.Entities.SolarProject>;
+    var planCommJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.ToDictionary(
+            r => r.Id.ToString(),
+            r =>
+            {
+                SolarPortal.Domain.Entities.SolarProject? p = null;
+                if (r.SolarProjectId.HasValue && plansById != null)
+                    plansById.TryGetValue(r.SolarProjectId.Value, out p);
+                var amt = p?.IncCommissionAmount ?? 0m;
+                return new { planName = p?.Name ?? r.SelectedPlan ?? "", amount = amt, isSet = amt > 0m };
+            }));
+}
+<script id="planCommData" type="application/json">@Html.Raw(planCommJson)</script>
+
 @section Scripts {
     <script>
         const workerData = JSON.parse(document.getElementById('workerOptions').textContent || '[]');
         const dcrData = JSON.parse(document.getElementById('dcrData').textContent || '{}');
         const dispatchAssign = JSON.parse(document.getElementById('dispatchAssignData').textContent || '{}');
         const installData = JSON.parse(document.getElementById('installData').textContent || '{}');
+        const planComm = JSON.parse(document.getElementById('planCommData')?.textContent || '{}');
         const csrfToken = document.querySelector('#csrfForm input[name="__RequestVerificationToken"]')?.value || '';
         const today = new Date().toISOString().split('T')[0];
 
@@ -573,10 +592,21 @@
         }
 
         function openMaterialForm(requestId, requestNumber) {
+        // Assigning an installer is what enables the commission payout, so a plan
+        // with no commission amount means this project can never pay out. Say so
+        // up front instead of letting it silently go missing later.
+        const pc = planComm[requestId] || {};
+        const commWarning = pc.isSet
+        ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:8px 10px;border-radius:8px;margin-bottom:10px;font-size:12.5px">
+             Commission for <strong>${esc(pc.planName)}</strong>: <strong>₹${Number(pc.amount).toLocaleString('en-IN')}</strong> per project.</div>`
+        : `<div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;padding:8px 10px;border-radius:8px;margin-bottom:10px;font-size:12.5px">
+             <strong>No commission is set for the ${pc.planName ? '&ldquo;' + esc(pc.planName) + '&rdquo;' : 'selected'} plan.</strong>
+             You can still dispatch, but the assigned installer will not receive any commission for this project
+             until an amount is added. Open <strong>INC Commission &rarr; Set Plan Commission</strong> to add it.</div>`;
         Swal.fire({
         title: '📦 Material Dispatch — ' + requestNumber,
         html: `
-        <div style="text-align:left;font-size:13px">
+        <div style="text-align:left;font-size:13px">${commWarning}
         <label>Material Details</label>
         <textarea id="f-mat-detail" class="swal2-textarea" placeholder="Solar panels, inverter, wiring, mounts..."></textarea>
         <label>Dispatch Date *</label>

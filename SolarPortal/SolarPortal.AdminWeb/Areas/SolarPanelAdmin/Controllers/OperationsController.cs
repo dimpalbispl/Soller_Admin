@@ -170,6 +170,19 @@ public class OperationsController : Controller
                 // so the assigned worker was showing blank. Attach it manually.
                 await AttachWorkersAsync(materials.Values.Select(m => (m.AssignedWorkerId, (Action<Worker>)(w => m.AssignedWorker = w))));
                 ViewBag.MaterialDetails = materials;
+
+                // Material Dispatch is where the INC installer gets assigned, and that
+                // assignment is what makes a commission payout possible. If the plan the
+                // project sits on has no commission amount configured, no payout can ever
+                // be generated — surface it while the admin is assigning, rather than
+                // letting it fail silently in the INC Commission report later.
+                // Exposed as a TYPED dictionary so the view can cast it and build the
+                // JSON island itself (same pattern as InstallationDetails).
+                var planIds = rows.Where(r => r.SolarProjectId.HasValue)
+                                  .Select(r => r.SolarProjectId!.Value).Distinct().ToHashSet();
+                ViewBag.PlansById = planIds.Any()
+                    ? (await _uow.SolarProjects.FindAsync(p => planIds.Contains(p.Id))).ToDictionary(p => p.Id)
+                    : new Dictionary<int, SolarProject>();
                 break;
             case "installation":
                 var installs = (await _uow.Installations.FindAsync(i => ids.Contains(i.SolarRequestId)))
