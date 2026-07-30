@@ -168,6 +168,41 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
 
+// Every admin controller lives in the SolarPanelAdmin area, so a typed or
+// bookmarked URL without the area prefix — "/Dashboard/Index" — falls through
+// the default route, finds no root DashboardController, and dies as a 404.
+// Redirect those into the area instead of showing a dead page.
+//
+// The controller list is read from the routing table at startup rather than
+// hardcoded, so a new area controller is covered automatically. Only names that
+// really exist in the area are redirected — every other unknown URL still 404s,
+// so genuine mistakes are not masked.
+var areaControllerNames = new HashSet<string>(
+    app.Services
+       .GetRequiredService<Microsoft.AspNetCore.Mvc.Infrastructure.IActionDescriptorCollectionProvider>()
+       .ActionDescriptors.Items
+       .OfType<Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor>()
+       .Where(d => d.RouteValues.TryGetValue("area", out var a) &&
+                   string.Equals(a, "SolarPanelAdmin", StringComparison.OrdinalIgnoreCase))
+       .Select(d => d.ControllerName),
+    StringComparer.OrdinalIgnoreCase);
+
+app.MapFallback(context =>
+{
+    var segments = context.Request.Path.Value?
+        .Split('/', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+
+    if (segments.Length > 0 && areaControllerNames.Contains(segments[0]))
+    {
+        context.Response.Redirect(
+            "/SolarPanelAdmin/" + string.Join('/', segments) + context.Request.QueryString);
+        return Task.CompletedTask;
+    }
+
+    context.Response.StatusCode = StatusCodes.Status404NotFound;
+    return Task.CompletedTask;
+});
+
 // Seed (shared DB — safe to run from every site, idempotent)
 using (var scope = app.Services.CreateScope())
 {

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SolarPortal.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c0a25447557df9433a9e08f2ced317e33719e9e0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e9a6e2360e34c5d0a3904ccd41b7d706257dfefa")]
 [assembly: System.Reflection.AssemblyProductAttribute("SolarPortal.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SolarPortal.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
