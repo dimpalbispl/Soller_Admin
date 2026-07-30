@@ -140,18 +140,45 @@ public class ActivationHistoryService : IActivationHistoryService
                     PlanAmount = r.PlanAmount,
                     VerifiedPaid = verifiedPaid,
                     CurrentStage = r.CurrentStage,
-                    ApprovalStatus = r.ApprovalStatus
+                    ApprovalStatus = r.ApprovalStatus,
+                    OriginalRequestType = r.OriginalRequestType,
+                    WithoutActivationOn = r.WithoutActivationOn,
+                    WithActivationOn = r.WithActivationOn,
+                    AlreadyActiveOn = r.AlreadyActiveOn
                 });
+
+                // The mode the request was SUBMITTED in - r.RequestType is the
+                // mode it is in NOW, which "Activate Now" may have overwritten.
+                var submittedAs = r.OriginalRequestType ?? r.RequestType;
 
                 dto.Events.Add(new ActivationEventDto
                 {
                     When = r.CreatedAt,
                     Kind = ActivationEventKind.RequestSubmitted,
-                    Title = $"Request submitted — {ModeLabel(r.RequestType)}",
+                    Title = $"Request submitted — {ModeLabel(submittedAs)}",
                     Detail = BuildRequestDetail(r),
                     Amount = r.PlanAmount > 0 ? r.PlanAmount : null,
                     Reference = r.RequestNumber
                 });
+
+                // The upgrade itself. It happens on the SAME row with the same
+                // request number, so without this the timeline jumps from
+                // "Without Activation" to the legacy activation order with
+                // nothing explaining the switch.
+                if (r.OriginalRequestType == RequestType.OnlySolarWithoutActivation
+                    && r.WithActivationOn.HasValue)
+                {
+                    dto.Events.Add(new ActivationEventDto
+                    {
+                        When = r.WithActivationOn.Value,
+                        Kind = ActivationEventKind.ActivationRequested,
+                        Title = "Upgraded to With Activation (Activate Now)",
+                        Detail = $"Without Activation taken on " +
+                                 $"{(r.WithoutActivationOn ?? r.CreatedAt):dd MMM yyyy} — product picked here.",
+                        Amount = r.PlanAmount > 0 ? r.PlanAmount : null,
+                        Reference = r.RequestNumber
+                    });
+                }
 
                 foreach (var p in payments)
                 {
@@ -336,10 +363,34 @@ public class ActivationHistoryService : IActivationHistoryService
         return Pick(r => r.RequestType == RequestType.WithActivation) ?? Pick(_ => true);
     }
 
-    private static DateTime? FirstDateOf(List<SolarRequest> ordered, RequestType type) =>
-        ordered.Where(r => r.RequestType == type)
-               .Select(r => (DateTime?)r.CreatedAt)
-               .FirstOrDefault();
+    /// <summary>
+    /// Earliest date the member entered <paramref name="type"/>, across all their
+    /// requests.
+    ///
+    /// Reads the per-mode stamps (WithoutActivationOn / WithActivationOn /
+    /// AlreadyActiveOn) rather than RequestType. "Activate Now" OVERWRITES
+    /// RequestType on the row it upgrades, so a RequestType scan reports zero
+    /// Without-Activation requests for exactly the members this report exists
+    /// for. CreatedAt is the fallback for rows written before the stamps existed.
+    /// </summary>
+    private static DateTime? FirstDateOf(List<SolarRequest> ordered, RequestType type)
+    {
+        var dates = new List<DateTime>();
+        foreach (var r in ordered)
+        {
+            var stamp = type switch
+            {
+                RequestType.OnlySolarWithoutActivation => r.WithoutActivationOn,
+                RequestType.WithActivation => r.WithActivationOn,
+                RequestType.AlreadyActiveOnlyRequest => r.AlreadyActiveOn,
+                _ => null
+            };
+
+            if (stamp.HasValue) dates.Add(stamp.Value);
+            else if (r.OriginalRequestType == null && r.RequestType == type) dates.Add(r.CreatedAt);
+        }
+        return dates.Count == 0 ? null : dates.Min();
+    }
 
     private static string ModeLabel(RequestType type) => type switch
     {

@@ -212,7 +212,10 @@
                             // Modes this member never used. Showing them explicitly
                             // stops "mera Without Activation kahan gaya?" — the answer
                             // is that no such request exists, not that it was dropped.
-                            var takenModes = m.Requests.Select(r => r.RequestType).ToHashSet();
+                            // ModesTaken, not RequestType: an upgraded row reports only
+                            // "With Activation" today, and listing Without Activation as
+                            // "not taken" would contradict the journey strip right above.
+                            var takenModes = m.Requests.SelectMany(r => r.ModesTaken).ToHashSet();
                             var notTaken = allModes.Where(t => !takenModes.Contains(t)).ToList();
 
                             <tr data-search="@($"{m.MemberIdNo} {m.MemberName} {m.Mobile} {m.City} {m.State}".ToLower())"
@@ -370,6 +373,7 @@
                                                     <th>Stage</th>
                                                     <th>Approval</th>
                                                     <th>Taken On</th>
+                                                    <th>Mode History</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -392,6 +396,28 @@
                                                         <td><span class="sts sts-disp">@r.CurrentStage</span></td>
                                                         <td><span class="sts @ApprovalCls(r.ApprovalStatus)">@r.ApprovalStatus</span></td>
                                                         <td style="white-space:nowrap">@r.CreatedAt.ToString("dd MMM yyyy")</td>
+                                                        <td style="white-space:nowrap">
+                                                            @if (r.WithoutActivationOn.HasValue)
+                                                            {
+                                                                <div>⚡ Without Activation <b>@r.WithoutActivationOn.Value.ToString("dd MMM yyyy")</b></div>
+                                                            }
+                                                            @if (r.WithActivationOn.HasValue)
+                                                            {
+                                                                <div>🔌 With Activation <b>@r.WithActivationOn.Value.ToString("dd MMM yyyy")</b></div>
+                                                            }
+                                                            @if (r.AlreadyActiveOn.HasValue)
+                                                            {
+                                                                <div>✅ Active Now <b>@r.AlreadyActiveOn.Value.ToString("dd MMM yyyy")</b></div>
+                                                            }
+                                                            @if (r.WasUpgradedToActivation)
+                                                            {
+                                                                <div class="cell-sub">Upgraded via Activate Now</div>
+                                                            }
+                                                            @if (!r.WithoutActivationOn.HasValue && !r.WithActivationOn.HasValue && !r.AlreadyActiveOn.HasValue)
+                                                            {
+                                                                <span class="cell-sub">—</span>
+                                                            }
+                                                        </td>
                                                     </tr>
                                                 }
                                             </tbody>

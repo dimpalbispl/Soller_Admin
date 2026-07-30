@@ -85,3 +85,6 @@ C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller
 C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bl_admin\SolarPortal.Domain.deps.json
 C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bl_admin\SolarPortal.Domain.dll
 C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bl_admin\SolarPortal.Domain.pdb
+C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bl2_admin\SolarPortal.Domain.deps.json
+C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bl2_admin\SolarPortal.Domain.dll
+C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bl2_admin\SolarPortal.Domain.pdb

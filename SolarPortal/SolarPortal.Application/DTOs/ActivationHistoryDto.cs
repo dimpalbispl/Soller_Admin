@@ -49,6 +49,33 @@ public class ActivationRequestRowDto
 
     /// <summary>Taken AFTER the member's ID was activated (i.e. the "Active Now" phase).</summary>
     public bool AfterActivation { get; set; }
+
+    // --- Mode history stamps (SolarRequests.OriginalRequestType / *On) ---
+    // RequestType above is the mode the request is in NOW. "Activate Now"
+    // overwrites it on the same row, so these carry what it started as and
+    // when each mode was entered.
+    public RequestType? OriginalRequestType { get; set; }
+    public DateTime? WithoutActivationOn { get; set; }
+    public DateTime? WithActivationOn { get; set; }
+    public DateTime? AlreadyActiveOn { get; set; }
+
+    /// <summary>Started as Without Activation and was upgraded on WithActivationOn.</summary>
+    public bool WasUpgradedToActivation =>
+        OriginalRequestType == RequestType.OnlySolarWithoutActivation && WithActivationOn.HasValue;
+
+    /// <summary>Every mode this one request has been through, oldest first.</summary>
+    public IEnumerable<RequestType> ModesTaken
+    {
+        get
+        {
+            var seen = new List<(DateTime When, RequestType Mode)>();
+            if (WithoutActivationOn.HasValue) seen.Add((WithoutActivationOn.Value, RequestType.OnlySolarWithoutActivation));
+            if (WithActivationOn.HasValue) seen.Add((WithActivationOn.Value, RequestType.WithActivation));
+            if (AlreadyActiveOn.HasValue) seen.Add((AlreadyActiveOn.Value, RequestType.AlreadyActiveOnlyRequest));
+            if (seen.Count == 0) return new[] { RequestType };
+            return seen.OrderBy(x => x.When).Select(x => x.Mode);
+        }
+    }
 }
 
 /// <summary>
