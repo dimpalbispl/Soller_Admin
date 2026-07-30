@@ -724,7 +724,7 @@
         // verifies it instead of re-typing.
         const ex = dcrData[requestId] || {};
         const docLink = ex.docPath
-        ? `<div style="margin:4px 0 8px"><a href="${ex.docPath.charAt(0) === '/' ? ex.docPath : '/' + ex.docPath}" target="_blank">📄 View user-uploaded DCR document</a></div>`
+        ? `<div style="margin:4px 0 8px"><a href="${fileModalSrc(ex.docPath)}" target="_blank">📄 View user-uploaded DCR document</a></div>`
         : '';
         Swal.fire({
         title: '📄 DCR Update — ' + requestNumber,

@@ -965,7 +965,7 @@ table.table-hover tbody tr:hover { background: var(--bg3); }
    off-centre, narrower than the dialog and unstyled. These repeat the same look
    at popup level so both placements render identically. */
 .swal2-popup .swal2-input-label {
-    display: block !important;
+    /* NOTE: no `display` override here — SweetAlert toggles it to hide the label when unused. */
     width: 100% !important;
     font-size: 12px !important;
     font-weight: 600 !important;
@@ -981,7 +981,9 @@ table.table-hover tbody tr:hover { background: var(--bg3); }
 .swal2-popup .swal2-select,
 .swal2-popup .swal2-textarea,
 .swal2-popup .swal2-file {
-    display: block !important;
+    /* Deliberately NO `display` rule: SweetAlert renders text/file/select/textarea
+       for every popup and hides the unused ones with an inline display:none.
+       Forcing display here made all four show up on every dialog. */
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 auto !important;
