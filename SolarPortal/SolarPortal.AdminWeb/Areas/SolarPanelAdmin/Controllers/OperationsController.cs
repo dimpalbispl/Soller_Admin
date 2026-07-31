@@ -323,6 +323,30 @@ public class OperationsController : Controller
             if (!workerId.HasValue || workerId.Value <= 0)
                 return Json(new { success = false, message = "Please assign an installer before dispatching." });
 
+                // An INC installer earns the plan's commission; a JOB worker is salaried
+                // and needs none. So block only the INC case when the plan has no amount
+                // configured — otherwise the assignment is created but can never pay out.
+                // The modal blocks this too; this is the authoritative check.
+                var assignee = await _uow.Workers.GetByIdAsync(workerId.Value);
+                if (assignee != null && assignee.Type == WorkerType.INC)
+                {
+                    var reqForPlan = await _uow.SolarRequests.GetByIdAsync(requestId);
+                    SolarProject? plan = reqForPlan?.SolarProjectId is int pid
+                        ? await _uow.SolarProjects.GetByIdAsync(pid)
+                        : null;
+                    if (!(plan?.IncCommissionAmount > 0m))
+                    {
+                        var planLabel = plan?.Name ?? reqForPlan?.SelectedPlan;
+                        return Json(new
+                        {
+                            success = false,
+                            message = $"No commission is set for the " +
+                                      (string.IsNullOrWhiteSpace(planLabel) ? "selected" : "\"" + planLabel + "\"") +
+                                      " plan. Add the commission amount in INC Commission before dispatching to an INC installer."
+                        });
+                    }
+                }
+
             string? docPath = null;
             if (dispatchDoc != null)
             {

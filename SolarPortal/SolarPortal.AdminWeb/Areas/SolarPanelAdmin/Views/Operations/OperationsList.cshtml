@@ -591,22 +591,43 @@
         });
         }
 
-        function openMaterialForm(requestId, requestNumber) {
-        // Assigning an installer is what enables the commission payout, so a plan
-        // with no commission amount means this project can never pay out. Say so
-        // up front instead of letting it silently go missing later.
+        // Commission only matters for INC installers — they are the ones who earn
+        // it. A JOB worker is salaried, so a plan with no commission amount is
+        // irrelevant there and must not block the dispatch.
+        //
+        // For an INC installer on a plan with no amount configured, dispatching
+        // would silently create an assignment that can never pay out, so that
+        // combination is blocked here and again server-side.
+        function matWorkerType(id) {
+        const w = workerData.find(x => String(x.id) === String(id));
+        return w ? String(w.type || '').toUpperCase() : '';
+        }
+
+        function matCommNote(requestId) {
         const pc = planComm[requestId] || {};
-        const commWarning = pc.isSet
+        const sel = document.getElementById('f-mat-worker');
+        const type = matWorkerType(sel ? sel.value : '');
+        const box = document.getElementById('f-mat-comm');
+        if (!box) return;
+
+        if (type !== 'INC') { box.innerHTML = ''; return; }
+
+        const planLabel = pc.planName ? '&ldquo;' + esc(pc.planName) + '&rdquo;' : 'selected';
+        box.innerHTML = pc.isSet
         ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:8px 10px;border-radius:8px;margin-bottom:10px;font-size:12.5px">
              Commission for <strong>${esc(pc.planName)}</strong>: <strong>₹${Number(pc.amount).toLocaleString('en-IN')}</strong> per project.</div>`
-        : `<div style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;padding:8px 10px;border-radius:8px;margin-bottom:10px;font-size:12.5px">
-             <strong>No commission is set for the ${pc.planName ? '&ldquo;' + esc(pc.planName) + '&rdquo;' : 'selected'} plan.</strong>
-             You can still dispatch, but the assigned installer will not receive any commission for this project
-             until an amount is added. Open <strong>INC Commission &rarr; Set Plan Commission</strong> to add it.</div>`;
+        : `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:8px 10px;border-radius:8px;margin-bottom:10px;font-size:12.5px">
+             <strong>No commission is set for the ${planLabel} plan.</strong>
+             This installer is an INC worker, so dispatch is blocked until a commission amount is added.
+             Open <strong>INC Commission &rarr; Set Plan Commission</strong> to add it.</div>`;
+        }
+
+        function openMaterialForm(requestId, requestNumber) {
         Swal.fire({
         title: '📦 Material Dispatch — ' + requestNumber,
         html: `
-        <div style="text-align:left;font-size:13px">${commWarning}
+        <div style="text-align:left;font-size:13px">
+        <div id="f-mat-comm"></div>
         <label>Material Details</label>
         <textarea id="f-mat-detail" class="swal2-textarea" placeholder="Solar panels, inverter, wiring, mounts..."></textarea>
         <label>Dispatch Date *</label>
@@ -623,10 +644,26 @@
         background: '#ffffff', color: '#1f2937',
         showCancelButton: true,
         confirmButtonText: 'Dispatch',
+        didOpen: () => {
+        // The note depends on which installer is picked, so it is rendered on
+        // open and refreshed on every change rather than baked into the HTML.
+        const sel = document.getElementById('f-mat-worker');
+        if (sel) sel.addEventListener('change', () => matCommNote(requestId));
+        matCommNote(requestId);
+        },
         preConfirm: async () => {
         // Worker assignment is mandatory — block submit until assigned.
         const w = document.getElementById('f-mat-worker').value;
         if (!w) { Swal.showValidationMessage('Please assign an installer before dispatching.'); return false; }
+
+        const pc = planComm[requestId] || {};
+        if (matWorkerType(w) === 'INC' && !pc.isSet) {
+        Swal.showValidationMessage(
+        'No commission is set for the ' + (pc.planName ? '"' + pc.planName + '"' : 'selected') +
+        ' plan. Add the commission amount in INC Commission before dispatching to an INC installer.');
+        return false;
+        }
+
         const fd = new FormData();
         fd.append('requestId', requestId);
         fd.append('materialDetails', document.getElementById('f-mat-detail').value);
