@@ -1,4 +1,4 @@
-﻿@model SolarPortal.Application.DTOs.SolarRequestDto
+@model SolarPortal.Application.DTOs.SolarRequestDto
 @using SolarPortal.Domain.Entities
 @{
     ViewData["Title"] = @Model?.RequestNumber ?? "Project Details";
@@ -189,8 +189,8 @@
                 }
             </div>
             <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);color:var(--text2);font-size:12.5px">
-                Stage overrides is page par nahi hain — stage badalne ke liye Workflow pages
-                (Meter Dispatch / Site Survey / Material Dispatch / Installation / DCR) use kijiye.
+                Stage overrides are not available on this page — use the Workflow pages
+                (Meter Dispatch / Site Survey / Material Dispatch / Installation / DCR) to change a stage.
             </div>
         </div>
     </div>
