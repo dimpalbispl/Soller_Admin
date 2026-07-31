@@ -77,7 +77,7 @@
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary">Not set</span>
+                                    <span class="badge bg-secondary">0</span>
                                 }
                             </td>
                                 <td>
@@ -89,7 +89,7 @@
                                     <button class="btn btn-s btn-sm" onclick="toggleActive(@p.Id)">
                                         @(p.IsActive ? "🔴 Disable" : "🟢 Enable")
                                     </button>
-                                    <button class="btn btn-d btn-sm" onclick="deleteProject(@p.Id)" style="margin-left:4px">🗑️</button>
+                                   @*  <button class="btn btn-d btn-sm" onclick="deleteProject(@p.Id)" style="margin-left:4px">🗑️</button> *@
                                 </td>
                             </tr>
                         }
