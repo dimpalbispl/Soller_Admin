@@ -174,3 +174,11 @@ C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller
 C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bl3_admin\SolarPortal.Infrastructure.runtimeconfig.json
 C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bl3_admin\SolarPortal.Infrastructure.dll
 C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bl3_admin\SolarPortal.Infrastructure.pdb
+C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bsp\SolarPortal.Infrastructure.deps.json
+C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bsp\SolarPortal.Infrastructure.runtimeconfig.json
+C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bsp\SolarPortal.Infrastructure.dll
+C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bsp\SolarPortal.Infrastructure.pdb
+C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bsp2\SolarPortal.Infrastructure.deps.json
+C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bsp2\SolarPortal.Infrastructure.runtimeconfig.json
+C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bsp2\SolarPortal.Infrastructure.dll
+C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller-Admin\2dd45a23-a1a9-45c9-900e-251cac1b6c58\scratchpad\bsp2\SolarPortal.Infrastructure.pdb

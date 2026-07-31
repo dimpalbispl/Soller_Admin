@@ -16,6 +16,14 @@ public class SolarProjectDto
     public decimal SportainTeam { get; set; }
     public decimal TotalAmount { get; set; }
     public decimal ProjectAmount { get; set; }   // shown to user (e.g., 1 kW = ₹10,000)
+
+    /// <summary>
+    /// Flat rupee commission an INC worker earns on every project taken under
+    /// this plan. NULL = not configured, so no payout can be generated for it.
+    /// Set from the INC Commission page, shown read-only on the plan master.
+    /// </summary>
+    public decimal? IncCommissionAmount { get; set; }
+
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
 }
