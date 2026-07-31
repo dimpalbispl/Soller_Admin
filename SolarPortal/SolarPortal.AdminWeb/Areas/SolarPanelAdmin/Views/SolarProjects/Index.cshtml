@@ -47,6 +47,7 @@
                             <th>Sportain</th>
                             <th>Total (Internal)</th>
                             <th>Project Amount (User)</th>
+                            <th>INC Commission</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -66,6 +67,19 @@
                                 <td>₹@p.SportainTeam.ToString("N0")</td>
                                 <td style="color:#94a3b8">₹@p.TotalAmount.ToString("N0")</td>
                                 <td style="color:var(--sun);font-weight:600">₹@p.ProjectAmount.ToString("N0")</td>
+                            @* Flat rupee commission an INC worker earns on every project
+                               taken under this plan. NULL means it has not been configured
+                               yet, and no payout can be generated until it is. *@
+                            <td>
+                                @if (p.IncCommissionAmount > 0m)
+                                {
+                                    <span style="color:var(--green);font-weight:600">₹@p.IncCommissionAmount.Value.ToString("N0")</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Not set</span>
+                                }
+                            </td>
                                 <td>
                                     <span class="sts @(p.IsActive ? "sts-act" : "sts-pend")">
                                         @(p.IsActive ? "Active" : "Inactive")
