@@ -36,6 +36,19 @@ public class SolarRequest : BaseEntity
     public string? PmSuryaLoanOption { get; set; }       // "Loan" | "WithoutLoan"
     public string? PmSuryaApplicationNo { get; set; }    // entered by admin at approval
 
+    // ─── PM Surya Ghar claim (change request point 9) ────────────────────
+    // An admin has to ACCEPT the case before deciding it, and only that admin
+    // may then approve or reject its documents. Rejecting a document clears
+    // these three back to null, which releases the claim — so once the user
+    // re-uploads, any admin can accept it again and carry on.
+    public string? PmSuryaAcceptedBy { get; set; }
+    public string? PmSuryaAcceptedByName { get; set; }
+    public DateTime? PmSuryaAcceptedAt { get; set; }
+
+    /// <summary>True while some admin holds the PM Surya Ghar case.</summary>
+    [NotMapped]
+    public bool IsPmSuryaAccepted => !string.IsNullOrWhiteSpace(PmSuryaAcceptedBy);
+
     // Technical
     public RequestType RequestType { get; set; } = RequestType.WithActivation;
     public ConnectionType ConnectionType { get; set; }

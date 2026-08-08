@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SolarPortal.Application.DTOs;
@@ -19,16 +19,21 @@ public class OperationsController : Controller
     private readonly IFileUploadService _fileUploadService;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IStateService _states;
+    private readonly IAdminActivityLogger _activity;
+    private readonly IIncCommissionCreditService _incCommission;
 
     public OperationsController(IUnitOfWork uow, ISolarRequestService requestService,
         IFileUploadService fileUploadService, UserManager<ApplicationUser> userManager,
-        IStateService states)
+        IStateService states, IAdminActivityLogger activity,
+        IIncCommissionCreditService incCommission)
     {
         _uow = uow;
         _requestService = requestService;
         _fileUploadService = fileUploadService;
         _userManager = userManager;
         _states = states;
+        _activity = activity;
+        _incCommission = incCommission;
     }
 
     // Helper: apply state/city/status filters on top of stage filter.
@@ -202,6 +207,18 @@ public class OperationsController : Controller
                                      .ToDictionary(g => g.Key, g => g.OrderByDescending(m => m.CreatedAt).First());
                 await AttachWorkersAsync(dispatchAssign.Values.Select(m => (m.AssignedWorkerId, (Action<Worker>)(w => m.AssignedWorker = w))));
                 ViewBag.DispatchAssignments = dispatchAssign;
+
+                // Point 11: the INC's mark-installed photos (up to 30) have to be
+                // visible to the admin, who approves or rejects the whole batch.
+                // Keyed by SolarRequestId so the queue row can show them without
+                // knowing the Installation id.
+                var installIds = installs.Values.Select(i => i.Id).ToHashSet();
+                var photos = installIds.Count == 0
+                    ? new List<InstallationPhoto>()
+                    : (await _uow.InstallationPhotos.FindAsync(p => installIds.Contains(p.InstallationId))).ToList();
+                ViewBag.InstallationPhotos = photos
+                    .GroupBy(p => p.SolarRequestId)
+                    .ToDictionary(g => g.Key, g => g.OrderBy(p => p.Id).ToList());
                 break;
             case "dcr":
                 var dcrs = (await _uow.DCRDocuments.FindAsync(d => ids.Contains(d.SolarRequestId)))
@@ -232,20 +249,73 @@ public class OperationsController : Controller
         }
     }
 
+    /// <summary>
+    /// Has the site-survey leg finished for this request? Point 3 runs Meter
+    /// Dispatch and Site Survey side by side, so each leg asks this about the
+    /// other before deciding whether the project can move to Material Dispatch.
+    /// </summary>
+    private async Task<bool> IsSiteSurveyApprovedAsync(int requestId) =>
+        (await _uow.SiteSurveys.FindAsync(s => s.SolarRequestId == requestId))
+            .Any(s => s.ApprovalStatus == ApprovalStatus.Approved || s.IsCompleted);
+
+    /// <summary>Has the meter been dispatched for this request? Counterpart of the above.</summary>
+    private async Task<bool> IsMeterDispatchedAsync(int requestId) =>
+        (await _uow.MeterDispatches.FindAsync(m => m.SolarRequestId == requestId))
+            .Any(m => m.IsDispatched);
+
     // --- Meter Dispatch ---
-    // Spec flow: PM Surya Ghar → Meter Dispatch → Site Survey → Material Dispatch.
-    // After admin approves PM Surya Ghar, the project's CurrentStage becomes MeterDispatch.
+    // Spec flow: PM Surya Ghar → (Meter Dispatch ∥ Site Survey) → Material Dispatch.
+    // After admin approves PM Surya Ghar the project's CurrentStage becomes
+    // MeterDispatch and BOTH queues open; whichever finishes last moves it on.
     public async Task<IActionResult> MeterDispatch(string? state, string? city, string? filter)
     {
         var f = (filter ?? "all").ToLowerInvariant();
         var showHistory = f == "all";
         ViewBag.Filter = f;
-        var requests = await FilterAsync(ProjectStatus.MeterDispatch, state, city, showHistory: showHistory, filterMode: f, op: "meter");
-        await PopulateFilterViewBags(state, city, requests);
+
+        // Point 3: the meter can be dispatched at ANY time - the site survey is
+        // what moves the project forward. So this queue cannot key off the project
+        // sitting at the MeterDispatch stage: once the survey pushes it to Material
+        // Dispatch the row would vanish and the meter could never be recorded.
+        //
+        // Start from PM Surya onwards and filter on whether a meter has actually
+        // been dispatched. Pending = no meter yet, whatever stage the project is at.
+        var reached = (await _uow.SolarRequests.FindAsync(r =>
+                          r.CurrentStage == ProjectStatus.MeterDispatch ||
+                          r.CurrentStage == ProjectStatus.SiteSurvey ||
+                          r.CurrentStage == ProjectStatus.MaterialDispatch ||
+                          r.CurrentStage == ProjectStatus.Installation ||
+                          r.CurrentStage == ProjectStatus.DCRUpdate ||
+                          r.CurrentStage == ProjectStatus.Completed)).ToList();
+
+        var ids = reached.Select(r => r.Id).ToHashSet();
+        var dispatched = ids.Count == 0
+            ? new HashSet<int>()
+            : (await _uow.MeterDispatches.FindAsync(m => ids.Contains(m.SolarRequestId)))
+              .Where(m => m.IsDispatched)
+              .Select(m => m.SolarRequestId)
+              .ToHashSet();
+
+        var requests = f switch
+        {
+            "pending" => reached.Where(r => !dispatched.Contains(r.Id)),
+            "approved" => reached.Where(r => dispatched.Contains(r.Id)),
+            _ => reached
+        };
+
+        // City / state filters, same as the shared helper applies elsewhere.
+        if (!string.IsNullOrWhiteSpace(state))
+            requests = requests.Where(r => string.Equals(r.State?.Trim(), state.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(city))
+            requests = requests.Where(r => (r.City ?? "").Contains(city.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        var list = requests.OrderByDescending(r => r.CreatedAt).ToList();
+
+        await PopulateFilterViewBags(state, city, list);
         ViewBag.Title = "Meter Dispatch";
         ViewBag.Op = "meter";
-        await PopulateOperationDetailsAsync("meter", requests);
-        return View("OperationsList", requests);
+        await PopulateOperationDetailsAsync("meter", list);
+        return View("OperationsList", list);
     }
 
     [HttpPost]
@@ -278,18 +348,39 @@ public class OperationsController : Controller
             await _uow.MeterDispatches.AddAsync(dispatch);
             await _uow.SaveChangesAsync();
 
-            // Advance to SiteSurvey (Meter Dispatch happens BEFORE Site Survey per spec).
-            var stageResult = await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
+            // Point 3: the SITE SURVEY moves the project on; the meter can be
+            // dispatched at any time, before or after that. So this leg records the
+            // meter and only nudges the stage when the project is still sitting at
+            // MeterDispatch AND the survey is already done. A project that has
+            // moved ahead is left exactly where it is - dragging it backwards to
+            // Material Dispatch would undo real progress.
+            var req = await _uow.SolarRequests.GetByIdAsync(requestId);
+            var stageMoved = false;
+
+            if (req != null &&
+                req.CurrentStage == ProjectStatus.MeterDispatch &&
+                await IsSiteSurveyApprovedAsync(requestId))
             {
-                Id = requestId,
-                NewStage = ProjectStatus.SiteSurvey,
-                Notes = $"Meter {meterNumber} dispatched on {dispatch.DispatchDate:dd/MM/yyyy}"
-            }, _userManager.GetUserId(User)!);
+                var stageResult = await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
+                {
+                    Id = requestId,
+                    NewStage = ProjectStatus.MaterialDispatch,
+                    Notes = $"Meter {meterNumber} dispatched on {dispatch.DispatchDate:dd/MM/yyyy}. Site survey already approved."
+                }, _userManager.GetUserId(User)!);
 
-            if (!stageResult.IsSuccess)
-                return Json(new { success = false, message = $"Stage update failed: {stageResult.Message ?? string.Join("; ", stageResult.Errors)}" });
+                if (!stageResult.IsSuccess)
+                    return Json(new { success = false, message = $"Stage update failed: {stageResult.Message ?? string.Join("; ", stageResult.Errors)}" });
 
-            return Json(new { success = true, message = $"Meter {meterNumber} dispatched. Project moved to Site Survey." });
+                stageMoved = true;
+            }
+
+            return Json(new
+            {
+                success = true,
+                message = stageMoved
+                    ? $"Meter {meterNumber} dispatched. Site survey was already approved - project moved to Material Dispatch."
+                    : $"Meter {meterNumber} dispatched."
+            });
         }
         catch (Exception ex)
         {
@@ -298,18 +389,241 @@ public class OperationsController : Controller
         }
     }
 
-    // --- Material Dispatch ---
-    public async Task<IActionResult> MaterialDispatch(string? state, string? city, string? filter)
+    // ═══ Material Dispatch — now TWO steps (change request point 6) ═══════
+    // "Material Dispatch — 2 Step. Alag 2 menu: (1) Prepare for Dispatch
+    //  (2) Final Dispatch."
+    //
+    // Step 1 records what is going out and who will install it, and leaves the
+    // project where it is. Step 2 actually sends it and advances the project to
+    // Installation. One MaterialDispatch row carries both milestones
+    // (IsPrepared, then IsDispatched), so nothing about the existing history,
+    // reports or installer assignment changes shape.
+
+    // Old single-screen entry point. Kept so existing bookmarks and links still
+    // land somewhere sensible — it now opens step 1.
+    public IActionResult MaterialDispatch(string? state, string? city, string? filter) =>
+        RedirectToAction(nameof(PrepareDispatch), new { state, city, filter });
+
+    /// <summary>Latest MaterialDispatch row per request, for the two queues below.</summary>
+    private async Task<Dictionary<int, MaterialDispatch>> LatestDispatchesAsync(IEnumerable<int> requestIds)
+    {
+        var ids = requestIds.ToHashSet();
+        if (ids.Count == 0) return new Dictionary<int, MaterialDispatch>();
+
+        return (await _uow.MaterialDispatches.FindAsync(m => ids.Contains(m.SolarRequestId)))
+               .GroupBy(m => m.SolarRequestId)
+               .ToDictionary(g => g.Key, g => g.OrderByDescending(m => m.CreatedAt).First());
+    }
+
+    // --- Step 1: Prepare for Dispatch ---
+    public async Task<IActionResult> PrepareDispatch(string? state, string? city, string? filter)
     {
         var f = (filter ?? "all").ToLowerInvariant();
         var showHistory = f == "all";
         ViewBag.Filter = f;
-        var requests = await FilterAsync(ProjectStatus.MaterialDispatch, state, city, showHistory: showHistory, filterMode: f, op: "material");
+
+        var requests = (await FilterAsync(ProjectStatus.MaterialDispatch, state, city,
+                                          showHistory: showHistory, filterMode: f, op: "material")).ToList();
+
+        // Pending = at this stage and not prepared yet.
+        // Approved = preparation done (whether or not it has gone out).
+        var latest = await LatestDispatchesAsync(requests.Select(r => r.Id));
+        requests = f switch
+        {
+            "pending" => requests.Where(r => !(latest.TryGetValue(r.Id, out var d) && d.IsPrepared)).ToList(),
+            "approved" => requests.Where(r => latest.TryGetValue(r.Id, out var d) && d.IsPrepared).ToList(),
+            _ => requests
+        };
+
         await PopulateFilterViewBags(state, city, requests);
-        ViewBag.Title = "Material Dispatch";
-        ViewBag.Op = "material";
+        ViewBag.Title = "Prepare for Dispatch";
+        ViewBag.Op = "prepare";
         await PopulateOperationDetailsAsync("material", requests);
         return View("OperationsList", requests);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SubmitPrepareDispatch(int requestId, string? materialDetails,
+        string? vehicleDetails, string? prepareRemark, int? workerId, IFormFile? dispatchDoc)
+    {
+        try
+        {
+            // Installer assignment is mandatory at preparation time — the same rule
+            // the old single-step dispatch enforced, just moved one step earlier so
+            // the INC knows about the job before the material leaves.
+            if (!workerId.HasValue || workerId.Value <= 0)
+                return Json(new { success = false, message = "Please assign an installer before preparing the dispatch." });
+
+            var commissionBlock = await BlockIncWithoutCommissionAsync(requestId, workerId.Value);
+            if (commissionBlock != null) return Json(new { success = false, message = commissionBlock });
+
+            string? docPath = null;
+            if (dispatchDoc != null)
+            {
+                var (ok, path, err) = await _fileUploadService.UploadAsync(dispatchDoc, "dispatch/material");
+                if (!ok) return Json(new { success = false, message = $"Document upload failed: {err}" });
+                docPath = path;
+            }
+
+            // Upsert: re-opening Prepare on the same request corrects the existing
+            // row rather than stacking duplicates that the Final queue would then
+            // show twice.
+            var dispatch = (await _uow.MaterialDispatches.FindAsync(m => m.SolarRequestId == requestId))
+                           .OrderByDescending(m => m.CreatedAt)
+                           .FirstOrDefault();
+            var isNew = dispatch == null;
+            dispatch ??= new MaterialDispatch { SolarRequestId = requestId };
+
+            if (dispatch.IsDispatched)
+                return Json(new { success = false, message = "This material has already been finally dispatched." });
+
+            dispatch.MaterialDetails = materialDetails;
+            dispatch.VehicleDetails = vehicleDetails;
+            dispatch.PrepareRemark = prepareRemark;
+            dispatch.AssignedWorkerId = workerId;
+            if (docPath != null) dispatch.DispatchDocumentPath = docPath;
+            dispatch.IsPrepared = true;
+            dispatch.PreparedAt = DateTime.UtcNow;
+            dispatch.PreparedBy = _userManager.GetUserId(User);
+
+            if (isNew) await _uow.MaterialDispatches.AddAsync(dispatch);
+            else _uow.MaterialDispatches.Update(dispatch);
+            await _uow.SaveChangesAsync();
+
+            await _activity.LogAsync(_userManager.GetUserId(User) ?? "system",
+                "MaterialDispatch.Prepare", "SolarRequest", requestId.ToString(),
+                $"Prepared for dispatch. Installer #{workerId}. {materialDetails}".Trim(),
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            // Deliberately no stage change — the project stays at Material Dispatch
+            // until step 2 sends it.
+            return Json(new
+            {
+                success = true,
+                message = "Prepared for dispatch. It now appears in the Final Dispatch queue."
+            });
+        }
+        catch (Exception ex)
+        {
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            return Json(new { success = false, message = $"Prepare failed: {detail}" });
+        }
+    }
+
+    // --- Step 2: Final Dispatch ---
+    public async Task<IActionResult> FinalDispatch(string? state, string? city, string? filter)
+    {
+        var f = (filter ?? "all").ToLowerInvariant();
+        var showHistory = f == "all";
+        ViewBag.Filter = f;
+
+        var requests = (await FilterAsync(ProjectStatus.MaterialDispatch, state, city,
+                                          showHistory: showHistory, filterMode: f, op: "material")).ToList();
+
+        // Pending = prepared but not yet sent. Nothing reaches this queue until
+        // step 1 has been done, which is the whole point of splitting the menu.
+        var latest = await LatestDispatchesAsync(requests.Select(r => r.Id));
+        requests = f switch
+        {
+            "pending" => requests.Where(r => latest.TryGetValue(r.Id, out var d) && d.IsPrepared && !d.IsDispatched).ToList(),
+            "approved" => requests.Where(r => latest.TryGetValue(r.Id, out var d) && d.IsDispatched).ToList(),
+            _ => requests
+        };
+
+        await PopulateFilterViewBags(state, city, requests);
+        ViewBag.Title = "Final Dispatch";
+        ViewBag.Op = "final";
+        await PopulateOperationDetailsAsync("material", requests);
+        return View("OperationsList", requests);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SubmitFinalDispatch(int requestId, DateTime? dispatchDate,
+        string? remark, IFormFile? dispatchDoc)
+    {
+        try
+        {
+            var dispatch = (await _uow.MaterialDispatches.FindAsync(m => m.SolarRequestId == requestId))
+                           .OrderByDescending(m => m.CreatedAt)
+                           .FirstOrDefault();
+
+            if (dispatch == null || !dispatch.IsPrepared)
+                return Json(new { success = false, message = "Prepare this dispatch first — Final Dispatch only handles prepared rows." });
+
+            if (dispatch.IsDispatched)
+                return Json(new { success = false, message = "This material has already been dispatched." });
+
+            // The installer chosen at preparation is what makes the INC payout
+            // possible, so re-check it here: the plan could have been changed
+            // between the two steps.
+            if (!dispatch.AssignedWorkerId.HasValue)
+                return Json(new { success = false, message = "No installer is assigned. Re-open Prepare for Dispatch and assign one." });
+
+            var commissionBlock = await BlockIncWithoutCommissionAsync(requestId, dispatch.AssignedWorkerId.Value);
+            if (commissionBlock != null) return Json(new { success = false, message = commissionBlock });
+
+            if (dispatchDoc != null)
+            {
+                var (ok, path, err) = await _fileUploadService.UploadAsync(dispatchDoc, "dispatch/material");
+                if (!ok) return Json(new { success = false, message = $"Document upload failed: {err}" });
+                dispatch.DispatchDocumentPath = path;
+            }
+
+            dispatch.DispatchDate = dispatchDate ?? DateTime.UtcNow;
+            if (!string.IsNullOrWhiteSpace(remark)) dispatch.Remark = remark;
+            dispatch.IsDispatched = true;
+            dispatch.DispatchedBy = _userManager.GetUserId(User);
+            _uow.MaterialDispatches.Update(dispatch);
+            await _uow.SaveChangesAsync();
+
+            var stageResult = await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
+            {
+                Id = requestId,
+                NewStage = ProjectStatus.Installation,
+                Notes = $"Material dispatched on {dispatch.DispatchDate:dd/MM/yyyy}"
+            }, _userManager.GetUserId(User)!);
+
+            if (!stageResult.IsSuccess)
+                return Json(new { success = false, message = $"Stage update failed: {stageResult.Message ?? string.Join("; ", stageResult.Errors)}" });
+
+            await _activity.LogAsync(_userManager.GetUserId(User) ?? "system",
+                "MaterialDispatch.Final", "SolarRequest", requestId.ToString(),
+                $"Material finally dispatched on {dispatch.DispatchDate:dd/MM/yyyy}. Project moved to Installation.",
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            return Json(new { success = true, message = "Material dispatched. Project moved to Installation." });
+        }
+        catch (Exception ex)
+        {
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            return Json(new { success = false, message = $"Final dispatch failed: {detail}" });
+        }
+    }
+
+    /// <summary>
+    /// An INC installer earns the plan's commission; a JOB worker is salaried and
+    /// needs none. So block only the INC case when the plan has no amount
+    /// configured — otherwise the assignment is created but can never pay out.
+    /// Returns the error text, or null when the assignment is fine.
+    /// </summary>
+    private async Task<string?> BlockIncWithoutCommissionAsync(int requestId, int workerId)
+    {
+        var assignee = await _uow.Workers.GetByIdAsync(workerId);
+        if (assignee == null || assignee.Type != WorkerType.INC) return null;
+
+        var reqForPlan = await _uow.SolarRequests.GetByIdAsync(requestId);
+        SolarProject? plan = reqForPlan?.SolarProjectId is int pid
+            ? await _uow.SolarProjects.GetByIdAsync(pid)
+            : null;
+
+        if (plan?.IncCommissionAmount > 0m) return null;
+
+        var planLabel = plan?.Name ?? reqForPlan?.SelectedPlan;
+        return "No commission is set for the " +
+               (string.IsNullOrWhiteSpace(planLabel) ? "selected" : "\"" + planLabel + "\"") +
+               " plan. Add the commission amount in INC Commission before dispatching to an INC installer.";
     }
 
     [HttpPost]
@@ -364,6 +678,13 @@ public class OperationsController : Controller
                 DispatchDocumentPath = docPath,
                 Remark = remark,
                 AssignedWorkerId = workerId,
+                // Point 6 split this into Prepare + Final. This one-shot handler is
+                // no longer reachable from the menu (MaterialDispatch redirects to
+                // PrepareDispatch) but is kept for old links; stamping IsPrepared
+                // means a row created this way never reappears in the Prepare queue.
+                IsPrepared = true,
+                PreparedAt = DateTime.UtcNow,
+                PreparedBy = _userManager.GetUserId(User),
                 IsDispatched = true,
                 DispatchedBy = _userManager.GetUserId(User)
             };
@@ -546,27 +867,95 @@ public class OperationsController : Controller
         }
     }
 
-    // Change the installer on an already-recorded Installation.
-    // Spec: "installation report mein installer name change ka option bhi dena hai."
-    // The Installation row is the source of truth for the report column; we also
-    // keep the WorkerAssignment audit row in sync so worker-side queries agree.
+    // Change the installer (the "INC change" option).
+    //
+    // Point 10 fix: this used to require an existing Installation row, so on the
+    // dispatch queues — and on an Installation that had only inherited its
+    // installer from the dispatch — the option simply never appeared. It now also
+    // accepts a MaterialDispatch id and updates whichever record actually holds
+    // the assignment, keeping both in step when both exist.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ChangeInstaller(int installationId, int workerId, string? note)
+    public async Task<IActionResult> ChangeInstaller(int workerId, string? note,
+        int installationId = 0, int dispatchId = 0, int requestId = 0)
     {
         try
         {
             if (workerId <= 0)
                 return Json(new { success = false, message = "Please choose an installer." });
 
-            var installation = await _uow.Installations.GetByIdAsync(installationId);
-            if (installation == null)
-                return Json(new { success = false, message = "Installation record not found." });
+            if (installationId <= 0 && dispatchId <= 0 && requestId <= 0)
+                return Json(new { success = false, message = "Nothing to update — no request was supplied." });
 
             var worker = await _uow.Workers.GetByIdAsync(workerId);
             if (worker == null)
                 return Json(new { success = false, message = "Selected worker not found." });
 
+            var installation = installationId > 0
+                ? await _uow.Installations.GetByIdAsync(installationId)
+                : null;
+
+            var dispatch = dispatchId > 0
+                ? await _uow.MaterialDispatches.GetByIdAsync(dispatchId)
+                : null;
+
+            // Point 10: the queues now offer Change on EVERY row, including ones
+            // that have neither record yet — previously the button only appeared
+            // once some other action had already created one, which is exactly
+            // why "INC change ka option nahi aa raha" on a fresh row. Resolve
+            // from the request itself, and start the dispatch record if the
+            // assignment has nowhere to live yet.
+            if (installation == null && dispatch == null && requestId > 0)
+            {
+                installation = (await _uow.Installations.FindAsync(i => i.SolarRequestId == requestId))
+                               .OrderByDescending(i => i.CreatedAt).FirstOrDefault();
+
+                dispatch = (await _uow.MaterialDispatches.FindAsync(m => m.SolarRequestId == requestId))
+                           .OrderByDescending(m => m.CreatedAt).FirstOrDefault();
+
+                if (installation == null && dispatch == null)
+                {
+                    // IsPrepared stays false, so Prepare for Dispatch still shows
+                    // this project as outstanding work — only the installer is set.
+                    dispatch = new MaterialDispatch { SolarRequestId = requestId };
+                    await _uow.MaterialDispatches.AddAsync(dispatch);
+                    await _uow.SaveChangesAsync();
+                }
+            }
+
+            if (installation == null && dispatch == null)
+                return Json(new { success = false, message = "Installation / dispatch record not found." });
+
+            // The INC/no-commission rule applies to a change just as much as to
+            // the original assignment — otherwise a change could quietly move the
+            // job to an installer who can never be paid for it.
+            var targetRequestId = installation?.SolarRequestId ?? dispatch!.SolarRequestId;
+            var commissionBlock = await BlockIncWithoutCommissionAsync(targetRequestId, workerId);
+            if (commissionBlock != null)
+                return Json(new { success = false, message = commissionBlock });
+
+            if (dispatch != null)
+            {
+                // The dispatch assignment is what Installation inherits from, so it
+                // has to move too or the change would silently revert.
+                dispatch.AssignedWorkerId = workerId;
+                _uow.MaterialDispatches.Update(dispatch);
+            }
+
+            if (installation == null)
+            {
+                await _uow.SaveChangesAsync();
+
+                await _activity.LogAsync(_userManager.GetUserId(User) ?? "system",
+                    "Installer.Change", "SolarRequest", targetRequestId.ToString(),
+                    $"Installer set to {worker.Name} on the material dispatch." +
+                    (string.IsNullOrWhiteSpace(note) ? "" : $" Note: {note}"),
+                    HttpContext.Connection.RemoteIpAddress?.ToString());
+
+                return Json(new { success = true, message = $"Installer changed to {worker.Name}." });
+            }
+
+            installationId = installation.Id;
             installation.AssignedWorkerId = workerId;
             _uow.Installations.Update(installation);
 
@@ -596,6 +985,13 @@ public class OperationsController : Controller
             }
 
             await _uow.SaveChangesAsync();
+
+            await _activity.LogAsync(_userManager.GetUserId(User) ?? "system",
+                "Installer.Change", "SolarRequest", targetRequestId.ToString(),
+                $"Installer changed to {worker.Name}." +
+                (string.IsNullOrWhiteSpace(note) ? "" : $" Note: {note}"),
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
             return Json(new { success = true, message = $"Installer changed to {worker.Name}." });
         }
         catch (Exception ex)
@@ -604,6 +1000,260 @@ public class OperationsController : Controller
             return Json(new { success = false, message = $"Installer change failed: {detail}" });
         }
     }
+
+    // ═══ Installation photos (change request point 11) ════════════════════
+    // "INC — Mark Installed → multiple photo upload upto 30 photo. Ye admin ko
+    //  show hona chahiye. Admin se approve hone par credit hona chahiye. Reject
+    //  hone par INC wapas upload karega."
+    //
+    // The INC uploads the batch from the installer panel; the admin approves or
+    // rejects the WHOLE batch here.
+    //
+    // Approval is what ENTITLES the INC to the commission, but this app does not
+    // pay it. The installer panel owns that: its sweep picks up every approved,
+    // not-yet-credited installation and posts it, keying idempotency on
+    // IncCommissionLedger.SolarRequestId. If the admin also wrote the wallet
+    // ledger directly, that check would not see the payment and the same project
+    // would be credited a second time. So the handshake is exactly one flag:
+    // admin sets ApprovalStatus, the installer panel sets CommissionCredited.
+
+    // ═══ Installation photo approval report (change request point 11) ═════
+    // "Ye admin ko show hona chahiye. Admin se approve hone par credit hona
+    //  chahiye. Reject hone par INC wapas update karega."
+    //
+    // Deliberately NOT filtered by project stage. Marking an installation
+    // complete advances the project to DCR / Completed, so by the time the photos
+    // need a decision the row has already left the Installation queue - which is
+    // exactly how a batch could sit unapproved forever and the INC never get paid.
+    // This report keys off the photo batch itself, so nothing can fall out of it.
+    public async Task<IActionResult> InstallationApprovals(string? status)
+    {
+        // Default is the FULL report - every batch, whatever its state. Pending
+        // is one tab away, but an admin opening this menu should first see the
+        // whole picture rather than a filtered slice.
+        var f = (status ?? "all").ToLowerInvariant();
+
+        // Only installations that actually have photos - there is nothing to
+        // decide on the rest.
+        var photos = (await _uow.InstallationPhotos.GetAllAsync()).ToList();
+        var byInstallation = photos.GroupBy(p => p.InstallationId)
+                                   .ToDictionary(g => g.Key, g => g.OrderBy(p => p.Id).ToList());
+        if (byInstallation.Count == 0)
+        {
+            ViewBag.Status = f;
+            ViewBag.Photos = byInstallation;
+            ViewBag.Requests = new Dictionary<int, SolarRequest>();
+            ViewBag.Workers = new Dictionary<int, Worker>();
+            ViewBag.Counts = new Dictionary<string, int>
+            {
+                ["pending"] = 0, ["approved"] = 0, ["rejected"] = 0
+            };
+            ViewBag.Title = "Installation Approval";
+            return View(new List<Installation>());
+        }
+
+        var ids = byInstallation.Keys.ToHashSet();
+        var installs = (await _uow.Installations.FindAsync(i => ids.Contains(i.Id))).ToList();
+
+        // Counts come from the full set, so the tab badges stay right whichever
+        // tab is open.
+        ViewBag.Counts = new Dictionary<string, int>
+        {
+            ["pending"]  = installs.Count(i => i.ApprovalStatus == ApprovalStatus.Pending),
+            ["approved"] = installs.Count(i => i.ApprovalStatus == ApprovalStatus.Approved),
+            ["rejected"] = installs.Count(i => i.ApprovalStatus == ApprovalStatus.Rejected)
+        };
+
+        var rows = f switch
+        {
+            "approved" => installs.Where(i => i.ApprovalStatus == ApprovalStatus.Approved),
+            "rejected" => installs.Where(i => i.ApprovalStatus == ApprovalStatus.Rejected),
+            "all"      => installs,
+            _          => installs.Where(i => i.ApprovalStatus == ApprovalStatus.Pending)
+        };
+
+        // Oldest submission first: a batch that has been waiting longest is the
+        // one holding up an installer's money.
+        var list = rows.OrderBy(i => i.SubmittedAt ?? i.CompletedAt ?? i.CreatedAt).ToList();
+
+        var reqIds = list.Select(i => i.SolarRequestId).ToHashSet();
+        ViewBag.Requests = (await _uow.SolarRequests.FindAsync(r => reqIds.Contains(r.Id)))
+                           .ToDictionary(r => r.Id);
+
+        // Installer falls back to the dispatch assignment, same as everywhere else.
+        var workerIds = list.Where(i => i.AssignedWorkerId.HasValue)
+                            .Select(i => i.AssignedWorkerId!.Value).ToHashSet();
+        foreach (var d in await _uow.MaterialDispatches.FindAsync(m => reqIds.Contains(m.SolarRequestId)))
+            if (d.AssignedWorkerId.HasValue) workerIds.Add(d.AssignedWorkerId.Value);
+
+        ViewBag.Workers = workerIds.Count == 0
+            ? new Dictionary<int, Worker>()
+            : (await _uow.Workers.FindAsync(w => workerIds.Contains(w.Id))).ToDictionary(w => w.Id);
+
+        ViewBag.DispatchWorker = (await _uow.MaterialDispatches.FindAsync(m => reqIds.Contains(m.SolarRequestId)))
+            .Where(m => m.AssignedWorkerId.HasValue)
+            .GroupBy(m => m.SolarRequestId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(m => m.CreatedAt).First().AssignedWorkerId!.Value);
+
+        ViewBag.Photos = byInstallation;
+        ViewBag.Status = f;
+        ViewBag.Title = "Installation Approval";
+        return View(list);
+    }
+
+    /// <summary>Maximum photos in one mark-installed batch, per the spec.</summary>
+    public const int MaxInstallationPhotos = 30;
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApproveInstallationPhotos(int installationId, string? remark)
+    {
+        try
+        {
+            var installation = await _uow.Installations.GetByIdAsync(installationId);
+            if (installation == null)
+                return Json(new { success = false, message = "Installation record not found." });
+
+            var photos = (await _uow.InstallationPhotos.FindAsync(p => p.InstallationId == installationId)).ToList();
+            if (photos.Count == 0)
+                return Json(new { success = false, message = "There are no photos to approve on this installation yet." });
+
+            if (installation.ApprovalStatus == ApprovalStatus.Approved)
+                return Json(new { success = false, message = "These photos are already approved." });
+
+            installation.ApprovalStatus = ApprovalStatus.Approved;
+            installation.RejectionReason = null;      // clear any earlier rejection
+            installation.Notes = string.IsNullOrWhiteSpace(remark)
+                ? installation.Notes
+                : $"{installation.Notes}\n[PHOTOS APPROVED] {remark}".Trim();
+            installation.ReviewedBy = _userManager.GetUserId(User);
+            installation.ReviewedAt = DateTime.UtcNow;
+            _uow.Installations.Update(installation);
+            await _uow.SaveChangesAsync();
+
+            // "Admin se approve hone par credit hona chahiye" - so pay now rather
+            // than waiting for the installer to open their panel. A failure here
+            // must not undo the approval: the installer panel's catch-up sweep
+            // will post it, and both paths share one idempotency key so only one
+            // of them can ever succeed.
+            var credit = await CreditApprovedInstallationAsync(installation);
+
+            await _activity.LogAsync(_userManager.GetUserId(User) ?? "system",
+                "Installation.ApprovePhotos", "Installation", installationId.ToString(),
+                $"Approved {photos.Count} installation photo(s). {credit.Message}",
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            return Json(new
+            {
+                success = true,
+                message = $"{photos.Count} photo(s) approved. {credit.Message}"
+            });
+        }
+        catch (Exception ex)
+        {
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            return Json(new { success = false, message = $"Photo approval failed: {detail}" });
+        }
+    }
+
+    /// <summary>
+    /// Pays the INC for an installation whose photos the admin just approved.
+    ///
+    /// Never throws: a commission problem must not roll back an approval the
+    /// admin already made and already saw succeed. If the post fails, the row is
+    /// simply left with CommissionCredited = false and the installer panel's
+    /// catch-up sweep retries it. Both paths key idempotency on the same
+    /// IncCommissionLedger row, so the retry can never pay twice.
+    /// </summary>
+    private async Task<IncCommissionCreditResult> CreditApprovedInstallationAsync(Installation installation)
+    {
+        try
+        {
+            if (installation.CommissionCredited)
+                return new IncCommissionCreditResult { Message = "Commission was already credited for this project." };
+
+            // Fall back to the dispatch assignment: the installer is chosen at
+            // Prepare-for-Dispatch time and an Installation row may never have
+            // been given one of its own.
+            var workerId = installation.AssignedWorkerId
+                           ?? (await _uow.MaterialDispatches.FindAsync(m => m.SolarRequestId == installation.SolarRequestId))
+                              .OrderByDescending(m => m.CreatedAt).FirstOrDefault()?.AssignedWorkerId;
+
+            if (!workerId.HasValue)
+                return new IncCommissionCreditResult { Message = "No installer is assigned, so no commission was credited." };
+
+            var me = _userManager.GetUserId(User) ?? "admin";
+            var result = await _incCommission.CreditForRequestAsync(installation.SolarRequestId, workerId.Value, me);
+
+            // Stamp the flag whenever the money is confirmed present - whether we
+            // posted it or found it already there - so the installer panel's
+            // sweep stops reconsidering this row.
+            if (result.Credited || result.Message.Contains("already been credited"))
+            {
+                installation.CommissionCredited = true;
+                _uow.Installations.Update(installation);
+                await _uow.SaveChangesAsync();
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            return new IncCommissionCreditResult
+            {
+                Message = "The approval was saved, but the commission could not be credited right now " +
+                          $"({ex.InnerException?.Message ?? ex.Message}). The installer's panel will post it automatically."
+            };
+        }
+    }
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RejectInstallationPhotos(int installationId, string reason)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(reason))
+                return Json(new { success = false, message = "A reason is required so the INC knows what to re-shoot." });
+
+            var installation = await _uow.Installations.GetByIdAsync(installationId);
+            if (installation == null)
+                return Json(new { success = false, message = "Installation record not found." });
+
+            // Rejecting after the money has gone out would leave the INC paid for
+            // work that was sent back. Once the installer panel has credited it,
+            // the batch is final.
+            if (installation.CommissionCredited)
+                return Json(new
+                {
+                    success = false,
+                    message = "These photos were already approved and the commission has been credited, so they cannot be rejected now."
+                });
+
+            installation.ApprovalStatus = ApprovalStatus.Rejected;
+            installation.RejectionReason = reason;
+            installation.ReviewedBy = _userManager.GetUserId(User);
+            installation.ReviewedAt = DateTime.UtcNow;
+            _uow.Installations.Update(installation);
+            await _uow.SaveChangesAsync();
+
+            await _activity.LogAsync(_userManager.GetUserId(User) ?? "system",
+                "Installation.RejectPhotos", "Installation", installationId.ToString(),
+                $"Rejected installation photos. Reason: {reason}",
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            return Json(new
+            {
+                success = true,
+                message = "Photos rejected. The INC can upload a fresh set from their panel."
+            });
+        }
+        catch (Exception ex)
+        {
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            return Json(new { success = false, message = $"Photo rejection failed: {detail}" });
+        }
+    }
+
 
     // --- DCR Update (Domestic only) ---
     public async Task<IActionResult> DCRUpdate(string? state, string? city, string? filter)

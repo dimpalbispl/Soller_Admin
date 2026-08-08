@@ -24,6 +24,10 @@ var mvcBuilder = builder.Services.AddControllersWithViews(options =>
         .RequireAuthenticatedUser()
         .Build();
     options.Filters.Add(new AuthorizeFilter(policy));
+
+    // admin -> user permission grid. Opt-in per user: an admin with no rows
+    // configured keeps full access, so turning this on locks nobody out.
+    options.Filters.Add<SolarPortal.AdminWeb.Middleware.AdminPermissionFilter>();
 });
 
 if (builder.Environment.IsDevelopment())

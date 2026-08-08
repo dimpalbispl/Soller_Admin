@@ -39,6 +39,8 @@
                             <th>City / State</th>
                             <th>Connection</th>
                             <th>Request Date</th>
+                            @* Point 9: who is holding this case, so two admins don't both open it. *@
+                            <th>Accepted By</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -73,6 +75,17 @@
                             <td>@r.City<div class="cell-sub">@r.State</div></td>
                             <td><span class="badge bg-info">@r.ConnectionType</span></td>
                             <td>@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
+                            <td>
+                                @if (r.IsPmSuryaAccepted)
+                                {
+                                    <span class="mini-pill pill-active">🔒 @(r.PmSuryaAcceptedByName ?? r.PmSuryaAcceptedBy)</span>
+                                    <div class="cell-sub">@r.PmSuryaAcceptedAt?.ToLocalTime().ToString("dd MMM, HH:mm")</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted" style="font-size:12px">— Not accepted —</span>
+                                }
+                            </td>
                             <td>
                                 <a class="btn btn-p btn-sm" asp-action="Details" asp-route-id="@r.Id">Review</a>
                             </td>

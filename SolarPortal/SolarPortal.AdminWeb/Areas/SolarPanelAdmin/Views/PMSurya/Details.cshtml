@@ -2,6 +2,18 @@
     ViewData["Title"] = "PM Surya Ghar Review";
     var req = (SolarPortal.Domain.Entities.SolarRequest)ViewBag.Request;
     var docs = (IEnumerable<SolarPortal.Application.DTOs.PMDocumentDto>)ViewBag.Documents;
+
+    // ── Accept-before-decide (change request point 9) ──────────────────────
+    // Nothing on this page may be approved or rejected until the case has been
+    // accepted, and then only by the admin who accepted it. The server enforces
+    // this too — these flags just stop the buttons from being offered at all.
+    var acceptedBy = ViewBag.AcceptedBy as string;
+    var acceptedByName = ViewBag.AcceptedByName as string;
+    var acceptedAt = ViewBag.AcceptedAt as DateTime?;
+    var isAccepted = !string.IsNullOrWhiteSpace(acceptedBy);
+    var isMine = ViewBag.IsMine == true;
+    var activityLog = ViewBag.ActivityLog as IEnumerable<SolarPortal.Domain.Entities.ActivityLog>
+                      ?? Enumerable.Empty<SolarPortal.Domain.Entities.ActivityLog>();
 }
 
 <div class="page-header" style="padding:16px">
@@ -73,7 +85,16 @@
                                        "stage >= PMSurvey", so the user can re-upload from whatever stage
                                        the project is currently at. Their re-upload arrives as a new
                                        Pending row which is approved here individually. *@
-                                    @if (!adminUploaded)
+                                    @* Point 9: no verdict buttons until this admin holds the case. *@
+                                    @if (!adminUploaded && !isMine)
+                                    {
+                                        <span class="text-muted" style="font-size:12px">
+                                            @(isAccepted
+                                                ? $"Accepted by {acceptedByName ?? acceptedBy}"
+                                                : "Accept the case to review")
+                                        </span>
+                                    }
+                                    else if (!adminUploaded)
                                     {
                                         if (d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Pending)
                                         {
@@ -112,6 +133,42 @@
             </div>
         </div>
         <div class="col-lg-4">
+            @* ── Point 9: claim the case before deciding it ────────────────── *@
+            <div class="card mb-3 @(isMine ? "border-success" : isAccepted ? "border-warning" : "border-info")">
+                <div class="card-header @(isMine ? "bg-success" : isAccepted ? "bg-warning" : "bg-info") text-white">
+                    @(isMine ? "✓ Accepted by you" : isAccepted ? "🔒 Accepted by another admin" : "📥 Accept this case")
+                </div>
+                <div class="card-body">
+                    @if (isMine)
+                    {
+                        <p class="mb-1 small">
+                            You accepted this case@(acceptedAt.HasValue ? $" on {acceptedAt.Value.ToLocalTime():dd MMM yyyy, HH:mm}" : "").
+                            Only you can approve or reject its documents.
+                        </p>
+                        <p class="text-muted small mb-0">
+                            Rejecting any document sends the case back to <strong>Pending</strong> and releases it,
+                            so any admin can pick it up again after the user re-uploads.
+                        </p>
+                    }
+                    else if (isAccepted)
+                    {
+                        <p class="mb-1 small">
+                            <strong>@(acceptedByName ?? acceptedBy)</strong> has accepted this case@(acceptedAt.HasValue ? $" on {acceptedAt.Value.ToLocalTime():dd MMM yyyy, HH:mm}" : "").
+                        </p>
+                        <p class="text-muted small mb-0">
+                            Only they can approve or reject it. It becomes free again if they reject a document.
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="mb-2 small">
+                            Accept this case to review it. Once accepted, only you can approve or reject its documents.
+                        </p>
+                        <button id="btnAcceptCase" class="btn btn-info w-100 text-white">📥 Accept Case</button>
+                    }
+                </div>
+            </div>
+
             @{
                 // Per spec: "Approve All" card sirf tab hide hona chahiye jab request
                 // actually PMSurvey se AAGE badh chuki ho.
@@ -196,13 +253,25 @@
                         <label class="form-label mb-1">PM Surya Ghar ID No. <span class="text-danger">*</span></label>
                         <input id="pmAppNo" class="form-control mb-2" placeholder="e.g., RJ-PMSG-2026-000123" value="@(req.PmSuryaApplicationNo ?? "")" />
                         <label class="form-label mb-1">Approval Document(s) — user downloadable <span class="text-danger">*</span></label>
-                        <input id="approvalDocs" type="file" class="form-control mb-1" multiple accept=".pdf,.png,.jpg,.jpeg" />
+                        @* Point 5: Camera / Gallery — photo-picker.js turns this into two buttons. *@
+                        <input id="approvalDocs" type="file" class="form-control mb-1" multiple accept=".pdf,.png,.jpg,.jpeg" data-photo-picker />
                         @if (hasApprovalDoc)
                         {
                             <p class="text-muted small mb-2">An approval document is already attached — leave this empty to keep it.</p>
                         }
                         <textarea id="advanceNotes" class="form-control mb-2" placeholder="Optional notes"></textarea>
-                        <button id="btnAdvance" class="btn btn-success w-100">Approve All &amp; Open Meter Dispatch + Site Survey</button>
+                        @* Point 9: final approval is a decision too — it needs the claim. *@
+                        <button id="btnAdvance" class="btn btn-success w-100" disabled="@(!isMine)">
+                            Approve All &amp; Open Meter Dispatch + Site Survey
+                        </button>
+                        @if (!isMine)
+                        {
+                            <p class="text-muted small mt-2 mb-0">
+                                @(isAccepted
+                                    ? $"Only {acceptedByName ?? acceptedBy} — who accepted this case — can approve it."
+                                    : "Accept the case first to enable final approval.")
+                            </p>
+                        }
                     </div>
                 </div>
             }
@@ -236,12 +305,41 @@
                         </ul>
                     }
                     <label class="form-label mb-1">Upload new approval document(s)</label>
-                    <input id="reUploadDocs" type="file" class="form-control mb-2" multiple accept=".pdf,.png,.jpg,.jpeg" />
+                    <input id="reUploadDocs" type="file" class="form-control mb-2" multiple accept=".pdf,.png,.jpg,.jpeg" data-photo-picker />
                     <button id="btnReUpload" class="btn btn-primary w-100">⬆ Upload</button>
                     <p class="text-muted small mt-2 mb-0">
                         Delete an existing document and upload a replacement whenever the
                         approval paperwork changes. Uploads are saved as approved.
                     </p>
+                </div>
+            </div>
+
+            @* ── Point 9: decision trail — who accepted, who approved/rejected ── *@
+            <div class="card mt-3">
+                <div class="card-header">🧾 Activity Log</div>
+                <div class="card-body" style="max-height:320px;overflow-y:auto">
+                    @if (!activityLog.Any())
+                    {
+                        <p class="text-muted small mb-0">No activity recorded yet.</p>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var entry in activityLog)
+                            {
+                                <li class="list-group-item px-0 py-2">
+                                    <div style="font-size:12px">@entry.Details</div>
+                                    <div class="text-muted" style="font-size:11px">
+                                        @entry.Action · @entry.Timestamp.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                                        @if (!string.IsNullOrWhiteSpace(entry.UserId))
+                                        {
+                                            <text> · @entry.UserId</text>
+                                        }
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
                 </div>
             </div>
         </div>
@@ -254,6 +352,16 @@
 <script>
 const token = $('input[name="__RequestVerificationToken"]').val();
 
+// Point 9: claim the case. Reload afterwards so every button on the page
+// re-renders against the new ownership.
+$('#btnAcceptCase').on('click', function () {
+    const $btn = $(this).prop('disabled', true).text('Accepting…');
+    $.post('@Url.Action("Accept")', { requestId: @req.Id, __RequestVerificationToken: token }, function (r) {
+        if (r.success) { setTimeout(function () { location.reload(); }, 600); }
+        else { $btn.prop('disabled', false).text('📥 Accept Case'); }
+    }).fail(function () { $btn.prop('disabled', false).text('📥 Accept Case'); });
+});
+
 $('.btn-approve').on('click', function () {
     const id = $(this).data('id');
     $.post('@Url.Action("ApproveDocument")', { docId: id, __RequestVerificationToken: token }, function (r) {
@@ -263,8 +371,11 @@ $('.btn-approve').on('click', function () {
 });
 $('.btn-reject').on('click', function () {
     const id = $(this).data('id');
-    const remarks = prompt('Rejection reason?');
+    // A reason is mandatory server-side — the user needs to know what to re-upload.
+    const remarks = prompt('Rejection reason? (the user will see this)');
     if (remarks === null) return;
+    if (!remarks.trim()) { alert('Please give a rejection reason.'); return; }
+    if (!confirm('Reject this document?\n\nThe case goes back to Pending and is released, so another admin can accept it after the user re-uploads.')) return;
     $.post('@Url.Action("RejectDocument")', { docId: id, remarks: remarks, __RequestVerificationToken: token }, function (r) {
         if (r.success) { setTimeout(function () { location.reload(); }, 600); }
     });

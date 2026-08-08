@@ -125,15 +125,24 @@ public class SolarRequestService : ISolarRequestService
                 $"Request {entity.RequestNumber} was rejected previously. " +
                 "It cannot be approved again from this screen. Ask the user to re-submit.");
 
-        // Per spec: pre-approval here only releases the request out of "Pending Request"
-        // into the payment workflow. FINAL approval is gated by Payment Verification
-        // and only happens when verified payments total ≥ ₹20,000 (handled in
-        // PaymentsController.Verify). So we move CurrentStage to Payment, not all the
-        // way to ProductSelection like before.
+        // ── Change request point 4 ────────────────────────────────────────
+        // "Kisi bhi ID ka Solar Request agar approve ho jaati hai to PM Surya
+        //  then open ho jayega — poora payment ki zaroorat nahi hai."
+        //
+        // Admin approval is now what opens PM Surya Ghar, not the payment total.
+        // Previously approval only released the request into the Payment stage and
+        // the move to PMSurvey waited until verified payments covered PlanAmount
+        // (PaymentsController.Verify / its page-load auto-heal). Those payment
+        // paths are untouched — they still advance a request that has NOT been
+        // approved yet — but an approved request no longer waits for them.
         entity.ApprovalStatus = ApprovalStatus.Approved;
         entity.AdminNotes = notes;
-        if (entity.CurrentStage == ProjectStatus.Registration)
-            entity.CurrentStage = ProjectStatus.Payment;
+        if (entity.CurrentStage == ProjectStatus.Registration ||
+            entity.CurrentStage == ProjectStatus.ProductSelection ||
+            entity.CurrentStage == ProjectStatus.Payment)
+        {
+            entity.CurrentStage = ProjectStatus.PMSurvey;
+        }
         entity.UpdatedAt = DateTime.UtcNow;
 
         _uow.SolarRequests.Update(entity);
@@ -145,11 +154,11 @@ public class SolarRequestService : ISolarRequestService
             SolarRequestId = entity.Id,
             Title = "Application Approved! ✅",
             Message = $"Your request {entity.RequestNumber} has been approved. " +
-                      "Please complete the payment to move to PM Surya Ghar.",
+                      "You can now upload your PM Surya Ghar documents — the remaining payment can follow.",
             NotificationType = "StatusUpdate"
         });
 
-        return ServiceResult<bool>.Success(true, "Request approved. User can now make payment.");
+        return ServiceResult<bool>.Success(true, "Request approved. PM Surya Ghar is now open for the user.");
     }
 
     public async Task<ServiceResult<bool>> RejectAsync(int id, string adminId, string reason)

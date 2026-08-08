@@ -26,7 +26,8 @@
                 </div>
                 <div class="fg">
                     <label for="dispatchDoc">Dispatch Document (PDF/Image)</label>
-                    <input type="file" name="dispatchDoc" id="dispatchDoc" accept=".pdf,.jpg,.jpeg,.png" />
+                    @* Point 5: Camera / Gallery — see wwwroot/js/photo-picker.js *@
+                    <input type="file" name="dispatchDoc" id="dispatchDoc" accept=".pdf,.jpg,.jpeg,.png" data-photo-picker />
                 </div>
                 <div class="btn-row">
                     <button type="submit" class="btn btn-primary">📦 Dispatch Meter</button>
@@ -52,7 +53,7 @@
                 </div>
                 <div class="fg">
                     <label for="dcrDoc">DCR Document (PDF/Image)</label>
-                    <input type="file" name="dcrDoc" id="dcrDoc" accept=".pdf,.jpg,.jpeg,.png" />
+                    <input type="file" name="dcrDoc" id="dcrDoc" accept=".pdf,.jpg,.jpeg,.png" data-photo-picker />
                 </div>
                 <div class="btn-row">
                     <button type="submit" class="btn btn-primary">📄 Submit DCR</button>

@@ -90,6 +90,10 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"
             onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js';document.head.appendChild(s);"></script>
     <script src="~/js/solar-portal.js" asp-append-version="true"></script>
+    @* Change request point 5: gives every file input marked data-photo-picker a
+       Camera and a Gallery button. Loaded before the page's own scripts so a
+       view can call enhancePhotoPickers() on markup it injects later. *@
+    <script src="~/js/photo-picker.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
     <script>

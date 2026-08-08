@@ -1,3 +1,8 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using SolarPortal.Application.Interfaces.Services
+@using SolarPortal.Domain.Entities
+@inject IAdminPermissionService AdminPermissions
+@inject UserManager<ApplicationUser> AdminUserManager
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
@@ -9,90 +14,190 @@
     // but point to different actions — each item lights up only on its own action.
     string IsActiveAction(string ctrl, string action) =>
         (currentController == ctrl && currentAction == action) ? "active" : "";
+
+    // admin -> user permissions. A null set means "not configured", which is
+    // full access — so an existing install shows every menu exactly as before.
+    // SuperAdmin always sees everything, matching AdminPermissionFilter.
+    HashSet<string>? allowedMenus = null;
+    if (!User.IsInRole("SuperAdmin"))
+    {
+        var myName = AdminUserManager.GetUserId(User);
+        // The grid applies to every admin. An account with no rows is unrestricted,
+        // so this cannot lock anyone out who has not been deliberately scoped.
+        if (!string.IsNullOrWhiteSpace(myName))
+            allowedMenus = await AdminPermissions.GetViewableAsync(myName);
+    }
+    bool Can(string menuKey) => allowedMenus == null || allowedMenus.Contains(menuKey);
 }
 
 <div class="sb-section">
     <div class="sb-label">Admin Menu</div>
-    <a class="sb-item @IsActive("Dashboard")" asp-area="SolarPanelAdmin" asp-controller="Dashboard" asp-action="Index">
-        <span class="sbi">📊</span>Dashboard
-    </a>
-    <a class="sb-item @IsActive("Projects")" asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Index">
-        <span class="sbi">🏗️</span>All Projects
-        <span class="sb-badge" id="total-badge">--</span>
-    </a>
+    @if (Can("Dashboard"))
+    {
+        <a class="sb-item @IsActive("Dashboard")" asp-area="SolarPanelAdmin" asp-controller="Dashboard" asp-action="Index">
+            <span class="sbi">📊</span>Dashboard
+        </a>
+    }
+    @if (Can("Projects"))
+    {
+        <a class="sb-item @IsActive("Projects")" asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Index">
+            <span class="sbi">🏗️</span>All Projects
+            <span class="sb-badge" id="total-badge">--</span>
+        </a>
+    }
     @* Approvals link hidden per spec: "Remove separate Approval module completely
        because Payment Approval and Request Approval both are same process."
        Payment Verification is now the single approval entry-point. The route
-       still exists for SuperAdmin direct URL access if needed for diagnostics.
-    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Projects" asp-action="Approvals">
-        <span class="sbi">✅</span>Approvals
-        <span class="sb-badge red" id="approval-badge">--</span>
-    </a>
-    *@
+       still exists for SuperAdmin direct URL access if needed for diagnostics. *@
 </div>
 <div class="sb-section">
     <div class="sb-label">Users & Payments</div>
     @* User Management link hidden per spec: "User Management module remove/hide karo."
-       Route still exists for SuperAdmin direct access.
-    <a class="sb-item @IsActive("Users")" asp-area="SolarPanelAdmin" asp-controller="Users" asp-action="Index">
-        <span class="sbi">👤</span>User Management
-    </a>
-    *@
-    <a class="sb-item @IsActive("Payments")" asp-area="SolarPanelAdmin" asp-controller="Payments" asp-action="Index">
-        <span class="sbi">💰</span>Payment Verification
-    </a>
+       Route still exists for SuperAdmin direct access. *@
+    @if (Can("Payments"))
+    {
+        <a class="sb-item @IsActive("Payments")" asp-area="SolarPanelAdmin" asp-controller="Payments" asp-action="Index">
+            <span class="sbi">💰</span>Payment Verification
+        </a>
+    }
+    @* Change request point 7: Add Fund is two steps, so it gets two menus.
+       Adding queues the money; a different admin confirms it under Approve Fund. *@
+    @if (Can("Funds.Add"))
+    {
+        <a class="sb-item @IsActiveAction("Funds", "Index")" asp-area="SolarPanelAdmin" asp-controller="Funds" asp-action="Index">
+            <span class="sbi">➕</span>Add Fund
+        </a>
+    }
+    @if (Can("Funds.Approve"))
+    {
+        <a class="sb-item @IsActiveAction("Funds", "Approve")" asp-area="SolarPanelAdmin" asp-controller="Funds" asp-action="Approve">
+            <span class="sbi">✅</span>Approve Fund
+        </a>
+    }
 </div>
 <div class="sb-section">
     <div class="sb-label">Reports</div>
-    <a class="sb-item @IsActive("ActivationHistory")" asp-area="SolarPanelAdmin" asp-controller="ActivationHistory" asp-action="Index">
-        <span class="sbi">🔓</span>Activation History
-    </a>
+    @if (Can("ActivationHistory"))
+    {
+        <a class="sb-item @IsActive("ActivationHistory")" asp-area="SolarPanelAdmin" asp-controller="ActivationHistory" asp-action="Index">
+            <span class="sbi">🔓</span>Activation History
+        </a>
+    }
+    @* admin -> log reports: every admin decision that was recorded. *@
+    @if (Can("AdminAccess.Logs"))
+    {
+        <a class="sb-item @IsActiveAction("AdminAccess", "Logs")" asp-area="SolarPanelAdmin" asp-controller="AdminAccess" asp-action="Logs">
+            <span class="sbi">🧾</span>Log Report
+        </a>
+    }
 </div>
 <div class="sb-section">
     <div class="sb-label">Workflow</div>
-    <a class="sb-item @IsActive("PMSurya")" asp-area="SolarPanelAdmin" asp-controller="PMSurya" asp-action="Index">
-        <span class="sbi">📋</span>PM Surya Ghar
-    </a>
-    <a class="sb-item @IsActiveAction("Operations", "MeterDispatch")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="MeterDispatch">
-        <span class="sbi">⚡</span>Meter Dispatch
-    </a>
-    <a class="sb-item @IsActive("SiteSurvey")" asp-area="SolarPanelAdmin" asp-controller="SiteSurvey" asp-action="Index">
-        <span class="sbi">📐</span>Site Survey
-    </a>
-    <a class="sb-item @IsActiveAction("Operations", "MaterialDispatch")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="MaterialDispatch">
-        <span class="sbi">📦</span>Material Dispatch
-    </a>
-    <a class="sb-item @IsActiveAction("Operations", "Installation")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="Installation">
-        <span class="sbi">🔧</span>Installation
-    </a>
-    <a class="sb-item @IsActiveAction("Operations", "DCRUpdate")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="DCRUpdate">
-        <span class="sbi">📄</span>DCR Verify
-    </a>
+    @if (Can("PMSurya"))
+    {
+        <a class="sb-item @IsActive("PMSurya")" asp-area="SolarPanelAdmin" asp-controller="PMSurya" asp-action="Index">
+            <span class="sbi">📋</span>PM Surya Ghar
+        </a>
+    }
+    @if (Can("Operations.MeterDispatch"))
+    {
+        <a class="sb-item @IsActiveAction("Operations", "MeterDispatch")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="MeterDispatch">
+            <span class="sbi">⚡</span>Meter Dispatch
+        </a>
+    }
+    @if (Can("SiteSurvey"))
+    {
+        <a class="sb-item @IsActive("SiteSurvey")" asp-area="SolarPanelAdmin" asp-controller="SiteSurvey" asp-action="Index">
+            <span class="sbi">📐</span>Site Survey
+        </a>
+    }
+    @* Change request point 6: Material Dispatch is two steps, so it gets two
+       menus. Step 1 records what goes out and who installs it; step 2 sends it
+       and moves the project to Installation. *@
+    @if (Can("Operations.PrepareDispatch"))
+    {
+        <a class="sb-item @IsActiveAction("Operations", "PrepareDispatch")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="PrepareDispatch">
+            <span class="sbi">📋</span>Prepare for Dispatch
+        </a>
+    }
+    @if (Can("Operations.FinalDispatch"))
+    {
+        <a class="sb-item @IsActiveAction("Operations", "FinalDispatch")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="FinalDispatch">
+            <span class="sbi">🚚</span>Final Dispatch
+        </a>
+    }
+    @if (Can("Operations.Installation"))
+    {
+        <a class="sb-item @IsActiveAction("Operations", "Installation")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="Installation">
+            <span class="sbi">🔧</span>Installation
+        </a>
+    }
+    @* Point 11: the photo batch needs its own report. Marking an installation
+       complete advances the project past the Installation stage, so a stage-based
+       queue loses exactly the rows still waiting on a decision. *@
+    @if (Can("Operations.InstallationApprovals"))
+    {
+        <a class="sb-item @IsActiveAction("Operations", "InstallationApprovals")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="InstallationApprovals">
+            <span class="sbi">📷</span>Installation Approval
+        </a>
+    }
+    @if (Can("Operations.DCRUpdate"))
+    {
+        <a class="sb-item @IsActiveAction("Operations", "DCRUpdate")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="DCRUpdate">
+            <span class="sbi">📄</span>DCR Verify
+        </a>
+    }
 </div>
 <div class="sb-section">
     <div class="sb-label">Masters</div>
-    <a class="sb-item @IsActive("SolarProjects")" asp-area="SolarPanelAdmin" asp-controller="SolarProjects" asp-action="Index">
-        <span class="sbi">☀️</span>Solar Projects
-    </a>
-    <a class="sb-item @IsActive("Workers")" asp-area="SolarPanelAdmin" asp-controller="Workers" asp-action="Index">
-        <span class="sbi">👷</span>Installers (INC)
-    </a>
+    @if (Can("SolarProjects"))
+    {
+        <a class="sb-item @IsActive("SolarProjects")" asp-area="SolarPanelAdmin" asp-controller="SolarProjects" asp-action="Index">
+            <span class="sbi">☀️</span>Solar Projects
+        </a>
+    }
+    @if (Can("Workers"))
+    {
+        <a class="sb-item @IsActive("Workers")" asp-area="SolarPanelAdmin" asp-controller="Workers" asp-action="Index">
+            <span class="sbi">👷</span>Installers (INC)
+        </a>
+    }
 </div>
 <div class="sb-section">
     <div class="sb-label">Management</div>
-    <a class="sb-item @IsActive("Commission")" asp-area="SolarPanelAdmin" asp-controller="Commission" asp-action="Index">
-        <span class="sbi">📈</span>INC Commission
-    </a>
-    <a class="sb-item @IsActiveAction("Inc","Connections")" asp-area="SolarPanelAdmin" asp-controller="Inc" asp-action="Connections">
-        <span class="sbi">🔌</span>INC Connections
-    </a>
-    <a class="sb-item @IsActiveAction("Inc","Withdrawals")" asp-area="SolarPanelAdmin" asp-controller="Inc" asp-action="Withdrawals">
-        <span class="sbi">🏦</span>INC Withdrawals
-    </a>
+    @if (Can("Commission"))
+    {
+        <a class="sb-item @IsActive("Commission")" asp-area="SolarPanelAdmin" asp-controller="Commission" asp-action="Index">
+            <span class="sbi">📈</span>INC Commission
+        </a>
+    }
+    @if (Can("Inc.Connections"))
+    {
+        <a class="sb-item @IsActiveAction("Inc","Connections")" asp-area="SolarPanelAdmin" asp-controller="Inc" asp-action="Connections">
+            <span class="sbi">🔌</span>INC Connections
+        </a>
+    }
+    @* Change request point 8: KYC of commission (INC) workers, approved here.
+       JOB workers are salaried and are never asked for KYC. *@
+    @if (Can("Inc.Kyc"))
+    {
+        <a class="sb-item @IsActiveAction("Inc","Kyc")" asp-area="SolarPanelAdmin" asp-controller="Inc" asp-action="Kyc">
+            <span class="sbi">🪪</span>INC KYC
+        </a>
+    }
+    @if (Can("Inc.Withdrawals"))
+    {
+        <a class="sb-item @IsActiveAction("Inc","Withdrawals")" asp-area="SolarPanelAdmin" asp-controller="Inc" asp-action="Withdrawals">
+            <span class="sbi">🏦</span>INC Withdrawals
+        </a>
+    }
+    @* admin -> user permission: who can open which menu. *@
+    @if (Can("AdminAccess.Permissions"))
+    {
+        <a class="sb-item @IsActiveAction("AdminAccess", "Permissions")" asp-area="SolarPanelAdmin" asp-controller="AdminAccess" asp-action="Permissions">
+            <span class="sbi">🔑</span>User Permissions
+        </a>
+    }
     @* Settings link hidden per spec: "Settings menu hide karo."
-       The controller/route still exists for direct access by SuperAdmin if needed.
-    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="Settings" asp-action="Index">
-        <span class="sbi">⚙️</span>Settings
-    </a>
-    *@
+       The controller/route still exists for direct access by SuperAdmin if needed. *@
 </div>

@@ -5,6 +5,10 @@
     var requests = ViewBag.Requests as Dictionary<int, SolarPortal.Domain.Entities.SolarRequest>
                    ?? new Dictionary<int, SolarPortal.Domain.Entities.SolarRequest>();
     var paidMap = (Dictionary<int, decimal>)(ViewBag.PaidMap ?? new Dictionary<int, decimal>());
+    // Point 1: paidMap already INCLUDES this, so every due on the page is correct.
+    // It is carried separately only so a row can explain where the extra money came
+    // from - "Paid 30,000" against 10,100 of payment rows otherwise reads as a bug.
+    var depositMap = (Dictionary<int, decimal>)(ViewBag.DepositMap ?? new Dictionary<int, decimal>());
 }
 
 <div class="page-header" style="padding:16px">
@@ -21,7 +25,7 @@
             <a class="btn @(filter == "rejected" ? "btn-danger" : "btn-outline-danger")" asp-route-filter="rejected">Rejected</a>
         </div>
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPaymentModal">
-            ➕ Add Payment (Admin Entry)
+            ➕ Add Fund (needs approval)
         </button>
     </div>
 
@@ -32,10 +36,18 @@
                 <form id="adminAddPaymentForm" enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
                     <div class="modal-header">
-                        <h5 class="modal-title">Add Payment on User's Behalf</h5>
+                        <h5 class="modal-title">Add Fund on User's Behalf</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
+                        @* Point 7 turned this into step 1 of two. It used to credit
+                           immediately; now it queues. Saying so here stops an admin
+                           wondering why the project total did not move. *@
+                        <div class="alert alert-warning" style="font-size:13px">
+                            This is <strong>step 1 of 2</strong>. The money is recorded but
+                            <strong>not credited</strong> until a <strong>different</strong> admin
+                            approves it under <strong>Approve Fund</strong>.
+                        </div>
                         <div class="alert alert-info" style="font-size:13px">
                             <strong>Admin entry</strong> — bypasses the ₹20,000 minimum and the project-total cap.
                             Payment is auto-verified.
@@ -104,7 +116,8 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Receipt (Image / PDF)</label>
-                                <input type="file" class="form-control" name="receiptImage" accept="image/*,.pdf" />
+                                @* Point 5: Camera / Gallery — see wwwroot/js/photo-picker.js *@
+                                <input type="file" class="form-control" name="receiptImage" accept="image/*,.pdf" data-photo-picker />
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Notes</label>
@@ -271,6 +284,7 @@
     {
         requests.TryGetValue(p.SolarRequestId, out var req);
         var paidTotal = paidMap.TryGetValue(p.SolarRequestId, out var pv) ? pv : 0m;
+        var rowDeposit = depositMap.TryGetValue(p.SolarRequestId, out var dv) ? dv : 0m;
         var projectAmt = req?.PlanAmount ?? 0m;
         var due = System.Math.Max(0, projectAmt - paidTotal);
         var paidPct = projectAmt > 0 ? (int)System.Math.Min(100, (double)(paidTotal / projectAmt * 100)) : 0;
@@ -338,6 +352,18 @@
                         <span style="color:#9ca3af"> / &#8377;@projectAmt.ToString("N0")</span>
                     </div>
                     <div class="pv-prog"><i style="width:@paidPct%"></i></div>
+                    @* Name this money. Admins were reading it as outstanding and
+                       chasing members for an amount already paid. *@
+                    @if (rowDeposit > 0)
+                    {
+                        <div style="font-size:11px;color:#0d9488;font-weight:600"
+                             title="Paid into the legacy cPanel for the order that activated this ID - it is NOT outstanding">
+                            &#10004; &#8377;@rowDeposit.ToString("N0") already paid on active ID
+                        </div>
+                        <div style="font-size:10.5px;color:#6b7280">
+                            already adjusted below &#8212; do not ask the member for it
+                        </div>
+                    }
                     @if (due > 0)
                     {
                         <div style="font-size:11px;color:#dc2626">Due &#8377;@due.ToString("N0")</div>
@@ -419,7 +445,7 @@
                         <div class="pdv" style="color:#16a34a;font-weight:600">&#8377;@projectAmt.ToString("N0")</div>
                     </div>
                     <div>
-                        <div class="pdl">Paid (Verified)</div>
+                        <div class="pdl">Paid (payments + already-paid deposit)</div>
                         <div class="pdv" style="color:#0d9488;font-weight:600">&#8377;@paidTotal.ToString("N0")</div>
                     </div>
                     <div>

@@ -1,7 +1,11 @@
-@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
+﻿@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
 @{
     ViewData["Title"] = ViewBag.Title ?? "Operations";
-    var op = (string)(ViewBag.Op ?? "");           // meter | material | installation | dcr
+    // meter | prepare | final | installation | dcr
+    // ("material" was the old single-step Material Dispatch; point 6 split it into
+    //  "prepare" and "final", which both act on the same MaterialDispatch row.)
+    var op = (string)(ViewBag.Op ?? "");
+    var isMaterialOp = op == "material" || op == "prepare" || op == "final";
     var states = (List<string>)(ViewBag.States ?? new List<string>());
     var workers = (List<SolarPortal.Domain.Entities.Worker>)(ViewBag.Workers ?? new List<SolarPortal.Domain.Entities.Worker>());
     var filterState = (string?)ViewBag.FilterState;
@@ -72,7 +76,7 @@
 
         // Assigned-person filter — only the two queues that actually carry a
         // person — dono jagah wahi installer hai jo Material Dispatch par assign hota hai.
-        ViewData["FilterShowWorker"] = op == "material" || op == "installation";
+        ViewData["FilterShowWorker"] = isMaterialOp || op == "installation";
         ViewData["FilterWorkerLabel"] = "Installer";
 
         <partial name="_ReportFilterToolbar" />
@@ -95,7 +99,7 @@
         var dispatchMap = ViewBag.DispatchAssignments as Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>;
 
         // Whether this queue shows the "assigned person" column at all.
-        var showPersonCol = op == "material" || op == "installation";
+        var showPersonCol = isMaterialOp || op == "installation";
         var personColTitle = "Installer";
 
         <div class="card">
@@ -141,11 +145,22 @@
                             var personFromDispatch = false;   // true = inherited, not yet confirmed
                             int? personInstallId = null;      // set only when a row can be edited
 
-                            if (op == "material" && materialMap != null
+                            // Point 10: "INC change ka option nahi aa raha hai."
+                            // The Change button used to render ONLY when an
+                            // Installation row already existed, so on the material
+                            // queues — and on an Installation row that had merely
+                            // inherited its installer from the dispatch — there was
+                            // no way to change the INC at all. Both queues now carry
+                            // the dispatch id (personDispatchId) so the assignment
+                            // can be changed wherever it is shown.
+                            int? personDispatchId = null;
+
+                            if (isMaterialOp && materialMap != null
                                 && materialMap.TryGetValue(r.Id, out var matPerson))
                             {
                                 personName = matPerson.AssignedWorker?.Name;
                                 personId = matPerson.AssignedWorkerId;
+                                personDispatchId = matPerson.Id;
                             }
                             else if (op == "installation")
                             {
@@ -155,12 +170,15 @@
                                     personId = insPerson.AssignedWorkerId;
                                     personInstallId = insPerson.Id;
                                 }
-                                if (personName == null && dispatchMap != null
-                                    && dispatchMap.TryGetValue(r.Id, out var dspPerson))
+                                if (dispatchMap != null && dispatchMap.TryGetValue(r.Id, out var dspPerson))
                                 {
-                                    personName = dspPerson.AssignedWorker?.Name;
-                                    personId = dspPerson.AssignedWorkerId;
-                                    personFromDispatch = true;
+                                    personDispatchId = dspPerson.Id;
+                                    if (personName == null)
+                                    {
+                                        personName = dspPerson.AssignedWorker?.Name;
+                                        personId = dspPerson.AssignedWorkerId;
+                                        personFromDispatch = true;
+                                    }
                                 }
                             }
 
@@ -201,25 +219,36 @@
                                             {
                                                 <div style="font-size:11px;color:var(--text3)">from Material Dispatch</div>
                                             }
-                                            if (personInstallId.HasValue)
-                                            {
-                                                <button type="button" class="btn btn-s btn-sm" style="margin-top:4px"
-                                                        onclick="openChangeInstaller(@personInstallId.Value, @(personId ?? 0), '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(personName))')">
-                                                    ✏️ Change
-                                                </button>
-                                            }
+                                            @* Point 10: offer Change wherever an installer is shown.
+                                               Whichever id we have decides which record gets updated —
+                                               the Installation row when one exists, otherwise the
+                                               MaterialDispatch row the assignment actually lives on. *@
+                                            <button type="button" class="btn btn-s btn-sm" style="margin-top:4px"
+                                                    onclick="openChangeInstaller(@(personInstallId ?? 0), @(personDispatchId ?? 0), @r.Id, @(personId ?? 0), '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(personName))')">
+                                                &#9999;&#65039; Change
+                                            </button>
                                         }
                                         else
                                         {
                                             <span class="text-muted">— Not assigned —</span>
+                                            @* Not assigned yet is exactly when this is most needed, so
+                                               it is offered unconditionally - the server resolves (or
+                                               creates) the record to hang the assignment on. *@
+                                            <div>
+                                                <button type="button" class="btn btn-s btn-sm" style="margin-top:4px"
+                                                        onclick="openChangeInstaller(@(personInstallId ?? 0), @(personDispatchId ?? 0), @r.Id, 0, '')">
+                                                    &#10133; Assign
+                                                </button>
+                                            </div>
                                         }
                                     </td>
                                 }
                                 @if (isHistoryMode)
                                 {
                                     <td style="font-size:12px;max-width:240px">
-                                        @* Render whatever dispatch record exists for this request, based on op. *@
-                                        @switch (op)
+                                        @* Render whatever dispatch record exists for this request, based on op.
+                                           Both material steps read the same MaterialDispatch row. *@
+                                        @switch (isMaterialOp ? "material" : op)
                                         {
                                             case "meter":
                                                 if (meterMap != null && meterMap.TryGetValue(r.Id, out var m))
@@ -254,6 +283,29 @@
                                             case "material":
                                                 if (materialMap != null && materialMap.TryGetValue(r.Id, out var mat))
                                                 {
+                                                    @* Point 6: which of the two steps this row has reached. *@
+                                                    <div>
+                                                        @if (mat.IsDispatched)
+                                                        {
+                                                            <span class="sts sts-act">🚚 Dispatched</span>
+                                                        }
+                                                        else if (mat.IsPrepared)
+                                                        {
+                                                            <span class="sts sts-disp">📋 Prepared</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted" style="font-size:11px">Not prepared</span>
+                                                        }
+                                                    </div>
+                                                    if (mat.PreparedAt.HasValue)
+                                                    {
+                                                        <div><strong>Prepared:</strong> @mat.PreparedAt.Value.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                                    }
+                                                    if (!string.IsNullOrWhiteSpace(mat.PrepareRemark))
+                                                    {
+                                                        <div style="color:var(--text3)">@mat.PrepareRemark</div>
+                                                    }
                                                     if (!string.IsNullOrWhiteSpace(mat.MaterialDetails))
                                                     {
 
@@ -358,14 +410,22 @@
                                 }
                                 <td>
                                     @{
-                                        // Map the page's "op" to the stage it acts on
+                                        // Map the page's "op" to the stage it acts on. Both material
+                                        // steps act on the MaterialDispatch stage.
                                         var actStage =
                                             op == "meter" ? SolarPortal.Domain.Enums.ProjectStatus.MeterDispatch :
-                                            op == "material" ? SolarPortal.Domain.Enums.ProjectStatus.MaterialDispatch :
+                                            isMaterialOp ? SolarPortal.Domain.Enums.ProjectStatus.MaterialDispatch :
                                             op == "installation" ? SolarPortal.Domain.Enums.ProjectStatus.Installation :
                                             op == "dcr" ? SolarPortal.Domain.Enums.ProjectStatus.DCRUpdate :
                                                                    SolarPortal.Domain.Enums.ProjectStatus.Registration;
                                         var isActiveRow = r.CurrentStage == actStage;
+
+                                        // Point 6: the two material steps show different buttons, and
+                                        // Final only offers itself once Prepare has been done.
+                                        SolarPortal.Domain.Entities.MaterialDispatch? rowDispatch = null;
+                                        materialMap?.TryGetValue(r.Id, out rowDispatch);
+                                        var isPrepared = rowDispatch?.IsPrepared == true;
+                                        var isDispatched = rowDispatch?.IsDispatched == true;
                                     }
                                     @if (isActiveRow)
                                     {
@@ -377,8 +437,53 @@
                                             case "material":
                                                 <button class="btn btn-primary btn-sm" onclick="openMaterialForm(@r.Id, '@r.RequestNumber')">📦 Dispatch Material</button>
                                                 break;
+                                            case "prepare":
+                                                if (isDispatched)
+                                                {
+                                                    <span class="sts sts-act">✅ Dispatched</span>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-primary btn-sm" onclick="openPrepareForm(@r.Id, '@r.RequestNumber')">
+                                                        @(isPrepared ? "✏️ Edit Preparation" : "📋 Prepare for Dispatch")
+                                                    </button>
+                                                }
+                                                break;
+                                            case "final":
+                                                if (isDispatched)
+                                                {
+                                                    <span class="sts sts-act">✅ Dispatched</span>
+                                                }
+                                                else if (isPrepared)
+                                                {
+                                                    <button class="btn btn-primary btn-sm" onclick="openFinalDispatchForm(@r.Id, '@r.RequestNumber')">🚚 Final Dispatch</button>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted" style="font-size:12px">Prepare it first</span>
+                                                }
+                                                break;
                                             case "installation":
                                                 <button class="btn btn-primary btn-sm" onclick="openInstallForm(@r.Id, '@r.RequestNumber')">📝 Remark / Check Installer</button>
+                                                @* Point 11: review the INC's photo batch and, on approval, credit them. *@
+                                                @if (installMap != null && installMap.TryGetValue(r.Id, out var instForPhotos))
+                                                {
+                                                    var photoDict = ViewBag.InstallationPhotos as Dictionary<int, List<SolarPortal.Domain.Entities.InstallationPhoto>>;
+                                                    var count = photoDict != null && photoDict.TryGetValue(r.Id, out var plist) ? plist.Count : 0;
+                                                    var pStatus = instForPhotos.ApprovalStatus;
+                                                    <button class="btn @(pStatus == SolarPortal.Domain.Enums.ApprovalStatus.Approved ? "btn-s" : "btn-primary") btn-sm"
+                                                            onclick="openInstallPhotos(@instForPhotos.Id, '@r.RequestNumber')">
+                                                        📷 Photos (@count)
+                                                        @if (pStatus == SolarPortal.Domain.Enums.ApprovalStatus.Approved)
+                                                        {
+                                                            <text>✅</text>
+                                                        }
+                                                        else if (pStatus == SolarPortal.Domain.Enums.ApprovalStatus.Rejected)
+                                                        {
+                                                            <text>❌</text>
+                                                        }
+                                                    </button>
+                                                }
                                                 break;
                                             case "dcr":
                                                 <button class="btn btn-primary btn-sm" onclick="openDCRForm(@r.Id, '@r.RequestNumber')">📄 Submit DCR</button>
@@ -415,6 +520,8 @@
     {
         "Meter Dispatch" => "📦",
         "Material Dispatch" => "📦",
+        "Prepare for Dispatch" => "📋",
+        "Final Dispatch" => "🚚",
         "Installation" => "🔧",
         "DCR Update" => "📄",
         _ => "📋"
@@ -505,6 +612,56 @@
 }
 <script id="planCommData" type="application/json">@Html.Raw(planCommJson)</script>
 
+@* Point 6: what step-1 already recorded, so the Prepare modal re-opens with the
+   saved values instead of a blank form, and Final can show what is going out. *@
+@{
+    var matForJson = ViewBag.MaterialDetails as Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>;
+    var matJson = System.Text.Json.JsonSerializer.Serialize(
+        (matForJson ?? new Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>())
+        .ToDictionary(
+            kv => kv.Key.ToString(),
+            kv => new
+            {
+                materialDetails = kv.Value.MaterialDetails ?? "",
+                vehicleDetails = kv.Value.VehicleDetails ?? "",
+                prepareRemark = kv.Value.PrepareRemark ?? "",
+                remark = kv.Value.Remark ?? "",
+                workerId = kv.Value.AssignedWorkerId,
+                workerName = kv.Value.AssignedWorker?.Name ?? "",
+                isPrepared = kv.Value.IsPrepared,
+                isDispatched = kv.Value.IsDispatched,
+                preparedAt = kv.Value.PreparedAt.HasValue ? kv.Value.PreparedAt.Value.ToLocalTime().ToString("dd MMM yyyy") : ""
+            }));
+}
+<script id="materialData" type="application/json">@Html.Raw(matJson)</script>
+
+@* Point 11: the INC's mark-installed photos, keyed by InstallationId so the
+   review modal can render the whole batch, plus the batch's approval state. *@
+@{
+    var photoMap = ViewBag.InstallationPhotos as Dictionary<int, List<SolarPortal.Domain.Entities.InstallationPhoto>>
+                   ?? new Dictionary<int, List<SolarPortal.Domain.Entities.InstallationPhoto>>();
+    var installsForPhotos = ViewBag.InstallationDetails as Dictionary<int, SolarPortal.Domain.Entities.Installation>
+                            ?? new Dictionary<int, SolarPortal.Domain.Entities.Installation>();
+
+    var photosJson = System.Text.Json.JsonSerializer.Serialize(
+        installsForPhotos.ToDictionary(
+            kv => kv.Value.Id.ToString(),
+            kv => (photoMap.TryGetValue(kv.Key, out var list) ? list : new List<SolarPortal.Domain.Entities.InstallationPhoto>())
+                  .Select(p => new { path = p.FilePath, name = p.FileName })));
+
+    var photoMetaJson = System.Text.Json.JsonSerializer.Serialize(
+        installsForPhotos.ToDictionary(
+            kv => kv.Value.Id.ToString(),
+            kv => new
+            {
+                status = kv.Value.ApprovalStatus.ToString(),
+                remark = kv.Value.RejectionReason ?? "",
+                credited = kv.Value.CommissionCredited
+            }));
+}
+<script id="installPhotoData" type="application/json">@Html.Raw(photosJson)</script>
+<script id="installPhotoMetaData" type="application/json">@Html.Raw(photoMetaJson)</script>
+
 @section Scripts {
     <script>
         const workerData = JSON.parse(document.getElementById('workerOptions').textContent || '[]');
@@ -512,8 +669,61 @@
         const dispatchAssign = JSON.parse(document.getElementById('dispatchAssignData').textContent || '{}');
         const installData = JSON.parse(document.getElementById('installData').textContent || '{}');
         const planComm = JSON.parse(document.getElementById('planCommData')?.textContent || '{}');
+        const materialData = JSON.parse(document.getElementById('materialData')?.textContent || '{}');
+        const installPhotos = JSON.parse(document.getElementById('installPhotoData')?.textContent || '{}');
+        const installPhotoMeta = JSON.parse(document.getElementById('installPhotoMetaData')?.textContent || '{}');
+        const maxInstallPhotos = @SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaxInstallationPhotos;
         const csrfToken = document.querySelector('#csrfForm input[name="__RequestVerificationToken"]')?.value || '';
         const today = new Date().toISOString().split('T')[0];
+
+        // ── Point 5: Camera / Gallery on every photo upload ────────────────
+        // A bare <input type="file"> lets the phone OS decide, and on several
+        // Android builds that means the gallery only — no way to shoot the photo
+        // on the spot. capture="environment" forces the camera, but then a file
+        // already on the device cannot be picked. So each upload renders BOTH
+        // inputs behind two buttons, and pickedFile() reads whichever was used
+        // (camera wins when, unusually, both hold a file).
+        function photoPickerHtml(id, accept) {
+        accept = accept || 'image/*,.pdf';
+        return `
+        <div class="file-pick" data-for="${id}">
+          <div style="display:flex;gap:8px;margin:4px 0">
+            <button type="button" class="swal2-styled file-pick-btn"
+                    style="background:#0d9488;font-size:12px;padding:6px 12px;margin:0"
+                    onclick="document.getElementById('${id}-cam').click()">📷 Camera</button>
+            <button type="button" class="swal2-styled file-pick-btn"
+                    style="background:#475569;font-size:12px;padding:6px 12px;margin:0"
+                    onclick="document.getElementById('${id}-gal').click()">🖼️ Gallery</button>
+          </div>
+          <input id="${id}-cam" type="file" accept="image/*" capture="environment" style="display:none"
+                 onchange="filePicked('${id}','cam')">
+          <input id="${id}-gal" type="file" accept="${accept}" style="display:none"
+                 onchange="filePicked('${id}','gal')">
+          <div id="${id}-name" style="font-size:11px;color:#6b7280">No file chosen</div>
+        </div>`;
+        }
+
+        // Show what was picked, and make the two inputs mutually exclusive so the
+        // last choice is unambiguously the one that gets uploaded.
+        function filePicked(id, which) {
+        const other = which === 'cam' ? 'gal' : 'cam';
+        const chosen = document.getElementById(id + '-' + which);
+        const otherEl = document.getElementById(id + '-' + other);
+        if (otherEl) otherEl.value = '';
+        const label = document.getElementById(id + '-name');
+        if (label) {
+        label.textContent = chosen && chosen.files[0]
+        ? (which === 'cam' ? '📷 ' : '🖼️ ') + chosen.files[0].name
+        : 'No file chosen';
+        }
+        }
+
+        function pickedFile(id) {
+        const cam = document.getElementById(id + '-cam');
+        const gal = document.getElementById(id + '-gal');
+        return (cam && cam.files[0]) || (gal && gal.files[0]) || null;
+        }
+
 
         // Escape for safely injecting values into the SweetAlert HTML string.
         const esc = s => (s == null ? '' : String(s))
@@ -563,8 +773,8 @@
         <input id="f-meter-date" type="date" class="swal2-input" value="${today}">
         <label>Remark</label>
         <textarea id="f-meter-remark" class="swal2-textarea" placeholder="Courier / tracking / notes"></textarea>
-        <label>Document (optional)</label>
-        <input id="f-meter-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
+        <label>Document / Photo (optional)</label>
+        ${photoPickerHtml('f-meter-doc', '.pdf,.jpg,.jpeg,.png')}
         </div>`,
         background: '#ffffff', color: '#1f2937',
         showCancelButton: true,
@@ -578,7 +788,7 @@
         fd.append('meterType', document.getElementById('f-meter-type').value);
         fd.append('dispatchDate', document.getElementById('f-meter-date').value);
         fd.append('remark', document.getElementById('f-meter-remark').value);
-        const file = document.getElementById('f-meter-doc').files[0];
+        const file = pickedFile('f-meter-doc');
         if (file) fd.append('dispatchDoc', file);
         return await postForm('/SolarPanelAdmin/Operations/SubmitMeterDispatch', fd);
         }
@@ -639,7 +849,7 @@
         <label>Remark</label>
         <textarea id="f-mat-remark" class="swal2-textarea"></textarea>
         <label>Document (optional)</label>
-        <input id="f-mat-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
+        ${photoPickerHtml('f-mat-doc', '.pdf,.jpg,.jpeg,.png')}
         </div>`,
         background: '#ffffff', color: '#1f2937',
         showCancelButton: true,
@@ -671,9 +881,116 @@
         fd.append('vehicleDetails', document.getElementById('f-mat-veh').value);
         fd.append('remark', document.getElementById('f-mat-remark').value);
         fd.append('workerId', w);
-        const file = document.getElementById('f-mat-doc').files[0];
+        const file = pickedFile('f-mat-doc');
         if (file) fd.append('dispatchDoc', file);
         return await postForm('/SolarPanelAdmin/Operations/SubmitMaterialDispatch', fd);
+        }
+        }).then(r => {
+        if (r.isConfirmed && r.value && r.value.success) {
+        Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+        } else if (r.isConfirmed) {
+        Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+        }
+        });
+        }
+
+        // ── Point 6, step 1: Prepare for Dispatch ─────────────────────────
+        // Records WHAT is going out and WHO installs it. Nothing moves yet —
+        // the project stays at Material Dispatch until Final Dispatch is done.
+        function openPrepareForm(requestId, requestNumber) {
+        const ex = materialData[requestId] || {};
+        Swal.fire({
+        title: '📋 Prepare for Dispatch — ' + requestNumber,
+        html: `
+        <div style="text-align:left;font-size:13px">
+        <div id="f-mat-comm"></div>
+        <label>Material Details</label>
+        <textarea id="f-prep-detail" class="swal2-textarea" placeholder="Solar panels, inverter, wiring, mounts...">${esc(ex.materialDetails)}</textarea>
+        <label>Vehicle / Courier</label>
+        <input id="f-prep-veh" type="text" class="swal2-input" placeholder="RJ-14-AB-1234 / DTDC AWB..." value="${esc(ex.vehicleDetails)}">
+        <label>Installer (Worker) *</label>
+        <select id="f-mat-worker" class="swal2-input">${workerOptionsHtml(true, ex.workerId, ex.workerName)}</select>
+        <label>Preparation Remark</label>
+        <textarea id="f-prep-remark" class="swal2-textarea">${esc(ex.prepareRemark)}</textarea>
+        <label>Document / Photo (optional)</label>
+        ${photoPickerHtml('f-prep-doc', '.pdf,.jpg,.jpeg,.png')}
+        </div>`,
+        background: '#ffffff', color: '#1f2937',
+        showCancelButton: true,
+        confirmButtonText: 'Save Preparation',
+        didOpen: () => {
+        // Reuses the Material Dispatch commission note — the INC/no-commission
+        // rule is checked at BOTH steps, so warn as early as step 1.
+        const sel = document.getElementById('f-mat-worker');
+        if (sel) sel.addEventListener('change', () => matCommNote(requestId));
+        matCommNote(requestId);
+        },
+        preConfirm: async () => {
+        const w = document.getElementById('f-mat-worker').value;
+        if (!w) { Swal.showValidationMessage('Please assign an installer before preparing.'); return false; }
+
+        const pc = planComm[requestId] || {};
+        if (matWorkerType(w) === 'INC' && !pc.isSet) {
+        Swal.showValidationMessage(
+        'No commission is set for the ' + (pc.planName ? '"' + pc.planName + '"' : 'selected') +
+        ' plan. Add the commission amount in INC Commission before assigning an INC installer.');
+        return false;
+        }
+
+        const fd = new FormData();
+        fd.append('requestId', requestId);
+        fd.append('materialDetails', document.getElementById('f-prep-detail').value);
+        fd.append('vehicleDetails', document.getElementById('f-prep-veh').value);
+        fd.append('prepareRemark', document.getElementById('f-prep-remark').value);
+        fd.append('workerId', w);
+        const file = pickedFile('f-prep-doc');
+        if (file) fd.append('dispatchDoc', file);
+        return await postForm('/SolarPanelAdmin/Operations/SubmitPrepareDispatch', fd);
+        }
+        }).then(r => {
+        if (r.isConfirmed && r.value && r.value.success) {
+        Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+        } else if (r.isConfirmed) {
+        Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+        }
+        });
+        }
+
+        // ── Point 6, step 2: Final Dispatch ───────────────────────────────
+        // Sends what step 1 prepared and advances the project to Installation.
+        // The material and installer are shown read-only — change them by
+        // re-opening Prepare, so the two steps can never disagree.
+        function openFinalDispatchForm(requestId, requestNumber) {
+        const ex = materialData[requestId] || {};
+        Swal.fire({
+        title: '🚚 Final Dispatch — ' + requestNumber,
+        html: `
+        <div style="text-align:left;font-size:13px">
+        <div style="border:1px solid #bbf7d0;background:#f0fdf4;border-radius:8px;padding:10px;margin-bottom:10px">
+        <div style="font-size:11px;color:#15803d;text-transform:uppercase;letter-spacing:.4px">Prepared${ex.preparedAt ? ' on ' + esc(ex.preparedAt) : ''}</div>
+        <div style="font-size:13px;color:#166534">${esc(ex.materialDetails) || '<em>No material details recorded</em>'}</div>
+        <div style="font-size:12px;color:#166534">👷 ${esc(ex.workerName) || '<em>No installer assigned</em>'}</div>
+        ${ex.vehicleDetails ? `<div style="font-size:12px;color:#166534">🚚 ${esc(ex.vehicleDetails)}</div>` : ''}
+        <div style="font-size:11px;color:#6b7280;margin-top:4px">To change any of this, re-open Prepare for Dispatch.</div>
+        </div>
+        <label>Dispatch Date *</label>
+        <input id="f-fin-date" type="date" class="swal2-input" value="${today}">
+        <label>Dispatch Remark</label>
+        <textarea id="f-fin-remark" class="swal2-textarea" placeholder="Docket no. / driver / notes">${esc(ex.remark)}</textarea>
+        <label>Dispatch Document / Photo (optional)</label>
+        ${photoPickerHtml('f-fin-doc', '.pdf,.jpg,.jpeg,.png')}
+        </div>`,
+        background: '#ffffff', color: '#1f2937',
+        showCancelButton: true,
+        confirmButtonText: 'Dispatch & Move to Installation',
+        preConfirm: async () => {
+        const fd = new FormData();
+        fd.append('requestId', requestId);
+        fd.append('dispatchDate', document.getElementById('f-fin-date').value);
+        fd.append('remark', document.getElementById('f-fin-remark').value);
+        const file = pickedFile('f-fin-doc');
+        if (file) fd.append('dispatchDoc', file);
+        return await postForm('/SolarPanelAdmin/Operations/SubmitFinalDispatch', fd);
         }
         }).then(r => {
         if (r.isConfirmed && r.value && r.value.success) {
@@ -749,30 +1066,34 @@
         });
         }
 
-        // Installation report se installer badalna — Installation row aur uska
-        // WorkerAssignment dono server par sync hote hain.
-        function openChangeInstaller(installationId, currentWorkerId, currentWorkerName) {
+        // Point 10: change (or first assign) the INC installer. Works from the
+        // dispatch queues as well as Installation — pass whichever ids the row
+        // has, and the server updates the record the assignment actually lives on.
+        function openChangeInstaller(installationId, dispatchId, requestId, currentWorkerId, currentWorkerName) {
+        const hasCurrent = currentWorkerId && String(currentWorkerId) !== '0';
         Swal.fire({
-        title: '✏️ Change Installer',
+        title: hasCurrent ? '✏️ Change Installer' : '➕ Assign Installer',
         html: `
         <div style="text-align:left;font-size:13px">
-        <div style="margin-bottom:8px">Current: <strong>${esc(currentWorkerName)}</strong></div>
-        <label>New Installer *</label>
-        <select id="f-chg-worker" class="swal2-input">${workerOptionsHtml(false, currentWorkerId, currentWorkerName)}</select>
+        ${hasCurrent ? `<div style="margin-bottom:8px">Current: <strong>${esc(currentWorkerName)}</strong></div>` : ''}
+        <label>Installer *</label>
+        <select id="f-chg-worker" class="swal2-input">${workerOptionsHtml(!hasCurrent, hasCurrent ? currentWorkerId : null, currentWorkerName)}</select>
         <label>Reason / Note</label>
         <textarea id="f-chg-note" class="swal2-textarea" placeholder="Why the installer changed"></textarea>
         </div>`,
         background: '#ffffff', color: '#1f2937',
         showCancelButton: true,
-        confirmButtonText: 'Update Installer',
+        confirmButtonText: hasCurrent ? 'Update Installer' : 'Assign Installer',
         preConfirm: async () => {
         const w = document.getElementById('f-chg-worker').value;
         if (!w) { Swal.showValidationMessage('Please choose an installer.'); return false; }
-        if (String(w) === String(currentWorkerId)) {
+        if (hasCurrent && String(w) === String(currentWorkerId)) {
         Swal.showValidationMessage('That is already the assigned installer.'); return false;
         }
         const fd = new FormData();
-        fd.append('installationId', installationId);
+        fd.append('installationId', installationId || 0);
+        fd.append('dispatchId', dispatchId || 0);
+        fd.append('requestId', requestId || 0);
         fd.append('workerId', w);
         fd.append('note', document.getElementById('f-chg-note').value);
         return await postForm('/SolarPanelAdmin/Operations/ChangeInstaller', fd);
@@ -781,6 +1102,74 @@
         if (r.isConfirmed && r.value && r.value.success) {
         Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
         } else if (r.isConfirmed) {
+        Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+        }
+        });
+        }
+
+        // ── Point 11: review the INC's mark-installed photos ───────────────
+        // The admin approves or rejects the WHOLE batch. Approving is what pays
+        // the INC, so the confirmation says so plainly.
+        function openInstallPhotos(installationId, requestNumber) {
+        const photos = installPhotos[installationId] || [];
+        const meta = installPhotoMeta[installationId] || {};
+
+        const grid = photos.length
+        ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;max-height:320px;overflow-y:auto">
+             ${photos.map(p => `
+               <a href="${fileModalSrc(p.path)}" target="_blank" title="${esc(p.name)}">
+                 <img src="${fileModalSrc(p.path)}" alt="${esc(p.name)}"
+                      style="width:100%;height:90px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb">
+               </a>`).join('')}
+           </div>`
+        : `<div style="color:#b91c1c">The INC has not uploaded any photos for this installation yet.</div>`;
+
+        const statusBox = meta.status === 'Approved'
+        ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:8px 10px;border-radius:8px;margin-bottom:8px;font-size:12.5px">
+             ✅ Already approved — ${meta.credited
+               ? 'the commission has been credited to the installer.'
+               : 'the installer panel will credit the commission when they next open their queue.'}</div>`
+        : meta.status === 'Rejected'
+        ? `<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:8px 10px;border-radius:8px;margin-bottom:8px;font-size:12.5px">
+             ❌ Rejected — waiting for the INC to upload again.${meta.remark ? '<br>Reason: ' + esc(meta.remark) : ''}</div>`
+        : '';
+
+        Swal.fire({
+        title: '📷 Installation Photos — ' + requestNumber,
+        html: `
+        <div style="text-align:left;font-size:13px">
+        ${statusBox}
+        <div style="margin-bottom:6px;color:#6b7280">${photos.length} of ${maxInstallPhotos} photo(s) uploaded by the INC.</div>
+        ${grid}
+        <label style="margin-top:10px;display:block">Remark</label>
+        <textarea id="f-ph-remark" class="swal2-textarea" placeholder="Optional on approve, required on reject"></textarea>
+        </div>`,
+        width: 620,
+        background: '#ffffff', color: '#1f2937',
+        showCancelButton: true,
+        showDenyButton: meta.status !== 'Approved' && !meta.credited,
+        confirmButtonText: '✅ Approve',
+        denyButtonText: '❌ Reject',
+        preConfirm: async () => {
+        if (!photos.length) { Swal.showValidationMessage('There are no photos to approve.'); return false; }
+        const fd = new FormData();
+        fd.append('installationId', installationId);
+        fd.append('remark', document.getElementById('f-ph-remark').value);
+        return await postForm('/SolarPanelAdmin/Operations/ApproveInstallationPhotos', fd);
+        },
+        preDeny: async () => {
+        const reason = (document.getElementById('f-ph-remark').value || '').trim();
+        if (!reason) { Swal.showValidationMessage('Give a reason — the INC needs to know what to re-shoot.'); return false; }
+        const fd = new FormData();
+        fd.append('installationId', installationId);
+        fd.append('reason', reason);
+        return await postForm('/SolarPanelAdmin/Operations/RejectInstallationPhotos', fd);
+        }
+        }).then(r => {
+        const acted = r.isConfirmed || r.isDenied;
+        if (acted && r.value && r.value.success) {
+        Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+        } else if (acted) {
         Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
         }
         });
@@ -805,7 +1194,7 @@
         <textarea id="f-dcr-remark" class="swal2-textarea">${esc(ex.remark)}</textarea>
         ${docLink}
         <label>DCR Document (optional — re-upload to replace user's)</label>
-        <input id="f-dcr-doc" type="file" accept=".pdf,.jpg,.png" class="swal2-file">
+        ${photoPickerHtml('f-dcr-doc', '.pdf,.jpg,.jpeg,.png')}
         </div>`,
         background: '#ffffff', color: '#1f2937',
         showCancelButton: true,
@@ -818,7 +1207,7 @@
         fd.append('dcrNumber', num);
         fd.append('dcrDate', document.getElementById('f-dcr-date').value);
         fd.append('remark', document.getElementById('f-dcr-remark').value);
-        const file = document.getElementById('f-dcr-doc').files[0];
+        const file = pickedFile('f-dcr-doc');
         if (file) fd.append('dcrDoc', file);
         return await postForm('/SolarPanelAdmin/Operations/SubmitDCR', fd);
         }

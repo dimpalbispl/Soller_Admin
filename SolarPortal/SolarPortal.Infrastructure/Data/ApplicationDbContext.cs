@@ -36,6 +36,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<IncWithdrawal> IncWithdrawals => Set<IncWithdrawal>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
 
+    // ─── Admin change request (Aug 2026) — tables created by
+    //     ADD-AdminPanelChangeRequest.sql, same hand-rolled pattern as the
+    //     rest of this schema (__EFMigrationsHistory is empty on the live DB).
+    public DbSet<AdminLoginOtp> AdminLoginOtps => Set<AdminLoginOtp>();
+    public DbSet<AdminPermission> AdminPermissions => Set<AdminPermission>();
+    public DbSet<IncKycDocument> IncKycDocuments => Set<IncKycDocument>();
+    public DbSet<InstallationPhoto> InstallationPhotos => Set<InstallationPhoto>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -246,6 +254,84 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             e.Property(x => x.EntityName).HasMaxLength(100).IsRequired();
             e.Property(x => x.EntityId).HasMaxLength(50).IsRequired();
             e.Property(x => x.IpAddress).HasMaxLength(45).IsRequired();
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        // ─── Admin change request (Aug 2026) ─────────────────────────────
+        // AdminLoginOtp / AdminPermission are plain tables (no BaseEntity), so
+        // they get no soft-delete filter.
+        builder.Entity<AdminLoginOtp>(e =>
+        {
+            e.ToTable("AdminLoginOtps");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.UserName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.EmailId).HasMaxLength(256);
+            e.Property(x => x.MobileNo).HasMaxLength(20);
+            e.Property(x => x.Otp).HasMaxLength(10).IsRequired();
+            e.Property(x => x.IpAddress).HasMaxLength(45);
+            e.HasIndex(x => new { x.UserName, x.IssuedAt });
+        });
+
+        builder.Entity<AdminPermission>(e =>
+        {
+            e.ToTable("AdminPermissions");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.UserName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.MenuKey).HasMaxLength(100).IsRequired();
+            e.HasIndex(x => new { x.UserName, x.MenuKey }).IsUnique();
+        });
+
+        // IncKycDocuments and InstallationPhotos are created and written by the
+        // USER/INSTALLER panel (ADD-UserPanelIncPoints.sql). The mapping here has
+        // to match that panel's exactly — one row per WORKER with three verified
+        // sections, and FileSizeBytes rather than FileSize.
+        builder.Entity<IncKycDocument>(e =>
+        {
+            e.ToTable("IncKycDocuments");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Address).HasMaxLength(250);
+            e.Property(x => x.PinCode).HasMaxLength(10);
+            e.Property(x => x.StateCode).HasMaxLength(20);
+            e.Property(x => x.StateName).HasMaxLength(100);
+            e.Property(x => x.District).HasMaxLength(100);
+            e.Property(x => x.City).HasMaxLength(100);
+            e.Property(x => x.IdProofTypeName).HasMaxLength(100);
+            e.Property(x => x.IdProofNo).HasMaxLength(30);
+            e.Property(x => x.AddressProofFrontPath).HasMaxLength(500);
+            e.Property(x => x.AddressProofBackPath).HasMaxLength(500);
+            e.Property(x => x.AddressRemark).HasMaxLength(1000);
+            e.Property(x => x.AccountType).HasMaxLength(50);
+            e.Property(x => x.AccountNo).HasMaxLength(30);
+            e.Property(x => x.BankName).HasMaxLength(150);
+            e.Property(x => x.BranchName).HasMaxLength(150);
+            e.Property(x => x.IfscCode).HasMaxLength(20);
+            e.Property(x => x.BankProofPath).HasMaxLength(500);
+            e.Property(x => x.BankRemark).HasMaxLength(1000);
+            e.Property(x => x.PanNo).HasMaxLength(15);
+            e.Property(x => x.PanProofPath).HasMaxLength(500);
+            e.Property(x => x.PanRemark).HasMaxLength(1000);
+            // Derived helpers — computed in C#, no columns behind them.
+            e.Ignore(x => x.IsFullyApproved);
+            e.Ignore(x => x.HasPendingSection);
+            e.Ignore(x => x.HasRejectedSection);
+            e.HasOne(x => x.Worker)
+             .WithMany()
+             .HasForeignKey(x => x.WorkerId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        builder.Entity<InstallationPhoto>(e =>
+        {
+            e.ToTable("InstallationPhotos");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.FileName).HasMaxLength(255);
+            e.Property(x => x.FilePath).HasMaxLength(500).IsRequired();
+            e.Property(x => x.ContentType).HasMaxLength(100);
+            e.HasOne(x => x.Installation)
+             .WithMany(i => i.Photos)
+             .HasForeignKey(x => x.InstallationId)
+             .OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(x => !x.IsDeleted);
         });
     }

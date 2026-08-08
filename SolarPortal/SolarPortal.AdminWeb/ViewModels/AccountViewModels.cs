@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 
 namespace SolarPortal.AdminWeb.ViewModels;
@@ -14,6 +14,23 @@ public class LoginViewModel
 
     [Display(Name = "Remember me")]
     public bool RememberMe { get; set; }
+
+    public string? ReturnUrl { get; set; }
+}
+
+/// <summary>
+/// Second step of admin sign-in. The username is carried on the form only so the
+/// screen can show it — the authoritative copy lives in the session, which is
+/// what the controller actually trusts. Nothing here can grant access on its own.
+/// </summary>
+public class AdminOtpViewModel
+{
+    [Required(ErrorMessage = "Please enter the OTP.")]
+    [Display(Name = "OTP")]
+    public string Otp { get; set; } = string.Empty;
+
+    /// <summary>"sadhn***@gmail.com" — shown so the admin knows which inbox to open.</summary>
+    public string? MaskedEmail { get; set; }
 
     public string? ReturnUrl { get; set; }
 }
@@ -88,4 +105,82 @@ public class ForgotPasswordViewModel
 {
     [Required, EmailAddress]
     public string Email { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Admin sign-in is a four-step wizard, matching the legacy SolFit panel:
+///   1. User ID   2. Password   3. Send OTP   4. Verify OTP
+///
+/// Each step posts only its own field. The authoritative record of how far a
+/// visitor has got lives in the SERVER SESSION, never on the form — a hidden
+/// field saying "password already checked" would be trivially forged, so the
+/// controller re-reads the session stage on every step and refuses anything out
+/// of order. Nothing in these models can grant access on its own.
+/// </summary>
+public class AdminUserIdViewModel
+{
+    [Required(ErrorMessage = "Please enter your User ID.")]
+    [Display(Name = "User ID")]
+    public string UserName { get; set; } = string.Empty;
+
+    public string? ReturnUrl { get; set; }
+}
+
+/// <summary>Step 2. The username is shown for context; the session holds the real one.</summary>
+public class AdminPasswordViewModel
+{
+    [Required(ErrorMessage = "Please enter your password.")]
+    [DataType(DataType.Password)]
+    public string Password { get; set; } = string.Empty;
+
+    [Display(Name = "Remember me")]
+    public bool RememberMe { get; set; }
+
+    /// <summary>Display only — read back from the session, not trusted from the post.</summary>
+    public string? UserName { get; set; }
+
+    public string? ReturnUrl { get; set; }
+}
+
+/// <summary>Step 3. Nothing to type — just the confirmation before a code is mailed.</summary>
+public class AdminSendOtpViewModel
+{
+    public string? UserName { get; set; }
+
+    /// <summary>"sadhn***@gmail.com" — so the admin knows which inbox to open.</summary>
+    public string? MaskedEmail { get; set; }
+
+    /// <summary>Set when there is no address to mail; the view explains rather than dead-ends.</summary>
+    public string? Problem { get; set; }
+
+    public string? ReturnUrl { get; set; }
+}
+
+
+/// <summary>
+/// Step 2: password AND the mailed code, together on one screen.
+///
+/// UserName and MaskedEmail are display-only - the controller reads the real ones
+/// from the session, so nothing posted here can change WHO is signing in.
+/// </summary>
+public class AdminVerifyViewModel
+{
+    [DataType(DataType.Password)]
+    public string Password { get; set; } = string.Empty;
+
+    [Display(Name = "OTP")]
+    public string Otp { get; set; } = string.Empty;
+
+    [Display(Name = "Remember me")]
+    public bool RememberMe { get; set; }
+
+    public string? UserName { get; set; }
+
+    /// <summary>Masked address, so the admin knows which inbox to open.</summary>
+    public string? MaskedEmail { get; set; }
+
+    /// <summary>Set when no code could be sent; the screen then asks for the password only.</summary>
+    public string? OtpProblem { get; set; }
+
+    public string? ReturnUrl { get; set; }
 }

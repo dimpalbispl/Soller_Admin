@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SolarPortal.Application.DTOs;
@@ -99,11 +99,22 @@ public class SiteSurveyController : Controller
         _uow.SiteSurveys.Update(survey);
         await _uow.SaveChangesAsync();
 
+        // Point 3: Site Survey and Meter Dispatch open together after PM Surya
+        // approval, and the SURVEY is what moves the project on - "pehle site
+        // survey upload kar approve kar de to bhi aage ka process chal jana
+        // chahiye, meter dispatch wo kabhi bhi kar sakta hai."
+        //
+        // So this no longer waits for the meter. Meter Dispatch stays available at
+        // any time; its queue lists projects with no meter dispatched yet rather
+        // than projects parked at that stage, so nothing falls out of it when the
+        // survey moves the project ahead.
+        var nextStage = ProjectStatus.MaterialDispatch;
+
         var adminId = _userManager.GetUserId(User)!;
         await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
         {
             Id = survey.SolarRequestId,
-            NewStage = ProjectStatus.MaterialDispatch,
+            NewStage = nextStage,
             Notes = "Site survey approved by admin."
         }, adminId);
 
@@ -115,12 +126,17 @@ public class SiteSurveyController : Controller
                 UserId = req.UserId,
                 SolarRequestId = req.Id,
                 Title = "Site Survey approved",
-                Message = "Your site survey has been approved. Meter dispatch is next.",
+                Message = "Your site survey has been approved. Material dispatch is next.",
                 NotificationType = "SiteSurvey"
             });
         }
 
-        return Json(new { success = true, message = "Site survey approved. Project moved to Material Dispatch." });
+        return Json(new
+        {
+            success = true,
+            message = "Site survey approved. Project moved to Material Dispatch. " +
+                      "Meter dispatch can still be recorded at any time."
+        });
     }
 
     // POST: /Admin/SiteSurvey/Reject

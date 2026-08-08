@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SolarPortal.Application.DTOs;
@@ -12,6 +12,13 @@ namespace SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers;
 /// <summary>
 /// Admin verifies PM Surya Ghar documents uploaded by users.
 /// Once approved, project moves to MeterDispatch.
+///
+/// ── Accept-before-decide (change request point 9) ────────────────────────
+/// A case has to be ACCEPTED by an admin before its documents can be approved
+/// or rejected, and only the admin who accepted it may decide it. Rejecting any
+/// document sends the case back to Pending and RELEASES the claim, so once the
+/// user re-uploads, any admin can accept it again and carry on. Every one of
+/// those steps is written to the activity log.
 /// </summary>
 [Area("SolarPanelAdmin")]
 [Authorize(Roles = "Admin")]
@@ -22,6 +29,7 @@ public class PMSuryaController : Controller
     private readonly ISolarRequestService _requestService;
     private readonly INotificationService _notifications;
     private readonly IFileUploadService _fileUploadService;
+    private readonly IAdminActivityLogger _activity;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public PMSuryaController(
@@ -30,6 +38,7 @@ public class PMSuryaController : Controller
         ISolarRequestService requestService,
         INotificationService notifications,
         IFileUploadService fileUploadService,
+        IAdminActivityLogger activity,
         UserManager<ApplicationUser> userManager)
     {
         _uow = uow;
@@ -37,7 +46,44 @@ public class PMSuryaController : Controller
         _requestService = requestService;
         _notifications = notifications;
         _fileUploadService = fileUploadService;
+        _activity = activity;
         _userManager = userManager;
+    }
+
+    private string CurrentAdminId => _userManager.GetUserId(User) ?? "system";
+    private string? ClientIp => HttpContext.Connection.RemoteIpAddress?.ToString();
+
+    /// <summary>Display name for the "accepted by" stamp — falls back to the id.</summary>
+    private async Task<string> CurrentAdminNameAsync()
+    {
+        var me = await _userManager.GetUserAsync(User);
+        return !string.IsNullOrWhiteSpace(me?.FullName) ? me!.FullName!
+             : !string.IsNullOrWhiteSpace(me?.UserName) ? me!.UserName!
+             : CurrentAdminId;
+    }
+
+    /// <summary>
+    /// Gate for every decision on a PM Surya case: it must be accepted, and by
+    /// the admin making the call. Returns null when the caller may proceed,
+    /// otherwise the JSON error to send back.
+    /// </summary>
+    private IActionResult? BlockIfNotMine(SolarRequest req)
+    {
+        if (!req.IsPmSuryaAccepted)
+            return Json(new
+            {
+                success = false,
+                message = "Accept this PM Surya Ghar case first. Only the admin who accepts it can approve or reject its documents."
+            });
+
+        if (!string.Equals(req.PmSuryaAcceptedBy, CurrentAdminId, StringComparison.OrdinalIgnoreCase))
+            return Json(new
+            {
+                success = false,
+                message = $"This case was accepted by {req.PmSuryaAcceptedByName ?? req.PmSuryaAcceptedBy}. Only they can approve or reject it."
+            });
+
+        return null;
     }
 
     // GET: /Admin/PMSurya/Index
@@ -113,7 +159,14 @@ public class PMSuryaController : Controller
         ViewBag.Filter = f;
             
             // Enrich user active status info
-            var requestList = requests.OrderByDescending(r => r.CreatedAt).ToList();
+            // Newest request first. Id is the tie-breaker because several requests
+            // can share a CreatedAt (bulk/seeded rows, or two in the same second),
+            // and without it those rows come back in whatever order the provider
+            // happens to return - which reads as "not sorted at all".
+            var requestList = requests
+                .OrderByDescending(r => r.CreatedAt)
+                .ThenByDescending(r => r.Id)
+                .ToList();
             var userIds = requestList.Select(r => r.UserId).Distinct().ToList();
             var users = new Dictionary<string, ApplicationUser>();
             
@@ -157,7 +210,51 @@ public class PMSuryaController : Controller
         var docs = await _pmDocs.GetByRequestIdAsync(id);
         ViewBag.Request = req;
         ViewBag.Documents = docs;
+
+        // Point 9: the page needs to know whether this case is claimed, by whom,
+        // and whether that is the admin looking at it — the buttons key off this.
+        ViewBag.AcceptedBy = req.PmSuryaAcceptedBy;
+        ViewBag.AcceptedByName = req.PmSuryaAcceptedByName;
+        ViewBag.AcceptedAt = req.PmSuryaAcceptedAt;
+        ViewBag.IsMine = req.IsPmSuryaAccepted &&
+                         string.Equals(req.PmSuryaAcceptedBy, CurrentAdminId, StringComparison.OrdinalIgnoreCase);
+
+        ViewBag.ActivityLog = await _activity.GetForEntityAsync("PMSurya", id.ToString());
         return View();
+    }
+
+    // POST: /Admin/PMSurya/Accept — claim the case. First admin to click owns the
+    // decision until they reject a document (which releases it again).
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Accept(int requestId)
+    {
+        var req = await _uow.SolarRequests.GetByIdAsync(requestId);
+        if (req == null) return Json(new { success = false, message = "Request not found" });
+
+        var meId = CurrentAdminId;
+
+        if (req.IsPmSuryaAccepted)
+        {
+            // Already mine → nothing to do; already someone else's → refuse, so two
+            // admins can never both believe they own the case.
+            return string.Equals(req.PmSuryaAcceptedBy, meId, StringComparison.OrdinalIgnoreCase)
+                ? Json(new { success = true, message = "You have already accepted this case." })
+                : Json(new { success = false, message = $"Already accepted by {req.PmSuryaAcceptedByName ?? req.PmSuryaAcceptedBy}." });
+        }
+
+        var meName = await CurrentAdminNameAsync();
+        req.PmSuryaAcceptedBy = meId;
+        req.PmSuryaAcceptedByName = meName;
+        req.PmSuryaAcceptedAt = DateTime.UtcNow;
+        req.UpdatedAt = DateTime.UtcNow;
+        _uow.SolarRequests.Update(req);
+        await _uow.SaveChangesAsync();
+
+        await _activity.LogAsync(meId, "PMSurya.Accept", "PMSurya", requestId.ToString(),
+            $"{meName} accepted PM Surya Ghar case {req.RequestNumber}.", ClientIp);
+
+        return Json(new { success = true, message = "Case accepted. You can now approve or reject its documents." });
     }
 
     // POST: /Admin/PMSurya/ApproveDocument
@@ -165,17 +262,76 @@ public class PMSuryaController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ApproveDocument(int docId, string? remarks)
     {
+        var doc = await _uow.PMDocuments.GetByIdAsync(docId);
+        if (doc == null) return Json(new { success = false, message = "Document not found" });
+
+        var req = await _uow.SolarRequests.GetByIdAsync(doc.SolarRequestId);
+        if (req == null) return Json(new { success = false, message = "Request not found" });
+
+        var blocked = BlockIfNotMine(req);
+        if (blocked != null) return blocked;
+
         await _pmDocs.ApproveDocumentAsync(docId, remarks);
+
+        await _activity.LogAsync(CurrentAdminId, "PMSurya.ApproveDocument", "PMSurya", req.Id.ToString(),
+            $"Approved document {doc.DocumentType} (#{docId}) on {req.RequestNumber}." +
+            (string.IsNullOrWhiteSpace(remarks) ? "" : $" Remarks: {remarks}"), ClientIp);
+
         return Json(new { success = true, message = "Document approved" });
     }
 
     // POST: /Admin/PMSurya/RejectDocument
+    //
+    // Point 9: a rejection puts the case back to Pending AND releases the claim.
+    // The user has to re-upload, and whoever is free at that point can accept it —
+    // it does not have to be the admin who rejected it.
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RejectDocument(int docId, string? remarks)
     {
+        var doc = await _uow.PMDocuments.GetByIdAsync(docId);
+        if (doc == null) return Json(new { success = false, message = "Document not found" });
+
+        var req = await _uow.SolarRequests.GetByIdAsync(doc.SolarRequestId);
+        if (req == null) return Json(new { success = false, message = "Request not found" });
+
+        var blocked = BlockIfNotMine(req);
+        if (blocked != null) return blocked;
+
+        if (string.IsNullOrWhiteSpace(remarks))
+            return Json(new { success = false, message = "Please give a reason so the user knows what to re-upload." });
+
+        var rejectedBy = req.PmSuryaAcceptedByName ?? CurrentAdminId;
+
         await _pmDocs.RejectDocumentAsync(docId, remarks);
-        return Json(new { success = true, message = "Document rejected" });
+
+        // Release the claim so the case is free again after re-upload.
+        req.PmSuryaAcceptedBy = null;
+        req.PmSuryaAcceptedByName = null;
+        req.PmSuryaAcceptedAt = null;
+        req.UpdatedAt = DateTime.UtcNow;
+        _uow.SolarRequests.Update(req);
+        await _uow.SaveChangesAsync();
+
+        await _activity.LogAsync(CurrentAdminId, "PMSurya.RejectDocument", "PMSurya", req.Id.ToString(),
+            $"{rejectedBy} rejected document {doc.DocumentType} (#{docId}) on {req.RequestNumber}. " +
+            $"Reason: {remarks}. Case returned to Pending and released.", ClientIp);
+
+        await _notifications.CreateAsync(new CreateNotificationDto
+        {
+            UserId = req.UserId,
+            SolarRequestId = req.Id,
+            Title = "PM Surya Ghar document rejected",
+            Message = $"Your {doc.DocumentType} was rejected. Reason: {remarks}. Please upload it again.",
+            NotificationType = "PMSurya"
+        });
+
+        return Json(new
+        {
+            success = true,
+            released = true,
+            message = "Document rejected. The case is back to Pending — any admin can accept it once the user re-uploads."
+        });
     }
 
     // POST: /Admin/PMSurya/ApproveAndAdvance/5 — approve the whole batch, store the
@@ -189,6 +345,10 @@ public class PMSuryaController : Controller
     {
         var req = await _uow.SolarRequests.GetByIdAsync(requestId);
         if (req == null) return Json(new { success = false, message = "Request not found" });
+
+        // Point 9: final approval is a decision like any other — it needs the claim.
+        var blocked = BlockIfNotMine(req);
+        if (blocked != null) return blocked;
 
         var docs = (await _uow.PMDocuments.FindAsync(d => d.SolarRequestId == requestId)).ToList();
 
@@ -292,16 +452,23 @@ public class PMSuryaController : Controller
         _uow.SolarRequests.Update(req);
         await _uow.SaveChangesAsync();
 
-        var adminId = _userManager.GetUserId(User)!;
-        // Task 12: PM approve — open Meter Dispatch and Site Survey simultaneously.
-        // We advance the request to MeterDispatch but SiteSurvey remains available
-        // for the user to submit/complete; both can be done in any order.
+        var adminId = CurrentAdminId;
+        // Point 3: PM approve opens Meter Dispatch AND Site Survey together. The
+        // stage lands on MeterDispatch, but neither queue waits for the other —
+        // OperationsController.SubmitMeterDispatch and SiteSurveyController.Approve
+        // each check whether the OTHER leg is finished before moving the project on
+        // to Material Dispatch, so the two can be done in any order.
         await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
         {
             Id = requestId,
             NewStage = ProjectStatus.MeterDispatch,
             Notes = notes ?? "PM Surya Ghar documents verified."
         }, adminId);
+
+        await _activity.LogAsync(adminId, "PMSurya.Approve", "PMSurya", requestId.ToString(),
+            $"Approved PM Surya Ghar for {req.RequestNumber}. " +
+            $"PM Surya ID: {req.PmSuryaApplicationNo}. Meter Dispatch & Site Survey opened." +
+            (string.IsNullOrWhiteSpace(notes) ? "" : $" Notes: {notes}"), ClientIp);
 
         await _notifications.CreateAsync(new CreateNotificationDto
         {

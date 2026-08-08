@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -92,6 +92,26 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<ILiveDbAuthBridge, LiveDbAuthBridge>();
+        // Second factor for admin sign-in — mails a one-time code, mirroring the
+        // legacy SolFit VB login page.
+        services.AddScoped<IAdminOtpService, AdminOtpService>();
+        // Audit trail for admin decisions (PM Surya accept/approve/reject, fund
+        // approval, INC KYC …) — feeds the Log Report.
+        services.AddScoped<IAdminActivityLogger, AdminActivityLogger>();
+        // Add Fund / Approve Fund — the two-step admin money entry.
+        services.AddScoped<IAdminFundService, AdminFundService>();
+        // Installation commission - credited when admin approves the photos.
+        // Shares IncCommissionLedger.SolarRequestId as its idempotency key with
+        // the installer panel's copy, so whichever app posts first wins and the
+        // other one skips. That shared key is the ONLY thing preventing a double
+        // payment; read IncCommissionCreditService before changing it.
+        services.AddScoped<IIncCommissionCreditService, IncCommissionCreditService>();
+        // Already-Active cPanel deposit (point 1). The user panel already credits
+        // it against the project; admin has to read the SAME figure or Payment
+        // Verification shows a due the member has in fact already paid.
+        services.AddScoped<IActiveIdDepositService, ActiveIdDepositService>();
+        // admin -> user menu permissions (opt-in; no rows = full access).
+        services.AddScoped<IAdminPermissionService, AdminPermissionService>();
         services.AddScoped<IDocumentService, DocumentService>();
         services.AddScoped<IWorkerService, WorkerService>();
         services.AddScoped<IFileUploadService, FileUploadService>();

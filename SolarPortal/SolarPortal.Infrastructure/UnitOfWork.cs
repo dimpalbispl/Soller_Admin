@@ -31,6 +31,8 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<WalletTransaction>? _walletTransactions;
     private IGenericRepository<Withdrawal>? _withdrawals;
     private IGenericRepository<ActivityLog>? _activityLogs;
+    private IGenericRepository<InstallationPhoto>? _installationPhotos;
+    private IGenericRepository<IncKycDocument>? _incKycDocuments;
 
     public UnitOfWork(ApplicationDbContext context) => _context = context;
 
@@ -72,6 +74,10 @@ public class UnitOfWork : IUnitOfWork
         _withdrawals ??= new GenericRepository<Withdrawal>(_context);
     public IGenericRepository<ActivityLog> ActivityLogs =>
         _activityLogs ??= new GenericRepository<ActivityLog>(_context);
+    public IGenericRepository<InstallationPhoto> InstallationPhotos =>
+        _installationPhotos ??= new GenericRepository<InstallationPhoto>(_context);
+    public IGenericRepository<IncKycDocument> IncKycDocuments =>
+        _incKycDocuments ??= new GenericRepository<IncKycDocument>(_context);
 
     public async Task<int> SaveChangesAsync() =>
         await _context.SaveChangesAsync();

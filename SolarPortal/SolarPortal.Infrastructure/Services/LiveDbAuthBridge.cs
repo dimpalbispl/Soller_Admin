@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SolarPortal.Application.Interfaces.Services;
@@ -104,6 +104,41 @@ public class LiveDbAuthBridge : ILiveDbAuthBridge
         }
     }
 
+    public async Task<ApplicationUser?> LoadBridgedAdminAsync(string userName)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(userName)) return null;
+
+            // No password check here on purpose — see the interface comment. The
+            // shadow row only exists because TryBridgeAdminAsync already created
+            // it after a successful credential check.
+            return await LoadUserBySqlAsync($"admin-{userName.Trim()}@livedb.local");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "LiveDb bridge could not reload admin UserName={UserName}", userName);
+            return null;
+        }
+    }
+
+    public async Task<bool> AdminExistsAsync(string userName)
+    {
+        if (string.IsNullOrWhiteSpace(userName)) return false;
+        try
+        {
+            var trimmed = userName.Trim();
+            return await _db.AdminUsers.AsNoTracking()
+                .AnyAsync(u => u.UserName != null && u.UserName.Trim() == trimmed);
+        }
+        catch (Exception ex)
+        {
+            // A legacy-DB hiccup must not block the login page. Reporting "not
+            // found" here only means step 1 falls through to the Identity check.
+            _logger.LogWarning(ex, "LiveDb bridge could not check admin UserName={UserName}", userName);
+            return false;
+        }
+    }
     // ─── Direct SQL helpers ────────────────────────────────────────────
 
     private async Task EnsureRoleViaSqlAsync(string roleName)

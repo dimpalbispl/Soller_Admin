@@ -23,6 +23,8 @@ public interface IUnitOfWork : IDisposable
     IGenericRepository<Domain.Entities.WalletTransaction> WalletTransactions { get; }
     IGenericRepository<Domain.Entities.Withdrawal> Withdrawals { get; }
     IGenericRepository<Domain.Entities.ActivityLog> ActivityLogs { get; }
+    IGenericRepository<Domain.Entities.InstallationPhoto> InstallationPhotos { get; }
+    IGenericRepository<Domain.Entities.IncKycDocument> IncKycDocuments { get; }
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();
     Task CommitTransactionAsync();

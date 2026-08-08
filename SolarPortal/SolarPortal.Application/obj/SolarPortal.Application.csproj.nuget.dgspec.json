@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "E:\\Sadhna Garg\\SolarGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\SolarPortal.Application.csproj": {}
+    "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\SolarPortal.Application.csproj": {}
   },
   "projects": {
-    "E:\\Sadhna Garg\\SolarGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\SolarPortal.Application.csproj": {
+    "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\SolarPortal.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\Sadhna Garg\\SolarGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\SolarPortal.Application.csproj",
+        "projectUniqueName": "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\SolarPortal.Application.csproj",
         "projectName": "SolarPortal.Application",
-        "projectPath": "E:\\Sadhna Garg\\SolarGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\SolarPortal.Application.csproj",
-        "packagesPath": "C:\\Users\\Dell\\.nuget\\packages\\",
-        "outputPath": "E:\\Sadhna Garg\\SolarGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\obj\\",
+        "projectPath": "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\SolarPortal.Application.csproj",
+        "packagesPath": "C:\\Users\\Claude1\\.nuget\\packages\\",
+        "outputPath": "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Application\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Dell\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Claude1\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -31,11 +31,10 @@
         },
         "frameworks": {
           "net8.0": {
-            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "E:\\Sadhna Garg\\SolarGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj": {
-                "projectPath": "E:\\Sadhna Garg\\SolarGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj"
+              "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj": {
+                "projectPath": "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj"
               }
             }
           }
@@ -53,11 +52,10 @@
             "https://github.com/advisories/GHSA-rvv3-g6hj-g44x": null
           }
         },
-        "SdkAnalysisLevel": "10.0.300"
+        "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
         "net8.0": {
-          "framework": "net8.0",
           "targetAlias": "net8.0",
           "dependencies": {
             "AutoMapper": {
@@ -84,6 +82,20 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.25, 8.0.25]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.25, 8.0.25]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.25, 8.0.25]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -92,24 +104,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "E:\\Sadhna Garg\\SolarGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj": {
+    "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\Sadhna Garg\\SolarGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj",
+        "projectUniqueName": "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj",
         "projectName": "SolarPortal.Domain",
-        "projectPath": "E:\\Sadhna Garg\\SolarGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj",
-        "packagesPath": "C:\\Users\\Dell\\.nuget\\packages\\",
-        "outputPath": "E:\\Sadhna Garg\\SolarGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\obj\\",
+        "projectPath": "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\SolarPortal.Domain.csproj",
+        "packagesPath": "C:\\Users\\Claude1\\.nuget\\packages\\",
+        "outputPath": "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Dell\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Claude1\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -123,7 +135,6 @@
         },
         "frameworks": {
           "net8.0": {
-            "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {}
           }
@@ -138,11 +149,10 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "10.0.300"
+        "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
         "net8.0": {
-          "framework": "net8.0",
           "targetAlias": "net8.0",
           "imports": [
             "net461",
@@ -155,6 +165,20 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.25, 8.0.25]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.25, 8.0.25]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.25, 8.0.25]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -163,7 +187,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

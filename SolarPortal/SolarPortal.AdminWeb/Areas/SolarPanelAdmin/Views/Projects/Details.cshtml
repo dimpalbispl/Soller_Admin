@@ -1,4 +1,4 @@
-@model SolarPortal.Application.DTOs.SolarRequestDto
+﻿@model SolarPortal.Application.DTOs.SolarRequestDto
 @using SolarPortal.Domain.Entities
 @{
     ViewData["Title"] = @Model?.RequestNumber ?? "Project Details";
@@ -104,6 +104,36 @@
             </div>
         </div>
     </div>
+
+    @* ── Point 4 ─────────────────────────────────────────────────────────
+       "Kisi bhi ID ka Solar Request agar approve ho jaati hai to PM Surya then
+        open ho jayega - poora payment ki zaroorat nahi hai."
+
+       The Approvals menu was hidden, so this was the missing half: the rule was
+       implemented but no screen offered the button, which left every request
+       Pending and the user stuck on "unlocks after your request is approved".
+       Approving here does NOT wait for the payment total.
+    *@
+    @if (effApproval == Domain.Enums.ApprovalStatus.Pending)
+    {
+        <div class="card" style="margin-bottom:14px;border-left:4px solid var(--sun)">
+            <div class="ct"><span class="ct-dot"></span>Request Approval</div>
+            <div style="padding:12px 14px">
+                <div style="font-size:13px;margin-bottom:10px">
+                    Approving opens <strong>PM Surya Ghar</strong> for this member straight away.
+                    @if (due > 0)
+                    {
+                        <text>
+                            The remaining <strong>₹@due.ToString("N0")</strong> can be paid afterwards —
+                            full payment is <strong>not</strong> required to approve.
+                        </text>
+                    }
+                </div>
+                <button class="btn btn-p btn-sm" id="btnApproveReq">✅ Approve Request</button>
+                <button class="btn btn-s btn-sm" id="btnRejectReq">❌ Reject</button>
+            </div>
+        </div>
+    }
 
     <div class="g2">
         @* ===== Applicant ===== *@
@@ -531,3 +561,64 @@
 
 @* In-page file preview modal (no new tab) *@
 @await Html.PartialAsync("_FileModal")
+
+@section Scripts {
+<script>
+    // Point 4: approve without waiting for the payment total.
+    (function () {
+        var tokEl = document.querySelector('input[name="__RequestVerificationToken"]');
+        var tok = tokEl ? tokEl.value : '';
+
+        function send(url, extra, btn, reset) {
+            var fd = new FormData();
+            fd.append('id', '@Model.Id');
+            fd.append('__RequestVerificationToken', tok);
+            Object.keys(extra || {}).forEach(function (k) { fd.append(k, extra[k]); });
+            btn.disabled = true;
+            fetch(url, { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.success) { Swal.fire('Done', d.message, 'success').then(function () { location.reload(); }); }
+                    else { Swal.fire('Error', d.message || 'Failed', 'error'); btn.disabled = false; btn.textContent = reset; }
+                })
+                .catch(function () {
+                    Swal.fire('Error', 'Could not reach the server.', 'error');
+                    btn.disabled = false; btn.textContent = reset;
+                });
+        }
+
+        var ap = document.getElementById('btnApproveReq');
+        if (ap) ap.addEventListener('click', function () {
+            var self = this;
+            Swal.fire({
+                title: 'Approve this request?',
+                text: 'PM Surya Ghar opens for the member immediately. Remaining payment can follow.',
+                icon: 'question',
+                input: 'text',
+                inputPlaceholder: 'Optional note',
+                showCancelButton: true,
+                confirmButtonText: 'Approve'
+            }).then(function (r) {
+                if (!r.isConfirmed) return;
+                send('@Url.Action("Approve", "Projects")', { notes: r.value || '' }, self, '✅ Approve Request');
+            });
+        });
+
+        var rj = document.getElementById('btnRejectReq');
+        if (rj) rj.addEventListener('click', function () {
+            var self = this;
+            Swal.fire({
+                title: 'Reject this request?',
+                input: 'text',
+                inputPlaceholder: 'Reason (required) — the member sees this',
+                showCancelButton: true,
+                confirmButtonText: 'Reject',
+                inputValidator: function (v) { return (!v || !v.trim()) && 'A rejection reason is required.'; }
+            }).then(function (r) {
+                if (!r.isConfirmed) return;
+                send('@Url.Action("Reject", "Projects")', { reason: r.value }, self, '❌ Reject');
+            });
+        });
+    })();
+</script>
+}

@@ -20,5 +20,17 @@ public class Payment : BaseEntity
     public DateTime? VerifiedAt { get; set; }
     public string? Notes { get; set; }
 
+    // ─── Add Fund / Approve Fund (change request point 7) ─────────────────
+    // A fund entered by an admin used to be verified the instant it was saved.
+    // It now needs a second admin: IsAdminFund puts the row in the Approve Fund
+    // queue and it stays unverified until approved there. Payments the user
+    // submits themselves never set this flag, so the existing Payment
+    // Verification screen behaves exactly as before.
+    public bool IsAdminFund { get; set; } = false;
+    public string? FundAddedBy { get; set; }
+    public string? FundApprovedBy { get; set; }
+    public DateTime? FundApprovedAt { get; set; }
+    public string? FundRejectionReason { get; set; }
+
     public virtual SolarRequest? SolarRequest { get; set; }
 }

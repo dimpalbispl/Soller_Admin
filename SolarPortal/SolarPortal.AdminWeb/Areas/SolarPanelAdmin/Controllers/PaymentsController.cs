@@ -24,6 +24,8 @@ public class PaymentsController : Controller
     private readonly ISolarRequestService _requestService;
     private readonly INotificationService _notifications;
     private readonly IFileUploadService _fileUploadService;
+    private readonly IAdminFundService _funds;
+    private readonly IActiveIdDepositService _deposits;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public PaymentsController(
@@ -32,6 +34,8 @@ public class PaymentsController : Controller
         ISolarRequestService requestService,
         INotificationService notifications,
         IFileUploadService fileUploadService,
+        IAdminFundService funds,
+        IActiveIdDepositService deposits,
         UserManager<ApplicationUser> userManager)
     {
         _uow = uow;
@@ -39,6 +43,8 @@ public class PaymentsController : Controller
         _requestService = requestService;
         _notifications = notifications;
         _fileUploadService = fileUploadService;
+        _funds = funds;
+        _deposits = deposits;
         _userManager = userManager;
     }
 
@@ -65,7 +71,12 @@ public class PaymentsController : Controller
                 r.CurrentStage == ProjectStatus.Payment).ToList();
             foreach (var r in stuck)
             {
-                var verified = await _payments.GetVerifiedPaidAsync(r.Id);
+                // Point 1: the Already-Active deposit is money on this project, so
+                // it counts towards the full-payment gate. Without it a member who
+                // has genuinely paid in full stays stuck at the Payment stage.
+                var verified = await _payments.GetVerifiedPaidAsync(r.Id)
+                             + await _deposits.GetForMemberAsync(
+                                   r.RequestType == RequestType.AlreadyActiveOnlyRequest ? r.UserId : string.Empty);
                 if (r.PlanAmount > 0 && verified >= r.PlanAmount)
                 {
                     await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
@@ -131,6 +142,25 @@ public class PaymentsController : Controller
         {
             paidMap[rid] = await _payments.GetVerifiedPaidAsync(rid);
         }
+
+        // Point 1: an Already-Active member has already paid for the cPanel order
+        // that activated their ID, and that money sits against this project. It is
+        // not a Payment row, so without this the page bills them for it a second
+        // time - SCR-007 showed "₹19,900 due" on a project the member had in fact
+        // paid in full.
+        //
+        // Folded into paidMap rather than handled separately so every figure on the
+        // page - row due, summary due, the Add Payment dropdown - is corrected in
+        // one place and none of them can drift apart. DepositMap is passed too, so
+        // the row can say where the extra money came from instead of looking like
+        // an arithmetic bug.
+        var depositMap = await _deposits.GetForRequestsAsync(requests.Values);
+        foreach (var kv in depositMap)
+        {
+            if (paidMap.ContainsKey(kv.Key)) paidMap[kv.Key] += kv.Value;
+        }
+
+        ViewBag.DepositMap = depositMap;
         ViewBag.PaidMap = paidMap;
         ViewBag.Requests = requests;
         ViewBag.Filter = filter ?? "all";
@@ -175,11 +205,19 @@ public class PaymentsController : Controller
                 NotificationType = "Payment"
             });
 
-            // ====== Stage gate: advance to PM Surya Ghar ONLY when full project payment is verified ======
-            // Per spec: "Jab tak full project amount complete nahi hota, PM Surya Ghar
-            // step locked rahe." The ₹20K minimum still triggers Mode-2 auto-activation
-            // (legacy rule), but the stage advance now requires verifiedTotal >= PlanAmount.
+            // ====== Approval gate ======
+            // Verifying a payment IS the approval in this panel - the separate
+            // Approvals module was removed, leaving Payment Verification as the one
+            // entry-point. Point 4 then removed the full-payment condition: once the
+            // ₹20,000 minimum is met the request is approved and PM Surya Ghar opens,
+            // and the balance can follow.
             var verifiedTotal = await _payments.GetVerifiedPaidAsync(payment.SolarRequestId);
+
+            // Same rule as the page-load heal: an Already-Active member's cPanel
+            // deposit is part of what this project has received.
+            var reqForDeposit = await _uow.SolarRequests.GetByIdAsync(payment.SolarRequestId);
+            if (reqForDeposit?.RequestType == RequestType.AlreadyActiveOnlyRequest)
+                verifiedTotal += await _deposits.GetForMemberAsync(reqForDeposit.UserId);
             var min           = PaymentService.MinimumPaymentThreshold;
             var stageAdvanced = false;
             var autoActivated = false;
@@ -213,32 +251,65 @@ public class PaymentsController : Controller
                     }
                 }
 
-                // FULL-PAYMENT gate for stage advance. Project amount must be fully paid.
+                // ── Point 4 ──────────────────────────────────────────────
+                // "Kisi bhi ID ka Solar Request agar approve ho jaati hai to PM
+                //  Surya then open ho jayega - poora payment ki zaroorat nahi hai."
+                //
+                // Payment Verification is the single approval entry-point in this
+                // panel (the separate Approvals module was removed), so verifying a
+                // payment IS the approval. It used to demand the whole PlanAmount
+                // before advancing, which is exactly what point 4 removes: an admin
+                // who verified 20,000 of a 30,000 project saw nothing happen and the
+                // member stayed stuck on "unlocks after your request is approved".
+                //
+                // The 20,000 minimum still applies - it is the `verifiedTotal >= min`
+                // block this sits inside - and the deposit counts towards it.
                 if (req != null &&
-                    req.PlanAmount > 0 &&
-                    verifiedTotal >= req.PlanAmount &&
-                    (req.CurrentStage == ProjectStatus.Registration ||
+                    (req.ApprovalStatus != ApprovalStatus.Approved ||
+                     req.CurrentStage == ProjectStatus.Registration ||
                      req.CurrentStage == ProjectStatus.ProductSelection ||
                      req.CurrentStage == ProjectStatus.Payment))
                 {
-                    var stageResult = await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
+                    // Approve the request itself. Rejected requests are left alone -
+                    // re-opening one silently on a payment would undo a deliberate
+                    // admin decision.
+                    if (req.ApprovalStatus == ApprovalStatus.Pending)
                     {
-                        Id = payment.SolarRequestId,
-                        NewStage = ProjectStatus.PMSurvey,
-                        Notes = $"Verified payments total ₹{verifiedTotal:N0} ≥ project total ₹{req.PlanAmount:N0} — advanced to PM Surya Ghar by admin."
-                    }, adminId);
+                        req.ApprovalStatus = ApprovalStatus.Approved;
+                        req.UpdatedAt = DateTime.UtcNow;
+                        _uow.SolarRequests.Update(req);
+                        await _uow.SaveChangesAsync();
+                    }
 
-                    if (stageResult.IsSuccess)
+                    if (req.ApprovalStatus == ApprovalStatus.Approved &&
+                        (req.CurrentStage == ProjectStatus.Registration ||
+                         req.CurrentStage == ProjectStatus.ProductSelection ||
+                         req.CurrentStage == ProjectStatus.Payment))
                     {
-                        stageAdvanced = true;
-                        await _notifications.CreateAsync(new CreateNotificationDto
+                        var fullyPaid = req.PlanAmount > 0 && verifiedTotal >= req.PlanAmount;
+                        var stageResult = await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
                         {
-                            UserId = payment.UserId,
-                            SolarRequestId = payment.SolarRequestId,
-                            Title = "Workflow advanced",
-                            Message = "Full project payment verified. You can now upload PM Surya Ghar documents.",
-                            NotificationType = "StatusUpdate"
-                        });
+                            Id = payment.SolarRequestId,
+                            NewStage = ProjectStatus.PMSurvey,
+                            Notes = fullyPaid
+                                ? $"Verified payments total {verifiedTotal:N0} >= project total {req.PlanAmount:N0} - advanced to PM Surya Ghar by admin."
+                                : $"Verified payments total {verifiedTotal:N0} meets the {min:N0} minimum - request approved and PM Surya Ghar opened. Balance can follow."
+                        }, adminId);
+
+                        if (stageResult.IsSuccess)
+                        {
+                            stageAdvanced = true;
+                            await _notifications.CreateAsync(new CreateNotificationDto
+                            {
+                                UserId = payment.UserId,
+                                SolarRequestId = payment.SolarRequestId,
+                                Title = "Request approved",
+                                Message = fullyPaid
+                                    ? "Full project payment verified. You can now upload PM Surya Ghar documents."
+                                    : "Your payment was verified and your request approved. You can now upload PM Surya Ghar documents - the remaining balance can be paid later.",
+                                NotificationType = "StatusUpdate"
+                            });
+                        }
                     }
                 }
             }
@@ -318,9 +389,13 @@ public class PaymentsController : Controller
     }
 
     // POST: /Admin/Payments/AddByAdmin
-    // Admin-side payment entry. Bypasses the ₹20K minimum and the project-total cap rules
-    // that apply to user-submitted payments. Admin can record any amount on behalf of user.
-    // Payment is auto-marked as Verified (since admin is recording it directly).
+    //
+    // Change request point 7 turned admin fund entry into two steps. This entry
+    // point is kept because the "Add payment" modal on this page still posts to
+    // it, but it no longer credits anything on its own: the money is queued as an
+    // UNVERIFIED admin fund and a SECOND admin confirms it under
+    // Funds → Approve Fund. The shared logic lives in IAdminFundService so this
+    // and the Add Fund menu cannot drift apart.
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddByAdmin(int solarRequestId, decimal amount, string utrNumber,
@@ -328,17 +403,8 @@ public class PaymentsController : Controller
     {
         try
         {
-            if (amount <= 0)
-                return Json(new { success = false, message = "Amount must be greater than zero." });
-            if (string.IsNullOrWhiteSpace(utrNumber))
-                return Json(new { success = false, message = "UTR number is required." });
-
-            var req = await _uow.SolarRequests.GetByIdAsync(solarRequestId);
-            if (req == null)
-                return Json(new { success = false, message = "Solar request not found." });
-
             string? receiptPath = null;
-            if (receiptImage != null)
+            if (receiptImage != null && receiptImage.Length > 0)
             {
                 var (ok, path, err) = await _fileUploadService.UploadAsync(receiptImage, "payments");
                 if (!ok)
@@ -346,68 +412,31 @@ public class PaymentsController : Controller
                 receiptPath = path;
             }
 
-            var adminId   = _userManager.GetUserId(User) ?? "system";
             var adminUser = await _userManager.GetUserAsync(User);
-            var adminName = adminUser?.FullName ?? adminUser?.UserName ?? "Admin";
 
-            var payment = new Payment
+            var result = await _funds.AddAsync(new AddFundInput
             {
-                SolarRequestId   = solarRequestId,
-                UserId           = req.UserId,                 // attribute to project owner
-                Amount           = amount,
-                UTRNumber        = utrNumber.Trim(),
-                ReferenceNumber  = referenceNumber?.Trim(),
-                PaymentDate      = paymentDate ?? DateTime.UtcNow,
-                PaymentMethod    = "Admin Entry",
-                ReceiptImagePath = receiptPath,
-                Status           = PaymentStatus.Completed,
-                IsVerified       = true,                       // admin-entered = pre-verified
-                VerifiedBy       = adminId,
-                VerifiedAt       = DateTime.UtcNow,
-                Notes            = $"[ADMIN ENTRY by {adminName}] {(notes ?? "")}".Trim()
-            };
-
-            await _uow.Payments.AddAsync(payment);
-            await _uow.SaveChangesAsync();
-
-            // Notify project owner so they see the admin-added payment immediately
-            await _notifications.CreateAsync(new CreateNotificationDto
-            {
-                UserId         = req.UserId,
-                SolarRequestId = solarRequestId,
-                Title          = "Payment recorded by admin",
-                Message        = $"Admin {adminName} recorded a payment of ₹{amount:N0} (UTR {utrNumber}) on your behalf.",
-                NotificationType = "Payment"
+                SolarRequestId  = solarRequestId,
+                Amount          = amount,
+                UtrNumber       = utrNumber,
+                PaymentDate     = paymentDate,
+                ReferenceNumber = referenceNumber,
+                Notes           = notes,
+                ReceiptPath     = receiptPath,
+                AdminId         = _userManager.GetUserId(User) ?? "system",
+                AdminName       = adminUser?.FullName ?? adminUser?.UserName ?? "Admin"
             });
 
-            // Stage gate: same rule as user-verify path — full PlanAmount required to advance to PMSurvey.
-            var verifiedTotal = await _payments.GetVerifiedPaidAsync(solarRequestId);
-            var stageAdvanced = false;
+            if (!result.IsSuccess)
+                return Json(new { success = false, message = result.Message ?? result.Errors.FirstOrDefault() });
 
-            if (req.PlanAmount > 0 &&
-                verifiedTotal >= req.PlanAmount &&
-                (req.CurrentStage == ProjectStatus.Registration ||
-                 req.CurrentStage == ProjectStatus.ProductSelection ||
-                 req.CurrentStage == ProjectStatus.Payment))
-            {
-                var stageResult = await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
-                {
-                    Id       = solarRequestId,
-                    NewStage = ProjectStatus.PMSurvey,
-                    Notes    = $"Admin-recorded payment brought verified total to ₹{verifiedTotal:N0} ≥ project total ₹{req.PlanAmount:N0}."
-                }, adminId);
-                stageAdvanced = stageResult.IsSuccess;
-            }
-
+            // stageAdvanced stays false by design — nothing advances until approval.
             return Json(new
             {
                 success       = true,
-                paymentId     = payment.Id,
-                verifiedTotal = verifiedTotal,
-                stageAdvanced = stageAdvanced,
-                message       = stageAdvanced
-                    ? $"Payment of ₹{amount:N0} recorded. Verified total ₹{verifiedTotal:N0} — project advanced to PM Surya Ghar."
-                    : $"Payment of ₹{amount:N0} recorded. Verified total now ₹{verifiedTotal:N0}."
+                paymentId     = result.Data!.Id,
+                stageAdvanced = false,
+                message       = result.Message
             });
         }
         catch (Exception ex)

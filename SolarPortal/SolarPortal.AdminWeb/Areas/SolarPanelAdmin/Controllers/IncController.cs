@@ -13,7 +13,21 @@ namespace SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers;
 public class IncController : Controller
 {
     private readonly ApplicationDbContext _db;
-    public IncController(ApplicationDbContext db) { _db = db; }
+    private readonly SolarPortal.Application.Interfaces.Services.IAdminActivityLogger _activity;
+    private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> _userManager;
+
+    public IncController(
+        ApplicationDbContext db,
+        SolarPortal.Application.Interfaces.Services.IAdminActivityLogger activity,
+        Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager)
+    {
+        _db = db;
+        _activity = activity;
+        _userManager = userManager;
+    }
+
+    private string AdminId => _userManager.GetUserId(User) ?? "system";
+    private string? ClientIp => HttpContext.Connection.RemoteIpAddress?.ToString();
 
     // ── INC connections (filter by state / city / status) ──
     public async Task<IActionResult> Connections(string? status, string? state, string? city)
@@ -74,6 +88,144 @@ public class IncController : Controller
             TempData["Success"] = "Connection rejected.";
         }
         return RedirectToAction(nameof(Connections));
+    }
+
+    // ═══ INC KYC (change request point 8) ═════════════════════════════════
+    // "INC — commission wale ka KYC upload system banana hai, approve by admin.
+    //  Job wale ka KYC nahi dena hai."
+    //
+    // The INC uploads from the installer panel; this is the admin's approval
+    // queue. Only commission-earning workers appear: WorkerType.INC. A JOB worker
+    // is salaried, so their documents are never asked for and never listed —
+    // the filter is on the worker's CURRENT type, so switching a worker's type
+    // moves them in or out of this queue without leaving stale rows behind.
+    //
+    // One row per worker with THREE independently-verified sections (Address
+    // Proof / Bank Detail / PAN Card), matching the legacy KYC.aspx layout and
+    // the installer panel that writes these rows. Each section is approved or
+    // rejected on its own, so a bad passbook does not send back a good PAN.
+    public async Task<IActionResult> Kyc(string? status)
+    {
+        var incWorkerIds = await _db.Workers
+            .Where(w => w.Type == WorkerType.INC && !w.IsDeleted)
+            .Select(w => w.Id)
+            .ToListAsync();
+
+        var rows = await _db.IncKycDocuments
+            .Where(k => incWorkerIds.Contains(k.WorkerId))
+            .OrderByDescending(k => k.SubmittedAt ?? k.CreatedAt)
+            .ToListAsync();
+
+        // Filtering happens in memory: "pending" spans three status columns, which
+        // is awkward to express in SQL and pointless at this row count.
+        var f = (status ?? "pending").ToLowerInvariant();
+        rows = f switch
+        {
+            "approved" => rows.Where(k => k.IsFullyApproved).ToList(),
+            "rejected" => rows.Where(k => k.HasRejectedSection).ToList(),
+            "all" => rows,
+            _ => rows.Where(k => k.HasPendingSection).ToList()
+        };
+
+        ViewBag.Status = f;
+        ViewBag.Workers = await _db.Workers
+            .Where(w => incWorkerIds.Contains(w.Id))
+            .ToDictionaryAsync(w => w.Id, w => w.Name);
+        // Workers with no KYC on file at all — the admin needs to chase these,
+        // and they are invisible if we only list submitted rows.
+        ViewBag.WorkersWithoutKyc = await _db.Workers
+            .Where(w => w.Type == WorkerType.INC && !w.IsDeleted &&
+                        !_db.IncKycDocuments.Any(k => k.WorkerId == w.Id))
+            .OrderBy(w => w.Name)
+            .ToListAsync();
+        return View(rows);
+    }
+
+    /// <summary>Sections the admin can decide on, and how each one is stamped.</summary>
+    private static readonly string[] KycSections = { "address", "bank", "pan" };
+
+    // POST: approve or reject ONE section of one worker's KYC.
+    // `section` is address | bank | pan; `approve` picks the direction.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReviewKycSection(int id, string section, bool approve, string? remark)
+    {
+        var key = (section ?? "").Trim().ToLowerInvariant();
+        if (!KycSections.Contains(key))
+            return Json(new { success = false, message = "Unknown KYC section." });
+
+        // A rejection has to say why — the installer only sees this text when
+        // deciding what to re-upload.
+        if (!approve && string.IsNullOrWhiteSpace(remark))
+            return Json(new { success = false, message = "A rejection reason is required so the INC knows what to correct." });
+
+        var doc = await _db.IncKycDocuments.FirstOrDefaultAsync(k => k.Id == id);
+        if (doc == null) return Json(new { success = false, message = "KYC record not found." });
+
+        // Guard against deciding a JOB worker's KYC: their type may have been
+        // switched after submission, and only INC workers have KYC at all.
+        var worker = await _db.Workers.FirstOrDefaultAsync(w => w.Id == doc.WorkerId);
+        if (worker == null || worker.Type != WorkerType.INC)
+            return Json(new { success = false, message = "KYC applies to INC (commission) workers only." });
+
+        var decision = approve ? ApprovalStatus.Approved : ApprovalStatus.Rejected;
+        var now = DateTime.UtcNow;
+
+        // Refuse to decide a section the installer has not filled in yet —
+        // approving an empty section would mark the worker verified on nothing.
+        var (current, hasFile) = key switch
+        {
+            "address" => (doc.AddressStatus, !string.IsNullOrWhiteSpace(doc.AddressProofFrontPath)),
+            "bank" => (doc.BankStatus, !string.IsNullOrWhiteSpace(doc.BankProofPath)),
+            _ => (doc.PanStatus, !string.IsNullOrWhiteSpace(doc.PanProofPath))
+        };
+
+        if (!hasFile)
+            return Json(new { success = false, message = $"The {key} section has not been submitted yet." });
+        if (current == decision)
+            return Json(new { success = false, message = $"This section is already {decision.ToString().ToLowerInvariant()}." });
+
+        switch (key)
+        {
+            case "address":
+                doc.AddressStatus = decision;
+                doc.AddressRemark = remark;
+                doc.AddressReviewedAt = now;
+                doc.AddressReviewedBy = AdminId;
+                break;
+            case "bank":
+                doc.BankStatus = decision;
+                doc.BankRemark = remark;
+                doc.BankReviewedAt = now;
+                doc.BankReviewedBy = AdminId;
+                break;
+            default:
+                doc.PanStatus = decision;
+                doc.PanRemark = remark;
+                doc.PanReviewedAt = now;
+                doc.PanReviewedBy = AdminId;
+                break;
+        }
+
+        doc.UpdatedAt = now;
+        doc.UpdatedBy = AdminId;
+        await _db.SaveChangesAsync();
+
+        var label = key switch { "address" => "Address Proof", "bank" => "Bank Detail", _ => "PAN Card" };
+
+        await _activity.LogAsync(AdminId, approve ? "IncKyc.Approve" : "IncKyc.Reject",
+            "Worker", doc.WorkerId.ToString(),
+            $"{(approve ? "Approved" : "Rejected")} {label} KYC for INC worker {worker.Name}." +
+            (string.IsNullOrWhiteSpace(remark) ? "" : $" Remark: {remark}"), ClientIp);
+
+        return Json(new
+        {
+            success = true,
+            message = approve
+                ? $"{label} approved for {worker.Name}." +
+                  (doc.IsFullyApproved ? " All three sections are now approved." : "")
+                : $"{label} rejected. {worker.Name} can correct just this section from their panel."
+        });
     }
 
     // ── INC withdrawals ──
