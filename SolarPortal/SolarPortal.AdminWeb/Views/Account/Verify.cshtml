@@ -1,0 +1,102 @@
+@model SolarPortal.AdminWeb.ViewModels.AdminVerifyViewModel
+@{
+    ViewData["Title"] = "Sign in";
+    Layout = "~/Views/Shared/_AuthLayout.cshtml";
+}
+
+<div class="auth-card">
+    <div class="auth-logo">
+        <div class="brand-logo-lg">☀️</div>
+        <h1 class="auth-title">SOLAR PORTAL</h1>
+        <p class="auth-sub">Step 2 of 2 — password and OTP</p>
+    </div>
+
+    <partial name="_LoginSteps" model="2" />
+
+    @* User ID is fixed here. Editing it would invalidate the code already mailed,
+       so "Change" goes back to step 1 rather than pretending the field is live. *@
+    <div style="background:rgba(250,204,21,.10);border:1px solid rgba(250,204,21,.35);
+                border-radius:10px;padding:10px 12px;margin-bottom:14px;
+                display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div>
+            <div style="font-size:10.5px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">User ID</div>
+            <div style="font-weight:700">@Model.UserName</div>
+        </div>
+        <a asp-action="Login" style="font-size:12px;color:var(--sun)">Change</a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.OtpProblem))
+    {
+        @* No inbox to mail. Say so instead of showing an OTP box nobody can fill. *@
+        <div style="background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.35);
+                    border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12.5px">
+            <strong>No OTP could be sent.</strong>
+            <div style="margin-top:4px;color:var(--text2)">@Model.OtpProblem</div>
+            <div style="margin-top:4px;color:var(--text3)">You can sign in with your password alone.</div>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(Model.MaskedEmail))
+    {
+        <div style="background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.35);
+                    border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12.5px;text-align:center">
+            📧 Code sent to <strong>@Model.MaskedEmail</strong>
+            <div style="color:var(--text3);font-size:11.5px;margin-top:2px">Valid for 5 minutes · 3 attempts</div>
+        </div>
+    }
+
+    <form asp-action="Verify" method="post" id="verifyForm">
+        <input type="hidden" asp-for="ReturnUrl" />
+
+        <div asp-validation-summary="ModelOnly" class="text-danger" style="font-size:12px;margin-bottom:8px"></div>
+
+        <div class="fg">
+            <label asp-for="Password">Password</label>
+            <div class="ig">
+                <input asp-for="Password" type="password" placeholder="Enter password"
+                       id="passwordInput" autocomplete="current-password" autofocus />
+                <button type="button" class="pass-toggle" onclick="togglePass()">👁</button>
+            </div>
+            <span asp-validation-for="Password" class="text-danger" style="font-size:11px"></span>
+        </div>
+
+        @if (string.IsNullOrEmpty(Model.OtpProblem))
+        {
+            <div class="fg">
+                <label asp-for="Otp">OTP</label>
+                <input asp-for="Otp" type="text" inputmode="numeric" autocomplete="one-time-code"
+                       maxlength="6" placeholder="6-digit code"
+                       style="letter-spacing:6px;font-size:18px;text-align:center;font-weight:700" />
+                <span asp-validation-for="Otp" class="text-danger" style="font-size:11px"></span>
+            </div>
+        }
+
+        <div class="fg">
+            <label style="display:flex;gap:7px;align-items:center;cursor:pointer;margin-bottom:0">
+                <input asp-for="RememberMe" type="checkbox" style="width:auto" />
+                <span style="font-size:12px;color:var(--text2)">Remember me</span>
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-p btn-full" style="margin-top:4px">☀️ Sign In</button>
+    </form>
+
+    @if (string.IsNullOrEmpty(Model.OtpProblem))
+    {
+        <form asp-action="ResendOtp" method="post" style="text-align:center;margin-top:12px">
+            @Html.AntiForgeryToken()
+            <button type="submit" style="border:none;background:none;color:var(--sun);font-size:12px;cursor:pointer">
+                Didn't get the code? Resend
+            </button>
+        </form>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function togglePass() {
+            const input = document.getElementById('passwordInput');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+    </script>
+}

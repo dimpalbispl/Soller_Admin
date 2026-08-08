@@ -1,0 +1,272 @@
+﻿@model List<SolarPortal.Domain.Entities.IncKycDocument>
+@using SolarPortal.Domain.Entities
+@using SolarPortal.Domain.Enums
+@{
+    ViewData["Title"] = "INC KYC";
+    var status = (ViewBag.Status as string) ?? "pending";
+    var workers = (Dictionary<int, string>)(ViewBag.Workers ?? new Dictionary<int, string>());
+    var withoutKyc = (List<Worker>)(ViewBag.WorkersWithoutKyc ?? new List<Worker>());
+
+    // One badge renderer for all three sections — they are decided identically,
+    // so they should read identically.
+    Func<ApprovalStatus, string> badge = s => s switch
+    {
+        ApprovalStatus.Approved => "<span class=\"sts sts-act\">✅ Approved</span>",
+        ApprovalStatus.Rejected => "<span class=\"sts sts-rej\">❌ Rejected</span>",
+        _ => "<span class=\"sts sts-disp\">⏳ Verification due</span>"
+    };
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>INC KYC</span></div>
+        <div class="ph-title">INC KYC Verification</div>
+        <div class="ph-sub">
+            KYC submitted by <strong>commission (INC)</strong> installers. JOB workers are salaried
+            and are never asked for KYC, so they never appear here.
+        </div>
+    </div>
+
+    @* Each section is decided on its own — say so, because the obvious
+       assumption is that one Reject sends the whole KYC back. *@
+    <div class="card" style="margin-bottom:14px;border-left:4px solid var(--sun)">
+        <div style="padding:12px 14px;font-size:13px">
+            Address Proof, Bank Detail and PAN Card are verified <strong>separately</strong>.
+            Rejecting one section unlocks only that section in the installer's panel —
+            the other two keep whatever status you already gave them.
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;gap:8px;padding:12px 14px;flex-wrap:wrap">
+            <a class="btn btn-sm @(status == "pending" ? "btn-p" : "btn-s")" asp-action="Kyc" asp-route-status="pending">⏳ Pending</a>
+            <a class="btn btn-sm @(status == "approved" ? "btn-p" : "btn-s")" asp-action="Kyc" asp-route-status="approved">✅ Fully approved</a>
+            <a class="btn btn-sm @(status == "rejected" ? "btn-p" : "btn-s")" asp-action="Kyc" asp-route-status="rejected">❌ Has rejection</a>
+            <a class="btn btn-sm @(status == "all" ? "btn-p" : "btn-s")" asp-action="Kyc" asp-route-status="all">📋 All</a>
+        </div>
+    </div>
+
+    @if (withoutKyc.Any())
+    {
+        <div class="card" style="margin-bottom:14px;border-left:4px solid #f59e0b">
+            <div style="padding:12px 14px;font-size:13px">
+                <strong>@withoutKyc.Count INC installer(s) have not submitted any KYC yet:</strong>
+                @string.Join(", ", withoutKyc.Select(w => w.Name))
+            </div>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="card">
+            <div style="text-align:center;padding:40px;color:var(--text3)">
+                <div style="font-size:48px;margin-bottom:16px">🪪</div>
+                <div style="font-size:18px;margin-bottom:8px">Nothing in this list</div>
+                <div>INC installers submit KYC from their panel; it lands here for verification.</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        foreach (var k in Model)
+        {
+            var workerName = workers.TryGetValue(k.WorkerId, out var n) ? n : $"#{k.WorkerId}";
+
+            <div class="card" style="margin-bottom:14px">
+                <div class="ct">
+                    <span class="ct-dot"></span>👷 @workerName
+                    <span style="font-size:11px;color:var(--text3);margin-left:8px">
+                        submitted @((k.SubmittedAt ?? k.CreatedAt).ToLocalTime().ToString("dd MMM yyyy, HH:mm"))
+                    </span>
+                    @if (k.IsFullyApproved)
+                    {
+                        <span class="sts sts-act" style="margin-left:8px">✅ Fully verified</span>
+                    }
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;padding:14px">
+
+                    @* ── Section 1: Address Proof ── *@
+                    <div style="border:1px solid var(--border);border-radius:10px;padding:12px">
+                        <div style="font-weight:600;margin-bottom:8px">🏠 Address Proof @Html.Raw(badge(k.AddressStatus))</div>
+                        <div style="font-size:12px;line-height:1.7">
+                            <div><strong>@k.IdProofTypeName</strong> @k.IdProofNo</div>
+                            <div>@k.Address</div>
+                            <div>@k.City @k.District</div>
+                            <div>@k.StateName — @k.PinCode</div>
+                        </div>
+                        <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap">
+                            @if (!string.IsNullOrWhiteSpace(k.AddressProofFrontPath))
+                            {
+                                <a href="javascript:void(0)" onclick="openFileModal('@k.AddressProofFrontPath')" style="color:var(--sun);font-size:12px">📄 Front</a>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(k.AddressProofBackPath))
+                            {
+                                <a href="javascript:void(0)" onclick="openFileModal('@k.AddressProofBackPath')" style="color:var(--sun);font-size:12px">📄 Back</a>
+                            }
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(k.AddressRemark))
+                        {
+                            <div style="font-size:11px;color:var(--text3)">Remark: @k.AddressRemark</div>
+                        }
+                        @* Only offer the decision that would actually change something.
+                           An already-approved section kept showing Approve, which did
+                           nothing but was refused by the server - so it read as broken. *@
+                        @if (!string.IsNullOrWhiteSpace(k.AddressProofFrontPath))
+                        {
+                            <div style="margin-top:8px;display:flex;gap:6px">
+                                @if (k.AddressStatus != ApprovalStatus.Approved)
+                                {
+                                    <button class="btn btn-p btn-sm kyc-act" data-id="@k.Id" data-section="address" data-approve="true">✅ Approve</button>
+                                }
+                                @if (k.AddressStatus != ApprovalStatus.Rejected)
+                                {
+                                    <button class="btn btn-s btn-sm kyc-act" data-id="@k.Id" data-section="address" data-approve="false">❌ Reject</button>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="font-size:11px;color:var(--text3);margin-top:8px">Not submitted yet.</div>
+                        }
+                    </div>
+
+                    @* ── Section 2: Bank Detail ── *@
+                    <div style="border:1px solid var(--border);border-radius:10px;padding:12px">
+                        <div style="font-weight:600;margin-bottom:8px">🏦 Bank Detail @Html.Raw(badge(k.BankStatus))</div>
+                        <div style="font-size:12px;line-height:1.7">
+                            <div>@k.AccountType</div>
+                            <div>A/c <strong>@k.AccountNo</strong></div>
+                            <div>@k.BankName — @k.BranchName</div>
+                            <div>IFSC @k.IfscCode</div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(k.BankProofPath))
+                        {
+                            <div style="margin:8px 0">
+                                <a href="javascript:void(0)" onclick="openFileModal('@k.BankProofPath')" style="color:var(--sun);font-size:12px">📄 Passbook / cheque</a>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(k.BankRemark))
+                        {
+                            <div style="font-size:11px;color:var(--text3)">Remark: @k.BankRemark</div>
+                        }
+                        @* Only offer the decision that would actually change something.
+                           An already-approved section kept showing Approve, which did
+                           nothing but was refused by the server - so it read as broken. *@
+                        @if (!string.IsNullOrWhiteSpace(k.BankProofPath))
+                        {
+                            <div style="margin-top:8px;display:flex;gap:6px">
+                                @if (k.BankStatus != ApprovalStatus.Approved)
+                                {
+                                    <button class="btn btn-p btn-sm kyc-act" data-id="@k.Id" data-section="bank" data-approve="true">✅ Approve</button>
+                                }
+                                @if (k.BankStatus != ApprovalStatus.Rejected)
+                                {
+                                    <button class="btn btn-s btn-sm kyc-act" data-id="@k.Id" data-section="bank" data-approve="false">❌ Reject</button>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="font-size:11px;color:var(--text3);margin-top:8px">Not submitted yet.</div>
+                        }
+                    </div>
+
+                    @* ── Section 3: PAN Card ── *@
+                    <div style="border:1px solid var(--border);border-radius:10px;padding:12px">
+                        <div style="font-weight:600;margin-bottom:8px">🪪 PAN Card @Html.Raw(badge(k.PanStatus))</div>
+                        <div style="font-size:12px;line-height:1.7">
+                            <div>PAN <strong>@k.PanNo</strong></div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(k.PanProofPath))
+                        {
+                            <div style="margin:8px 0">
+                                <a href="javascript:void(0)" onclick="openFileModal('@k.PanProofPath')" style="color:var(--sun);font-size:12px">📄 PAN card</a>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(k.PanRemark))
+                        {
+                            <div style="font-size:11px;color:var(--text3)">Remark: @k.PanRemark</div>
+                        }
+                        @* Only offer the decision that would actually change something.
+                           An already-approved section kept showing Approve, which did
+                           nothing but was refused by the server - so it read as broken. *@
+                        @if (!string.IsNullOrWhiteSpace(k.PanProofPath))
+                        {
+                            <div style="margin-top:8px;display:flex;gap:6px">
+                                @if (k.PanStatus != ApprovalStatus.Approved)
+                                {
+                                    <button class="btn btn-p btn-sm kyc-act" data-id="@k.Id" data-section="pan" data-approve="true">✅ Approve</button>
+                                }
+                                @if (k.PanStatus != ApprovalStatus.Rejected)
+                                {
+                                    <button class="btn btn-s btn-sm kyc-act" data-id="@k.Id" data-section="pan" data-approve="false">❌ Reject</button>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="font-size:11px;color:var(--text3);margin-top:8px">Not submitted yet.</div>
+                        }
+                    </div>
+
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<form id="csrfForm" style="display:none">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+<script>
+    const kycToken = document.querySelector('#csrfForm input[name="__RequestVerificationToken"]').value;
+    const sectionLabel = { address: 'Address Proof', bank: 'Bank Detail', pan: 'PAN Card' };
+
+    document.querySelectorAll('.kyc-act').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const id = this.dataset.id;
+            const section = this.dataset.section;
+            const approve = this.dataset.approve === 'true';
+            const label = sectionLabel[section] || section;
+            const original = this.innerHTML;
+            const self = this;
+
+            Swal.fire({
+                title: (approve ? 'Approve ' : 'Reject ') + label + '?',
+                input: 'text',
+                inputPlaceholder: approve ? 'Optional remark' : 'Reason (required) — the INC sees this',
+                showCancelButton: true,
+                confirmButtonText: approve ? 'Approve' : 'Reject',
+                // Only a rejection needs text; the reason is what the installer
+                // reads to know which document to fix.
+                inputValidator: function (v) {
+                    if (!approve && (!v || !v.trim())) return 'A rejection reason is required.';
+                }
+            }).then(function (res) {
+                if (!res.isConfirmed) return;
+                const fd = new FormData();
+                fd.append('id', id);
+                fd.append('section', section);
+                fd.append('approve', approve);
+                fd.append('remark', res.value || '');
+                fd.append('__RequestVerificationToken', kycToken);
+
+                self.disabled = true;
+                fetch('@Url.Action("ReviewKycSection")', { method: 'POST', body: fd })
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.success) { Swal.fire('Done', d.message, 'success').then(() => location.reload()); }
+                        else { Swal.fire('Error', d.message || 'Failed', 'error'); self.disabled = false; self.innerHTML = original; }
+                    })
+                    .catch(() => {
+                        Swal.fire('Error', 'Could not reach the server.', 'error');
+                        self.disabled = false; self.innerHTML = original;
+                    });
+            });
+        });
+    });
+</script>
+}
+
+@await Html.PartialAsync("_FileModal")

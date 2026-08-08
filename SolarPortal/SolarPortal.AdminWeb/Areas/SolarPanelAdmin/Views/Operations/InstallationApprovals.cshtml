@@ -1,0 +1,290 @@
+@model List<SolarPortal.Domain.Entities.Installation>
+@using SolarPortal.Domain.Entities
+@using SolarPortal.Domain.Enums
+@{
+    ViewData["Title"] = "Installation Approval";
+    var status = (ViewBag.Status as string) ?? "all";
+    var photos = (Dictionary<int, List<InstallationPhoto>>)(ViewBag.Photos ?? new Dictionary<int, List<InstallationPhoto>>());
+    var requests = (Dictionary<int, SolarRequest>)(ViewBag.Requests ?? new Dictionary<int, SolarRequest>());
+    var workers = (Dictionary<int, Worker>)(ViewBag.Workers ?? new Dictionary<int, Worker>());
+    var dispatchWorker = (Dictionary<int, int>)(ViewBag.DispatchWorker ?? new Dictionary<int, int>());
+    var counts = (Dictionary<string, int>)(ViewBag.Counts ?? new Dictionary<string, int>());
+    int Count(string k) => counts.TryGetValue(k, out var v) ? v : 0;
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Installation Approval</span></div>
+        <div class="ph-title">Installation Approval</div>
+        <div class="ph-sub">
+            Photos the INC uploaded with "Mark Installed". Approving one releases the
+            installer's commission; rejecting sends them back to re-upload.
+        </div>
+    </div>
+
+    @* Keyed off the photo batch, NOT the project stage. Marking an installation
+       complete moves the project to DCR/Completed, so a stage-based queue would
+       drop the very rows that still need a decision. *@
+    <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;gap:8px;padding:12px 14px;flex-wrap:wrap">
+            <a class="btn btn-sm @(status == "all" ? "btn-p" : "btn-s")" asp-action="InstallationApprovals" asp-route-status="all">📋 All</a>
+            <a class="btn btn-sm @(status == "pending" ? "btn-p" : "btn-s")" asp-action="InstallationApprovals" asp-route-status="pending">⏳ Pending (@Count("pending"))</a>
+            <a class="btn btn-sm @(status == "approved" ? "btn-p" : "btn-s")" asp-action="InstallationApprovals" asp-route-status="approved">✅ Approved (@Count("approved"))</a>
+            <a class="btn btn-sm @(status == "rejected" ? "btn-p" : "btn-s")" asp-action="InstallationApprovals" asp-route-status="rejected">❌ Rejected (@Count("rejected"))</a>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card">
+            <div class="empty-state" style="text-align:center;padding:40px;color:var(--text3)">
+                <div class="es-icon" style="font-size:48px;margin-bottom:16px">📷</div>
+                <div class="es-title" style="font-size:18px;margin-bottom:8px">Nothing in this list</div>
+                <div class="es-sub">Installations appear here as soon as an INC marks one complete with photos.</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        ViewData["FilterTableId"] = "instApprTable";
+        ViewData["FilterPlaceholder"] = "Search by Member ID, name, mobile, request #, installer...";
+        ViewData["FilterDateLabel"] = "Submitted Date";
+
+        <partial name="_ReportFilterToolbar" />
+
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Installation Approval (@Model.Count)</div>
+            <div class="tbl-wrap">
+                <table id="instApprTable">
+                    <thead>
+                        <tr>
+                            <th>Request #</th>
+                            <th>Member ID</th>
+                            <th>Member Name</th>
+                            <th>City / State</th>
+                            <th>Installer</th>
+                            <th>Photos</th>
+                            <th>Submitted</th>
+                            <th>Reviewed</th>
+                            <th>Status</th>
+                            <th>Commission</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var inst in Model)
+                    {
+                        requests.TryGetValue(inst.SolarRequestId, out var req);
+                        var pics = photos.TryGetValue(inst.Id, out var pl) ? pl : new List<InstallationPhoto>();
+
+                        var wid = inst.AssignedWorkerId
+                                  ?? (dispatchWorker.TryGetValue(inst.SolarRequestId, out var dw) ? dw : (int?)null);
+                        Worker? wk = wid.HasValue && workers.TryGetValue(wid.Value, out var w) ? w : null;
+
+                        var memberName = req == null ? "—"
+                            : (string.IsNullOrWhiteSpace(req.MemberFullName) ? req.ApplicantName : req.MemberFullName);
+                        var submitted = (inst.SubmittedAt ?? inst.CompletedAt ?? inst.CreatedAt).ToLocalTime();
+
+                        <tr data-search="@($"{req?.UserId} {memberName} {req?.MobileNumber} {req?.RequestNumber} {wk?.Name}".ToLower())"
+                            data-mid="@req?.UserId"
+                            data-city="@req?.City"
+                            data-state="@req?.State"
+                            data-date="@submitted.ToString("yyyy-MM-dd")">
+
+                            <td class="td-b">@(req?.RequestNumber ?? $"#{inst.SolarRequestId}")</td>
+                            <td><span class="mid-code">@req?.UserId</span></td>
+                            <td>
+                                @memberName
+                                @if (!string.IsNullOrWhiteSpace(req?.MobileNumber))
+                                {
+                                    <div class="cell-sub">@req.MobileNumber</div>
+                                }
+                            </td>
+                            <td>@req?.City<div class="cell-sub">@req?.State</div></td>
+                            <td>
+                                @if (wk == null)
+                                {
+                                    <span class="text-muted" style="font-size:12px">— Not assigned —</span>
+                                }
+                                else
+                                {
+                                    <div>👷 @wk.Name</div>
+                                    @* A JOB worker is salaried, so approving earns them nothing.
+                                       Saying so stops an admin waiting for a payout that will
+                                       never appear. *@
+                                    <div class="cell-sub">@(wk.Type == WorkerType.INC ? "INC — earns commission" : "JOB — salaried")</div>
+                                }
+                            </td>
+                            <td>
+                                @if (pics.Count == 0)
+                                {
+                                    <span class="text-muted" style="font-size:12px">none</span>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-s btn-sm btn-view-photos"
+                                            data-id="@inst.Id" data-req="@(req?.RequestNumber ?? ("#" + inst.SolarRequestId))">
+                                        📷 @pics.Count
+                                    </button>
+                                }
+                            </td>
+                            <td style="white-space:nowrap">@submitted.ToString("dd MMM yyyy")<div class="cell-sub">@submitted.ToString("HH:mm")</div></td>
+                            <td style="white-space:nowrap">
+                                @if (inst.ReviewedAt.HasValue)
+                                {
+                                    @inst.ReviewedAt.Value.ToLocalTime().ToString("dd MMM yyyy")
+                                    <div class="cell-sub">@inst.ReviewedBy</div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                @switch (inst.ApprovalStatus)
+                                {
+                                    case ApprovalStatus.Approved:
+                                        <span class="sts sts-act">✅ Approved</span>
+                                        break;
+                                    case ApprovalStatus.Rejected:
+                                        <span class="sts sts-rej">❌ Rejected</span>
+                                        <div class="cell-sub" title="@inst.RejectionReason">@inst.RejectionReason</div>
+                                        break;
+                                    default:
+                                        <span class="sts sts-disp">⏳ Pending</span>
+                                        break;
+                                }
+                            </td>
+                            <td>
+                                @if (inst.CommissionCredited)
+                                {
+                                    <span class="mini-pill pill-active">💰 Credited</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted" style="font-size:12px">—</span>
+                                }
+                            </td>
+                            <td style="white-space:nowrap">
+                                @* Approved-and-credited is final: sending it back after the
+                                   money has gone out would leave the INC paid for returned work. *@
+                                @if (inst.ApprovalStatus == ApprovalStatus.Approved)
+                                {
+                                    <span class="text-muted" style="font-size:12px">Decided</span>
+                                }
+                                else if (pics.Count == 0)
+                                {
+                                    <span class="text-muted" style="font-size:12px">No photos</span>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-p btn-sm btn-appr" data-id="@inst.Id" data-count="@pics.Count">✅ Approve</button>
+                                    <button class="btn btn-s btn-sm btn-rej" data-id="@inst.Id">❌ Reject</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+<form id="csrfForm" style="display:none">@Html.AntiForgeryToken()</form>
+
+@* Photo sets, keyed by InstallationId — a table cell cannot hold 30 thumbnails,
+   so the batch opens in a viewer instead. *@
+@{
+    var photoJson = System.Text.Json.JsonSerializer.Serialize(
+        photos.ToDictionary(
+            kv => kv.Key.ToString(),
+            kv => kv.Value.Select(p => new { path = p.FilePath, name = p.FileName })));
+}
+<script id="instPhotoData" type="application/json">@Html.Raw(photoJson)</script>
+
+@section Scripts {
+<script>
+    const instPhotos = JSON.parse(document.getElementById('instPhotoData')?.textContent || '{}');
+    const tok = document.querySelector('#csrfForm input[name="__RequestVerificationToken"]').value;
+    const esc = s => (s == null ? '' : String(s))
+        .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    document.querySelectorAll('.btn-view-photos').forEach(function (b) {
+        b.addEventListener('click', function () {
+            const list = instPhotos[this.dataset.id] || [];
+            Swal.fire({
+                title: '📷 ' + this.dataset.req + ' — ' + list.length + ' photo(s)',
+                width: 720,
+                background: '#ffffff', color: '#1f2937',
+                confirmButtonText: 'Close',
+                html: list.length
+                    ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:60vh;overflow-y:auto">
+                         ${list.map(p => `
+                           <a href="${fileModalSrc(p.path)}" target="_blank" title="${esc(p.name)}">
+                             <img src="${fileModalSrc(p.path)}" alt="${esc(p.name)}"
+                                  style="width:100%;height:110px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb">
+                           </a>`).join('')}
+                       </div>`
+                    : '<div>No photos on this installation.</div>'
+            });
+        });
+    });
+
+    function post(url, fd, btn, reset) {
+        fd.append('__RequestVerificationToken', tok);
+        btn.disabled = true;
+        fetch(url, { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) { Swal.fire('Done', d.message, 'success').then(() => location.reload()); }
+                else { Swal.fire('Error', d.message || 'Failed', 'error'); btn.disabled = false; btn.innerHTML = reset; }
+            })
+            .catch(() => { Swal.fire('Error', 'Could not reach the server.', 'error'); btn.disabled = false; btn.innerHTML = reset; });
+    }
+
+    document.querySelectorAll('.btn-appr').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var id = this.dataset.id, n = this.dataset.count, self = this;
+            Swal.fire({
+                title: 'Approve ' + n + ' photo(s)?',
+                text: "This releases the installer's commission.",
+                icon: 'question',
+                input: 'text',
+                inputPlaceholder: 'Optional remark',
+                showCancelButton: true,
+                confirmButtonText: 'Approve'
+            }).then(function (r) {
+                if (!r.isConfirmed) return;
+                var fd = new FormData();
+                fd.append('installationId', id);
+                fd.append('remark', r.value || '');
+                post('@Url.Action("ApproveInstallationPhotos")', fd, self, '✅ Approve');
+            });
+        });
+    });
+
+    document.querySelectorAll('.btn-rej').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var id = this.dataset.id, self = this;
+            Swal.fire({
+                title: 'Reject these photos?',
+                input: 'text',
+                inputPlaceholder: 'Reason (required) — the INC sees this',
+                showCancelButton: true,
+                confirmButtonText: 'Reject',
+                inputValidator: function (v) { return (!v || !v.trim()) && 'A reason is required.'; }
+            }).then(function (r) {
+                if (!r.isConfirmed) return;
+                var fd = new FormData();
+                fd.append('installationId', id);
+                fd.append('reason', r.value);
+                post('@Url.Action("RejectInstallationPhotos")', fd, self, '❌ Reject');
+            });
+        });
+    });
+</script>
+}
+
+@await Html.PartialAsync("_FileModal")

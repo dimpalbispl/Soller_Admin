@@ -1,0 +1,283 @@
+@using SolarPortal.Domain.Entities
+@{
+    ViewData["Title"] = "Add Fund";
+    var myPending = (List<Payment>)(ViewBag.MyPending ?? new List<Payment>());
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Add Fund</span></div>
+        <div class="ph-title">Add Fund</div>
+        <div class="ph-sub">Step 1 of 2 — record the money. A second admin confirms it under Approve Fund.</div>
+    </div>
+
+    @* The two-step rule is the whole point of this screen, so say it up front
+       rather than letting an admin discover it when the amount does not show up. *@
+    <div class="card" style="margin-bottom:14px;border-left:4px solid var(--sun)">
+        <div style="padding:12px 14px;font-size:13px">
+            A fund added here is <strong>not credited yet</strong>. It waits in
+            <strong>Approve Fund</strong> until a different admin approves it — the admin who
+            adds a fund cannot approve their own entry. Until then it does not count toward the
+            project total and nothing in the workflow moves.
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+        <div class="ct"><span class="ct-dot"></span>Fund Details</div>
+        <form id="addFundForm" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+
+            @* Member ID first — that is what an admin has to hand. The name and
+               project are fetched from it, so there is no long project dropdown to
+               scroll and no chance of picking the row above the one intended. *@
+            <div class="fr3">
+                <div class="fg">
+                    <label>Member ID *</label>
+                    <div style="display:flex;gap:8px">
+                        <input type="text" id="fundMemberId" placeholder="e.g. SADHNATEST05"
+                               autocomplete="off" style="flex:1" />
+                        <button type="button" class="btn btn-s btn-sm" id="btnFindMember">🔍 Find</button>
+                    </div>
+                    <input type="hidden" name="solarRequestId" id="fundRequestId" />
+                    <div id="fundLookupMsg" style="font-size:11.5px;margin-top:4px"></div>
+                </div>
+                <div class="fg">
+                    <label>Amount (₹) *</label>
+                    <input type="number" name="amount" id="fundAmount" step="0.01" min="1" required placeholder="e.g. 20000" />
+                </div>
+                <div class="fg">
+                    <label>UTR / Transaction No. *</label>
+                    <input type="text" name="utrNumber" required placeholder="Bank UTR / reference" />
+                </div>
+            </div>
+
+            @* Filled in by the lookup. Everything below stays disabled until a
+               member resolves, so a fund can never be saved against nobody. *@
+            <div id="fundMemberCard" style="display:none;margin-bottom:12px"></div>
+
+            <div class="fr3">
+                <div class="fg">
+                    <label>Payment Date</label>
+                    <input type="date" name="paymentDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="fg">
+                    <label>Reference No.</label>
+                    <input type="text" name="referenceNumber" placeholder="Optional" />
+                </div>
+                <div class="fg">
+                    <label>Receipt (Camera / Gallery)</label>
+                    @* Point 5: camera and gallery offered separately — a phone handed
+                       a plain file input often shows only the gallery. *@
+                    <div style="display:flex;gap:8px;margin-bottom:4px">
+                        <button type="button" class="btn btn-s btn-sm" onclick="document.getElementById('fundReceiptCam').click()">📷 Camera</button>
+                        <button type="button" class="btn btn-s btn-sm" onclick="document.getElementById('fundReceiptGal').click()">🖼️ Gallery</button>
+                    </div>
+                    <input type="file" id="fundReceiptCam" accept="image/*" capture="environment" style="display:none" />
+                    <input type="file" id="fundReceiptGal" accept="image/*,.pdf" style="display:none" />
+                    <div id="fundReceiptName" style="font-size:11px;color:var(--text3)">No file chosen</div>
+                </div>
+            </div>
+
+            <div class="fg">
+                <label>Notes</label>
+                <textarea name="notes" rows="2" placeholder="Why this fund is being added"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-p" id="btnAddFund" disabled>
+                💰 Add Fund &amp; Send for Approval
+            </button>
+            <span id="fundBlockedHint" style="font-size:12px;color:var(--text3);margin-left:8px">
+                Find a member first.
+            </span>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="ct"><span class="ct-dot"></span>Your Funds Awaiting Approval (@myPending.Count)</div>
+        @if (!myPending.Any())
+        {
+            <div style="padding:20px;color:var(--text3);font-size:13px">
+                Nothing of yours is waiting. Funds you add will appear here until another admin approves them.
+            </div>
+        }
+        else
+        {
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Added On</th>
+                            <th>Request</th>
+                            <th>Amount</th>
+                            <th>UTR</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in myPending)
+                        {
+                            <tr>
+                                <td>@p.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</td>
+                                <td>#@p.SolarRequestId</td>
+                                <td class="td-b">₹@p.Amount.ToString("N0")</td>
+                                <td>@p.UTRNumber</td>
+                                <td><span class="sts sts-disp">⏳ Awaiting approval</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const esc = s => (s == null ? '' : String(s))
+        .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    const msgBox   = document.getElementById('fundLookupMsg');
+    const cardBox  = document.getElementById('fundMemberCard');
+    const reqIdBox = document.getElementById('fundRequestId');
+    const submitBtn= document.getElementById('btnAddFund');
+    const hint     = document.getElementById('fundBlockedHint');
+
+    // The submit button mirrors exactly one thing: whether a project is resolved.
+    function setProject(id, label) {
+        reqIdBox.value = id || '';
+        submitBtn.disabled = !id;
+        hint.textContent = id ? '' : 'Find a member first.';
+        if (id && label) { hint.textContent = label; hint.style.color = 'var(--text2)'; }
+    }
+
+    function clearLookup() {
+        setProject('', '');
+        cardBox.style.display = 'none';
+        cardBox.innerHTML = '';
+        msgBox.textContent = '';
+    }
+
+    document.getElementById('fundMemberId').addEventListener('input', clearLookup);
+
+    async function findMember() {
+        const id = document.getElementById('fundMemberId').value.trim();
+        clearLookup();
+        if (!id) { msgBox.textContent = 'Enter a Member ID.'; msgBox.style.color = '#b91c1c'; return; }
+
+        msgBox.textContent = 'Searching…';
+        msgBox.style.color = 'var(--text3)';
+
+        let d;
+        try {
+            const r = await fetch('@Url.Action("Lookup")?memberId=' + encodeURIComponent(id));
+            d = await r.json();
+        } catch (e) {
+            msgBox.textContent = 'Could not reach the server.';
+            msgBox.style.color = '#b91c1c';
+            return;
+        }
+
+        if (!d.found) {
+            msgBox.textContent = d.message || 'Not found.';
+            msgBox.style.color = '#b91c1c';
+            return;
+        }
+
+        msgBox.textContent = '';
+
+        const rows = d.requests || [];
+        const header =
+            `<div style="border:1px solid #bbf7d0;background:#f0fdf4;border-radius:10px;padding:12px">
+               <div style="font-size:11px;color:#15803d;text-transform:uppercase;letter-spacing:.4px">Member</div>
+               <div style="font-weight:700;font-size:16px;color:#166534">${esc(d.name)}</div>
+               <div style="font-size:12px;color:#166534">${esc(d.memberId)}${d.mobile ? ' · ' + esc(d.mobile) : ''}${d.city ? ' · ' + esc(d.city) : ''}</div>`;
+
+        // One live project resolves straight away; several are listed so the admin
+        // says which, rather than the page silently choosing the newest.
+        let body;
+        if (rows.length === 1) {
+            const p = rows[0];
+            setProject(p.id, `Adding to ${p.requestNumber}`);
+            body =
+                `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #bbf7d0;font-size:12.5px;color:#166534">
+                   <strong>${esc(p.requestNumber)}</strong> · ${esc(p.plan || '')}<br>
+                   Total ₹${Number(p.total).toLocaleString('en-IN')} ·
+                   Paid ₹${Number(p.paid).toLocaleString('en-IN')} ·
+                   <strong>Due ₹${Number(p.due).toLocaleString('en-IN')}</strong>
+                   <span style="color:#6b7280"> · ${esc(p.stage)}</span>
+                 </div>`;
+        } else {
+            body =
+                `<div style="margin-top:10px;padding-top:10px;border-top:1px solid #bbf7d0">
+                   <div style="font-size:12px;color:#166534;margin-bottom:6px">
+                     This member has ${rows.length} live projects — choose which one the money is for:
+                   </div>
+                   ${rows.map(p => `
+                     <label style="display:block;font-size:12.5px;color:#166534;padding:4px 0;cursor:pointer">
+                       <input type="radio" name="pickReq" value="${p.id}"
+                              data-label="Adding to ${esc(p.requestNumber)}" style="width:auto;margin-right:6px">
+                       <strong>${esc(p.requestNumber)}</strong> · ${esc(p.plan || '')} ·
+                       Due ₹${Number(p.due).toLocaleString('en-IN')}
+                       <span style="color:#6b7280"> · ${esc(p.stage)}</span>
+                     </label>`).join('')}
+                 </div>`;
+        }
+
+        cardBox.innerHTML = header + body + '</div>';
+        cardBox.style.display = 'block';
+
+        cardBox.querySelectorAll('input[name="pickReq"]').forEach(function (rb) {
+            rb.addEventListener('change', function () { setProject(this.value, this.dataset.label); });
+        });
+    }
+
+    document.getElementById('btnFindMember').addEventListener('click', findMember);
+    document.getElementById('fundMemberId').addEventListener('keydown', function (e) {
+        // Enter should look up, not submit a form that has no project yet.
+        if (e.key === 'Enter') { e.preventDefault(); findMember(); }
+    });
+
+    // Camera / Gallery — last one used wins so the upload is never ambiguous.
+    function fundPick(which) {
+        var cam = document.getElementById('fundReceiptCam');
+        var gal = document.getElementById('fundReceiptGal');
+        var other = which === 'cam' ? gal : cam;
+        if (other) other.value = '';
+        var f = (which === 'cam' ? cam : gal).files[0];
+        document.getElementById('fundReceiptName').textContent =
+            f ? (which === 'cam' ? '📷 ' : '🖼️ ') + f.name : 'No file chosen';
+    }
+    document.getElementById('fundReceiptCam').addEventListener('change', function () { fundPick('cam'); });
+    document.getElementById('fundReceiptGal').addEventListener('change', function () { fundPick('gal'); });
+
+    document.getElementById('addFundForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!reqIdBox.value) { Swal.fire('Pick a member', 'Find a Member ID first.', 'warning'); return; }
+
+        var btn = submitBtn;
+        var fd = new FormData(this);
+
+        var cam = document.getElementById('fundReceiptCam').files[0];
+        var gal = document.getElementById('fundReceiptGal').files[0];
+        var file = cam || gal;
+        if (file) fd.append('receiptImage', file);
+
+        btn.disabled = true; btn.textContent = 'Saving…';
+        fetch('@Url.Action("Add")', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.success) {
+                    Swal.fire('Sent for approval', d.message, 'success').then(function () { location.reload(); });
+                } else {
+                    Swal.fire('Could not add fund', d.message || 'Failed', 'error');
+                    btn.disabled = false; btn.textContent = '💰 Add Fund & Send for Approval';
+                }
+            })
+            .catch(function () {
+                Swal.fire('Error', 'Could not reach the server.', 'error');
+                btn.disabled = false; btn.textContent = '💰 Add Fund & Send for Approval';
+            });
+    });
+</script>
+}

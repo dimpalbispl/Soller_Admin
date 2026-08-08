@@ -1,0 +1,118 @@
+﻿@model IReadOnlyList<SolarPortal.Domain.Entities.ActivityLog>
+@{
+    ViewData["Title"] = "Log Report";
+    var adminUsers = (List<string>)(ViewBag.AdminUsers ?? new List<string>());
+    var actions = (List<string>)(ViewBag.Actions ?? new List<string>());
+    var fUser = ViewBag.FilterUser as string;
+    var fAction = ViewBag.FilterAction as string;
+    var fFrom = ViewBag.FilterFrom as DateTime?;
+    var fTo = ViewBag.FilterTo as DateTime?;
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Log Report</span></div>
+        <div class="ph-title">Log Report</div>
+        <div class="ph-sub">Who did what, and when — PM Surya decisions, fund approvals, dispatches, INC KYC and permission changes.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+        <div class="ct"><span class="ct-dot"></span>Filter</div>
+        <form method="get">
+            <div class="fr3">
+                <div class="fg">
+                    <label>Admin</label>
+                    <select name="adminUser">
+                        <option value="">All admins</option>
+                        @foreach (var u in adminUsers)
+                        {
+                            <option value="@u" selected="@(string.Equals(u, fUser, StringComparison.OrdinalIgnoreCase))">@u</option>
+                        }
+                    </select>
+                </div>
+                <div class="fg">
+                    <label>Action</label>
+                    <select name="action">
+                        <option value="">All actions</option>
+                        @foreach (var a in actions)
+                        {
+                            <option value="@a" selected="@(string.Equals(a, fAction, StringComparison.OrdinalIgnoreCase))">@a</option>
+                        }
+                    </select>
+                </div>
+                <div class="fg">
+                    <label>&nbsp;</label>
+                    <div style="display:flex;gap:8px">
+                        <button type="submit" class="btn btn-primary btn-sm">🔍 Apply</button>
+                        <a href="?" class="btn btn-s btn-sm">Reset</a>
+                    </div>
+                </div>
+            </div>
+            <div class="fr3">
+                <div class="fg">
+                    <label>From</label>
+                    <input type="date" name="from" value="@(fFrom?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="fg">
+                    <label>To</label>
+                    <input type="date" name="to" value="@(fTo?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="fg"></div>
+            </div>
+        </form>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card">
+            <div style="text-align:center;padding:40px;color:var(--text3)">
+                <div style="font-size:48px;margin-bottom:16px">🧾</div>
+                <div style="font-size:18px;margin-bottom:8px">No activity in this range</div>
+                <div>Admin actions are recorded as they happen; widen the filter to see more.</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            @* The service caps the result set — say so rather than letting a
+               truncated list read as "that's everything". *@
+            <div class="ct">
+                <span class="ct-dot"></span>Activity (@Model.Count)
+                @if (Model.Count >= 500)
+                {
+                    <span style="font-size:11px;color:var(--text3);margin-left:8px">
+                        showing the newest 500 — narrow the dates to see older entries
+                    </span>
+                }
+            </div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>When</th>
+                            <th>Admin</th>
+                            <th>Action</th>
+                            <th>On</th>
+                            <th>Details</th>
+                            <th>IP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var l in Model)
+                    {
+                        <tr>
+                            <td style="white-space:nowrap">@l.Timestamp.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</td>
+                            <td class="td-b">@l.UserId</td>
+                            <td><span class="sts sts-disp">@l.Action</span></td>
+                            <td>@l.EntityName #@l.EntityId</td>
+                            <td style="font-size:12px;max-width:420px">@l.Details</td>
+                            <td style="font-size:11px;color:var(--text3)">@l.IpAddress</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

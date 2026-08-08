@@ -1,0 +1,199 @@
+@model IReadOnlyList<SolarPortal.Domain.Entities.Payment>
+@using SolarPortal.Domain.Entities
+@using SolarPortal.Domain.Enums
+@{
+    ViewData["Title"] = "Approve Fund";
+    var requests = (Dictionary<int, SolarRequest>)(ViewBag.Requests ?? new Dictionary<int, SolarRequest>());
+    var filter = (ViewBag.Filter as string) ?? "pending";
+    var myId = (ViewBag.MyId as string) ?? "";
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Approve Fund</span></div>
+        <div class="ph-title">Approve Fund</div>
+        <div class="ph-sub">Step 2 of 2 — confirm funds added under Add Fund. Only an approved fund counts toward the project total.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;gap:8px;padding:12px 14px;flex-wrap:wrap">
+            <a class="btn btn-sm @(filter == "pending" ? "btn-p" : "btn-s")" asp-action="Approve" asp-route-filter="pending">⏳ Pending</a>
+            <a class="btn btn-sm @(filter == "decided" ? "btn-p" : "btn-s")" asp-action="Approve" asp-route-filter="decided">✅ Decided</a>
+            <a class="btn btn-sm @(filter == "all" ? "btn-p" : "btn-s")" asp-action="Approve" asp-route-filter="all">📋 All</a>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card">
+            <div class="empty-state" style="text-align:center;padding:40px;color:var(--text3)">
+                <div style="font-size:48px;margin-bottom:16px">💰</div>
+                <div style="font-size:18px;margin-bottom:8px">Nothing in this list</div>
+                <div>Funds added from the <strong>Add Fund</strong> menu appear here for approval.</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>Fund Entries (@Model.Count)</div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Added On</th>
+                            <th>Request</th>
+                            <th>Member</th>
+                            <th>Amount</th>
+                            <th>UTR</th>
+                            <th>Added By</th>
+                            <th>Receipt</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var p in Model)
+                    {
+                        requests.TryGetValue(p.SolarRequestId, out var req);
+                        var memberName = req == null
+                            ? "—"
+                            : (string.IsNullOrWhiteSpace(req.MemberFullName) ? req.ApplicantName : req.MemberFullName);
+
+                        // Maker-checker: the adder never sees an Approve button for
+                        // their own entry. The server refuses it too.
+                        var isMine = string.Equals(p.FundAddedBy, myId, StringComparison.OrdinalIgnoreCase);
+                        var isPending = !p.IsVerified && p.Status != PaymentStatus.Rejected;
+
+                        <tr>
+                            <td>@p.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")</td>
+                            <td class="td-b">@(req?.RequestNumber ?? $"#{p.SolarRequestId}")</td>
+                            <td>
+                                @memberName
+                                @if (req != null)
+                                {
+                                    <div class="cell-sub">@req.UserId</div>
+                                }
+                            </td>
+                            <td class="td-b">₹@p.Amount.ToString("N0")</td>
+                            <td>@p.UTRNumber</td>
+                            <td style="font-size:12px">@p.FundAddedBy</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(p.ReceiptImagePath))
+                                {
+                                    <a href="javascript:void(0)" onclick="openFileModal('@p.ReceiptImagePath')" style="color:var(--sun)">📄 View</a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (p.IsVerified)
+                                {
+                                    <span class="sts sts-act">✅ Approved</span>
+                                    <div class="cell-sub">@p.FundApprovedAt?.ToLocalTime().ToString("dd MMM, HH:mm")</div>
+                                }
+                                else if (p.Status == PaymentStatus.Rejected)
+                                {
+                                    <span class="sts sts-rej">❌ Rejected</span>
+                                    <div class="cell-sub">@p.FundRejectionReason</div>
+                                }
+                                else
+                                {
+                                    <span class="sts sts-disp">⏳ Pending</span>
+                                }
+                            </td>
+                            <td style="white-space:nowrap">
+                                @if (!isPending)
+                                {
+                                    <span class="text-muted" style="font-size:12px">Decided</span>
+                                }
+                                else if (isMine)
+                                {
+                                    <span class="text-muted" style="font-size:12px">You added this — another admin must approve</span>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-p btn-sm btn-fund-approve" data-id="@p.Id" data-amount="@p.Amount.ToString("N0")">✅ Approve</button>
+                                    <button class="btn btn-s btn-sm btn-fund-reject" data-id="@p.Id">❌ Reject</button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+<form id="csrfForm" style="display:none">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+<script>
+    const fundToken = document.querySelector('#csrfForm input[name="__RequestVerificationToken"]').value;
+
+    function postFund(url, data, btn, resetHtml) {
+        data.append('__RequestVerificationToken', fundToken);
+        btn.disabled = true;
+        fetch(url, { method: 'POST', body: data })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    Swal.fire('Done', d.message, 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Error', d.message || 'Failed', 'error');
+                    btn.disabled = false; btn.innerHTML = resetHtml;
+                }
+            })
+            .catch(() => {
+                Swal.fire('Error', 'Could not reach the server.', 'error');
+                btn.disabled = false; btn.innerHTML = resetHtml;
+            });
+    }
+
+    document.querySelectorAll('.btn-fund-approve').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var id = this.dataset.id, amt = this.dataset.amount, btn = this;
+            Swal.fire({
+                title: 'Approve ₹' + amt + '?',
+                text: 'Once approved this amount counts toward the project total.',
+                icon: 'question',
+                input: 'text',
+                inputPlaceholder: 'Optional note',
+                showCancelButton: true,
+                confirmButtonText: 'Approve'
+            }).then(function (res) {
+                if (!res.isConfirmed) return;
+                var fd = new FormData();
+                fd.append('id', id);
+                fd.append('note', res.value || '');
+                postFund('@Url.Action("ApproveEntry")', fd, btn, '✅ Approve');
+            });
+        });
+    });
+
+    document.querySelectorAll('.btn-fund-reject').forEach(function (b) {
+        b.addEventListener('click', function () {
+            var id = this.dataset.id, btn = this;
+            Swal.fire({
+                title: 'Reject this fund entry?',
+                input: 'text',
+                inputPlaceholder: 'Reason (required)',
+                showCancelButton: true,
+                confirmButtonText: 'Reject',
+                inputValidator: function (v) { return (!v || !v.trim()) && 'A rejection reason is required.'; }
+            }).then(function (res) {
+                if (!res.isConfirmed) return;
+                var fd = new FormData();
+                fd.append('id', id);
+                fd.append('reason', res.value);
+                postFund('@Url.Action("RejectEntry")', fd, btn, '❌ Reject');
+            });
+        });
+    });
+</script>
+}
+
+@await Html.PartialAsync("_FileModal")
