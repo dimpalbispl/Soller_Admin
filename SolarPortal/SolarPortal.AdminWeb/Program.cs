@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Serilog;
 using SolarPortal.Infrastructure;
@@ -77,6 +78,24 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
+
+// ─── Data protection key ring ────────────────────────────────────────────
+// Antiforgery tokens and the auth cookie are both encrypted with this ring.
+// Left unconfigured it lands in the launching account's profile folder, which an
+// IIS app pool does not load unless setProfileEnvironment is on — so the keys are
+// regenerated from scratch on every recycle. After a recycle every form rendered
+// before it carries a token the new keys cannot decrypt, and the POST comes back
+// as a bare 400 Bad Request. Logout is where that shows up first because its form
+// sits on a page the admin may have had open for a while.
+//
+// Pin the ring to a folder inside the deployment (survives recycles and deploys
+// if App_Data is preserved) and name the application so every worker process
+// derives the same purpose strings.
+var adminKeyRing = new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "App_Data", "keys"));
+adminKeyRing.Create();
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(adminKeyRing)
+    .SetApplicationName("SolarPortal.Admin");
 
 var app = builder.Build();
 

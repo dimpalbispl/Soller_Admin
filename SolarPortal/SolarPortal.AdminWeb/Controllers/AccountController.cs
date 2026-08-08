@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -372,10 +372,30 @@ public class AccountController : Controller
         return View(model);
     }
 
+    // [Authorize] deliberately absent. Signing out a session that is already gone
+    // is a harmless no-op, but with the attribute the expired-cookie case bounced
+    // to /Account/Login?ReturnUrl=%2FAccount%2FLogout — and the trip back from the
+    // login page is a GET, which a POST-only action answers with 405.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [Authorize]
     public async Task<IActionResult> Logout()
+    {
+        await _signInManager.SignOutAsync();
+        return RedirectToAction("Login");
+    }
+
+    // Logout also has to survive a plain GET: a bookmark, a browser prefetch, a
+    // page cached from before the button became a form, or the ReturnUrl bounce
+    // above. Every one of those used to come back as 405 Method Not Allowed on a
+    // POST-only action, which reads to the user as "logout is broken".
+    //
+    // A GET that ends a session can be triggered cross-site (an <img> tag is
+    // enough). That is a nuisance — it can only sign someone out, never act as
+    // them — and it is the accepted trade for a logout that always works. The
+    // button in the layout still POSTs with the antiforgery token.
+    [HttpGet]
+    [ActionName("Logout")]
+    public async Task<IActionResult> LogoutGet()
     {
         await _signInManager.SignOutAsync();
         return RedirectToAction("Login");
