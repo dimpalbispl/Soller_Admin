@@ -1,4 +1,4 @@
-﻿namespace SolarPortal.Application.Interfaces.Services;
+namespace SolarPortal.Application.Interfaces.Services;
 
 /// <summary>
 /// Which admin can open which menu ("admin → user permission").
@@ -62,6 +62,13 @@ public static class AdminMenus
 {
     public record Item(string Key, string Label, string Group, string Controller, string Action);
 
+    /// <summary>
+    /// This screen's own key. Called out because it is the one menu an admin must
+    /// keep for themselves - restricting yourself out of the permission grid is
+    /// the only change on it that nobody can undo afterwards.
+    /// </summary>
+    public const string PermissionsKey = "AdminAccess.Permissions";
+
     public static readonly IReadOnlyList<Item> All = new[]
     {
         new Item("Dashboard",                 "Dashboard",            "Admin Menu",       "Dashboard",         "Index"),
@@ -90,7 +97,7 @@ public static class AdminMenus
         new Item("Inc.Connections",           "INC Connections",      "Management",       "Inc",               "Connections"),
         new Item("Inc.Kyc",                   "INC KYC",              "Management",       "Inc",               "Kyc"),
         new Item("Inc.Withdrawals",           "INC Withdrawals",      "Management",       "Inc",               "Withdrawals"),
-        new Item("AdminAccess.Permissions",   "User Permissions",     "Management",       "AdminAccess",       "Permissions"),
+        new Item(PermissionsKey,              "User Permissions",     "Management",       "AdminAccess",       "Permissions"),
     };
 
     /// <summary>

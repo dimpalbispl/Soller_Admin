@@ -1,4 +1,4 @@
-﻿@model List<SolarPortal.Domain.Entities.IncKycDocument>
+@model List<SolarPortal.Domain.Entities.IncKycDocument>
 @using SolarPortal.Domain.Entities
 @using SolarPortal.Domain.Enums
 @{
@@ -30,10 +30,12 @@
     @* Each section is decided on its own — say so, because the obvious
        assumption is that one Reject sends the whole KYC back. *@
     <div class="card" style="margin-bottom:14px;border-left:4px solid var(--sun)">
-        <div style="padding:12px 14px;font-size:13px">
+        <div style="padding:12px 14px;font-size:13px;line-height:1.7">
             Address Proof, Bank Detail and PAN Card are verified <strong>separately</strong>.
             Rejecting one section unlocks only that section in the installer's panel —
-            the other two keep whatever status you already gave them.
+            the other two keep whatever status you already gave them.<br />
+            An <strong>approved</strong> section is final: it offers no further action.
+            To reopen it the installer has to resubmit that document.
         </div>
     </div>
 
@@ -68,151 +70,145 @@
     }
     else
     {
-        foreach (var k in Model)
-        {
-            var workerName = workers.TryGetValue(k.WorkerId, out var n) ? n : $"#{k.WorkerId}";
-
-            <div class="card" style="margin-bottom:14px">
-                <div class="ct">
-                    <span class="ct-dot"></span>👷 @workerName
-                    <span style="font-size:11px;color:var(--text3);margin-left:8px">
-                        submitted @((k.SubmittedAt ?? k.CreatedAt).ToLocalTime().ToString("dd MMM yyyy, HH:mm"))
-                    </span>
-                    @if (k.IsFullyApproved)
+        <div class="card">
+            <div class="ct"><span class="ct-dot"></span>KYC Submissions (@Model.Count)</div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Installer</th>
+                            <th>Section</th>
+                            <th>Details</th>
+                            <th>Documents</th>
+                            <th>Status</th>
+                            <th>Remark</th>
+                            <th style="width:190px">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var k in Model)
                     {
-                        <span class="sts sts-act" style="margin-left:8px">✅ Fully verified</span>
+                        var workerName = workers.TryGetValue(k.WorkerId, out var n) ? n : $"#{k.WorkerId}";
+
+                        @* The three sections are the same shape, so drive the rows off a
+                           list rather than repeating the same block three times - that
+                           duplication is how the Reject button survived on an approved
+                           section in one place but not the others. *@
+                        var sections = new[]
+                        {
+                            new { Key = "address", Label = "🏠 Address Proof", Status = k.AddressStatus,
+                                  Remark = k.AddressRemark, Submitted = !string.IsNullOrWhiteSpace(k.AddressProofFrontPath) },
+                            new { Key = "bank",    Label = "🏦 Bank Detail",   Status = k.BankStatus,
+                                  Remark = k.BankRemark,    Submitted = !string.IsNullOrWhiteSpace(k.BankProofPath) },
+                            new { Key = "pan",     Label = "🪪 PAN Card",      Status = k.PanStatus,
+                                  Remark = k.PanRemark,     Submitted = !string.IsNullOrWhiteSpace(k.PanProofPath) }
+                        };
+
+                        var rowIndex = 0;
+                        foreach (var s in sections)
+                        {
+                            <tr>
+                                @if (rowIndex == 0)
+                                {
+                                    <td rowspan="3" style="vertical-align:top">
+                                        <div class="td-b">👷 @workerName</div>
+                                        <div style="font-size:11px;color:var(--text3);margin-top:3px">
+                                            submitted @((k.SubmittedAt ?? k.CreatedAt).ToLocalTime().ToString("dd MMM yyyy, HH:mm"))
+                                        </div>
+                                        @if (k.IsFullyApproved)
+                                        {
+                                            <div style="margin-top:6px"><span class="sts sts-act">✅ Fully verified</span></div>
+                                        }
+                                    </td>
+                                }
+                                <td style="white-space:nowrap">@s.Label</td>
+                                <td style="font-size:12px;line-height:1.6">
+                                    @switch (s.Key)
+                                    {
+                                        case "address":
+                                            <div><strong>@k.IdProofTypeName</strong> @k.IdProofNo</div>
+                                            <div>@k.Address</div>
+                                            <div>@k.City @k.District</div>
+                                            <div>@k.StateName — @k.PinCode</div>
+                                            break;
+                                        case "bank":
+                                            <div>@k.AccountType</div>
+                                            <div>A/c <strong>@k.AccountNo</strong></div>
+                                            <div>@k.BankName — @k.BranchName</div>
+                                            <div>IFSC @k.IfscCode</div>
+                                            break;
+                                        case "pan":
+                                            <div>PAN <strong>@k.PanNo</strong></div>
+                                            break;
+                                    }
+                                </td>
+                                <td style="font-size:12px;white-space:nowrap">
+                                    @switch (s.Key)
+                                    {
+                                        case "address":
+                                            if (!string.IsNullOrWhiteSpace(k.AddressProofFrontPath))
+                                            {
+                                                <div><a href="javascript:void(0)" onclick="openFileModal('@k.AddressProofFrontPath')" style="color:var(--sun)">📄 Front</a></div>
+                                            }
+                                            if (!string.IsNullOrWhiteSpace(k.AddressProofBackPath))
+                                            {
+                                                <div><a href="javascript:void(0)" onclick="openFileModal('@k.AddressProofBackPath')" style="color:var(--sun)">📄 Back</a></div>
+                                            }
+                                            break;
+                                        case "bank":
+                                            if (!string.IsNullOrWhiteSpace(k.BankProofPath))
+                                            {
+                                                <div><a href="javascript:void(0)" onclick="openFileModal('@k.BankProofPath')" style="color:var(--sun)">📄 Passbook / cheque</a></div>
+                                            }
+                                            break;
+                                        case "pan":
+                                            if (!string.IsNullOrWhiteSpace(k.PanProofPath))
+                                            {
+                                                <div><a href="javascript:void(0)" onclick="openFileModal('@k.PanProofPath')" style="color:var(--sun)">📄 PAN card</a></div>
+                                            }
+                                            break;
+                                    }
+                                    @if (!s.Submitted)
+                                    {
+                                        <span style="color:var(--text3)">—</span>
+                                    }
+                                </td>
+                                <td>@Html.Raw(badge(s.Status))</td>
+                                <td style="font-size:11px;color:var(--text3);max-width:220px">
+                                    @(string.IsNullOrWhiteSpace(s.Remark) ? "—" : s.Remark)
+                                </td>
+                                <td>
+                                    @* Only offer a decision that would actually change something.
+                                       Approved is the end of the line: showing Reject there let an
+                                       admin undo a verified document by accident, and the section
+                                       already reads "Approved" two columns to the left. *@
+                                    @if (!s.Submitted)
+                                    {
+                                        <span style="font-size:11px;color:var(--text3)">Not submitted yet</span>
+                                    }
+                                    else if (s.Status == ApprovalStatus.Approved)
+                                    {
+                                        <span style="font-size:11px;color:var(--text3)">No action needed</span>
+                                    }
+                                    else
+                                    {
+                                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                                            <button class="btn btn-p btn-sm kyc-act" data-id="@k.Id" data-section="@s.Key" data-approve="true">✅ Approve</button>
+                                            @if (s.Status != ApprovalStatus.Rejected)
+                                            {
+                                                <button class="btn btn-s btn-sm kyc-act" data-id="@k.Id" data-section="@s.Key" data-approve="false">❌ Reject</button>
+                                            }
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                            rowIndex++;
+                        }
                     }
-                </div>
-
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;padding:14px">
-
-                    @* ── Section 1: Address Proof ── *@
-                    <div style="border:1px solid var(--border);border-radius:10px;padding:12px">
-                        <div style="font-weight:600;margin-bottom:8px">🏠 Address Proof @Html.Raw(badge(k.AddressStatus))</div>
-                        <div style="font-size:12px;line-height:1.7">
-                            <div><strong>@k.IdProofTypeName</strong> @k.IdProofNo</div>
-                            <div>@k.Address</div>
-                            <div>@k.City @k.District</div>
-                            <div>@k.StateName — @k.PinCode</div>
-                        </div>
-                        <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap">
-                            @if (!string.IsNullOrWhiteSpace(k.AddressProofFrontPath))
-                            {
-                                <a href="javascript:void(0)" onclick="openFileModal('@k.AddressProofFrontPath')" style="color:var(--sun);font-size:12px">📄 Front</a>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(k.AddressProofBackPath))
-                            {
-                                <a href="javascript:void(0)" onclick="openFileModal('@k.AddressProofBackPath')" style="color:var(--sun);font-size:12px">📄 Back</a>
-                            }
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(k.AddressRemark))
-                        {
-                            <div style="font-size:11px;color:var(--text3)">Remark: @k.AddressRemark</div>
-                        }
-                        @* Only offer the decision that would actually change something.
-                           An already-approved section kept showing Approve, which did
-                           nothing but was refused by the server - so it read as broken. *@
-                        @if (!string.IsNullOrWhiteSpace(k.AddressProofFrontPath))
-                        {
-                            <div style="margin-top:8px;display:flex;gap:6px">
-                                @if (k.AddressStatus != ApprovalStatus.Approved)
-                                {
-                                    <button class="btn btn-p btn-sm kyc-act" data-id="@k.Id" data-section="address" data-approve="true">✅ Approve</button>
-                                }
-                                @if (k.AddressStatus != ApprovalStatus.Rejected)
-                                {
-                                    <button class="btn btn-s btn-sm kyc-act" data-id="@k.Id" data-section="address" data-approve="false">❌ Reject</button>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <div style="font-size:11px;color:var(--text3);margin-top:8px">Not submitted yet.</div>
-                        }
-                    </div>
-
-                    @* ── Section 2: Bank Detail ── *@
-                    <div style="border:1px solid var(--border);border-radius:10px;padding:12px">
-                        <div style="font-weight:600;margin-bottom:8px">🏦 Bank Detail @Html.Raw(badge(k.BankStatus))</div>
-                        <div style="font-size:12px;line-height:1.7">
-                            <div>@k.AccountType</div>
-                            <div>A/c <strong>@k.AccountNo</strong></div>
-                            <div>@k.BankName — @k.BranchName</div>
-                            <div>IFSC @k.IfscCode</div>
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(k.BankProofPath))
-                        {
-                            <div style="margin:8px 0">
-                                <a href="javascript:void(0)" onclick="openFileModal('@k.BankProofPath')" style="color:var(--sun);font-size:12px">📄 Passbook / cheque</a>
-                            </div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(k.BankRemark))
-                        {
-                            <div style="font-size:11px;color:var(--text3)">Remark: @k.BankRemark</div>
-                        }
-                        @* Only offer the decision that would actually change something.
-                           An already-approved section kept showing Approve, which did
-                           nothing but was refused by the server - so it read as broken. *@
-                        @if (!string.IsNullOrWhiteSpace(k.BankProofPath))
-                        {
-                            <div style="margin-top:8px;display:flex;gap:6px">
-                                @if (k.BankStatus != ApprovalStatus.Approved)
-                                {
-                                    <button class="btn btn-p btn-sm kyc-act" data-id="@k.Id" data-section="bank" data-approve="true">✅ Approve</button>
-                                }
-                                @if (k.BankStatus != ApprovalStatus.Rejected)
-                                {
-                                    <button class="btn btn-s btn-sm kyc-act" data-id="@k.Id" data-section="bank" data-approve="false">❌ Reject</button>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <div style="font-size:11px;color:var(--text3);margin-top:8px">Not submitted yet.</div>
-                        }
-                    </div>
-
-                    @* ── Section 3: PAN Card ── *@
-                    <div style="border:1px solid var(--border);border-radius:10px;padding:12px">
-                        <div style="font-weight:600;margin-bottom:8px">🪪 PAN Card @Html.Raw(badge(k.PanStatus))</div>
-                        <div style="font-size:12px;line-height:1.7">
-                            <div>PAN <strong>@k.PanNo</strong></div>
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(k.PanProofPath))
-                        {
-                            <div style="margin:8px 0">
-                                <a href="javascript:void(0)" onclick="openFileModal('@k.PanProofPath')" style="color:var(--sun);font-size:12px">📄 PAN card</a>
-                            </div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(k.PanRemark))
-                        {
-                            <div style="font-size:11px;color:var(--text3)">Remark: @k.PanRemark</div>
-                        }
-                        @* Only offer the decision that would actually change something.
-                           An already-approved section kept showing Approve, which did
-                           nothing but was refused by the server - so it read as broken. *@
-                        @if (!string.IsNullOrWhiteSpace(k.PanProofPath))
-                        {
-                            <div style="margin-top:8px;display:flex;gap:6px">
-                                @if (k.PanStatus != ApprovalStatus.Approved)
-                                {
-                                    <button class="btn btn-p btn-sm kyc-act" data-id="@k.Id" data-section="pan" data-approve="true">✅ Approve</button>
-                                }
-                                @if (k.PanStatus != ApprovalStatus.Rejected)
-                                {
-                                    <button class="btn btn-s btn-sm kyc-act" data-id="@k.Id" data-section="pan" data-approve="false">❌ Reject</button>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <div style="font-size:11px;color:var(--text3);margin-top:8px">Not submitted yet.</div>
-                        }
-                    </div>
-
-                </div>
+                    </tbody>
+                </table>
             </div>
-        }
+        </div>
     }
 </div>
 

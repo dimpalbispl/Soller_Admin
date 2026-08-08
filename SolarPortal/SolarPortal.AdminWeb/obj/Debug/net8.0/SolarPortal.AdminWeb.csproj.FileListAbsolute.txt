@@ -10105,4 +10105,3 @@ C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller
 \\localhost\Sadhna\SolerGithub\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\obj\Debug\net8.0\SolarPortal.AdminWeb.pdb
 \\localhost\Sadhna\SolerGithub\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\obj\Debug\net8.0\SolarPortal.AdminWeb.genruntimeconfig.cache
 \\localhost\Sadhna\SolerGithub\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\obj\Debug\net8.0\ref\SolarPortal.AdminWeb.dll
-\\localhost\Sadhna\SolerGithub\Soller_Admin\SolarPortal\SolarPortal.AdminWeb\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

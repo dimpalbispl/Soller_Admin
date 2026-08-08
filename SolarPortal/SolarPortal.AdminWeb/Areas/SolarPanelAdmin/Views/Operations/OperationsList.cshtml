@@ -1,4 +1,4 @@
-﻿@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
+@model IEnumerable<SolarPortal.Domain.Entities.SolarRequest>
 @{
     ViewData["Title"] = ViewBag.Title ?? "Operations";
     // meter | prepare | final | installation | dcr
@@ -208,6 +208,17 @@
                                 <td>@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
                                 <td>
                                     <span class="sts sts-disp">@r.CurrentStage.ToString().Replace("_", " ")</span>
+                                    @if (op == "meter")
+                                    {
+                                        // The project stage says nothing about the meter - spell the
+                                        // meter out so a "Completed" project cannot be read as
+                                        // "meter done".
+                                        SolarPortal.Domain.Entities.MeterDispatch? stageMeter = null;
+                                        meterMap?.TryGetValue(r.Id, out stageMeter);
+                                        <div style="font-size:11px;margin-top:4px;color:var(--text3)">
+                                            @(stageMeter?.IsDispatched == true ? "meter dispatched" : "meter pending")
+                                        </div>
+                                    }
                                 </td>
                                 @if (showPersonCol)
                                 {
@@ -420,6 +431,18 @@
                                                                    SolarPortal.Domain.Enums.ProjectStatus.Registration;
                                         var isActiveRow = r.CurrentStage == actStage;
 
+                                        // The meter is NOT part of the stage chain - it can be
+                                        // recorded before or after the survey moves the project on
+                                        // (the same rule the MeterDispatch action filters Pending by).
+                                        // Keying this column off the stage said "Processed" for any
+                                        // project that had simply moved past MeterDispatch, so a
+                                        // request whose meter was never dispatched looked done here
+                                        // while the customer's own panel still said "awaiting meter".
+                                        SolarPortal.Domain.Entities.MeterDispatch? rowMeter = null;
+                                        meterMap?.TryGetValue(r.Id, out rowMeter);
+                                        var meterDone = rowMeter?.IsDispatched == true;
+                                        if (op == "meter") { isActiveRow = !meterDone; }
+
                                         // Point 6: the two material steps show different buttons, and
                                         // Final only offers itself once Prepare has been done.
                                         SolarPortal.Domain.Entities.MaterialDispatch? rowDispatch = null;
@@ -489,6 +512,10 @@
                                                 <button class="btn btn-primary btn-sm" onclick="openDCRForm(@r.Id, '@r.RequestNumber')">📄 Submit DCR</button>
                                                 break;
                                         }
+                                    }
+                                    else if (op == "meter")
+                                    {
+                                        <span class="sts sts-act">✅ Meter dispatched</span>
                                     }
                                     else
                                     {

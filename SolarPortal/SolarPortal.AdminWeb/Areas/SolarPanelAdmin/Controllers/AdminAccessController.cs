@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -54,7 +54,8 @@ public class AdminAccessController : Controller
         // actually governs - restricting a main admin has no effect.
         ViewBag.GroupIds = await _permissions.GetGroupIdsAsync();
         ViewBag.Menus = AdminMenus.All;
-        // Used only to stop an admin restricting their own account.
+        // Only used to warn when you are editing your own account - the grid is
+        // shown for every user now, your own included.
         ViewBag.MyId = MeId;
         ViewBag.SelectedUser = user?.Trim();
 
@@ -78,17 +79,21 @@ public class AdminAccessController : Controller
             return RedirectToAction(nameof(Permissions));
         }
 
-        // Refuse to save changes to your own account. The screen hides the grid
-        // for it, but a stale tab could still POST - and locking yourself out of
-        // the permissions page leaves nobody able to undo it.
-        if (string.Equals(userName.Trim(), MeId, StringComparison.OrdinalIgnoreCase))
-        {
-            TempData["Warning"] = "You cannot change your own access. Ask another admin to do it.";
-            return RedirectToAction(nameof(Permissions), new { user = userName.Trim() });
-        }
-
         var viewSet = (view ?? Array.Empty<string>()).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var editSet = (edit ?? Array.Empty<string>()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Editing your own account is allowed. The one save that cannot be undone
+        // is restricting YOURSELF out of this very page - after that nobody can
+        // reach the grid to put it back, so that single combination is refused.
+        // (Nothing ticked means unrestricted, which is always safe.)
+        if (string.Equals(userName.Trim(), MeId, StringComparison.OrdinalIgnoreCase)
+            && viewSet.Count > 0
+            && !viewSet.Contains(AdminMenus.PermissionsKey))
+        {
+            TempData["Warning"] = "Keep \"User Permissions\" ticked for your own account — "
+                                + "without it you could not open this page again to undo the change.";
+            return RedirectToAction(nameof(Permissions), new { user = userName.Trim() });
+        }
 
         var payload = AdminMenus.All
             .Select(m => new MenuPermission(m.Key, viewSet.Contains(m.Key), editSet.Contains(m.Key)))
@@ -111,19 +116,29 @@ public class AdminAccessController : Controller
 
     // ── Log report ────────────────────────────────────────────────────────
     // GET: /SolarPanelAdmin/AdminAccess/Logs
-    public async Task<IActionResult> Logs(string? adminUser, string? action, DateTime? from, DateTime? to)
+    // The action filter MUST be bound explicitly from the query string. "action"
+    // is a route key on the default {controller}/{action} route, so a plain
+    // `string? action` parameter binds to the route value - literally "Logs" -
+    // before the query string is ever consulted. Every request then filtered on
+    // Action LIKE 'Logs%' and the report came back empty no matter what was
+    // picked. The query-string name stays "action" so existing links still work.
+    public async Task<IActionResult> Logs(string? adminUser,
+                                          [FromQuery(Name = "action")] string? actionFilter,
+                                          DateTime? from, DateTime? to)
     {
         // `to` arrives as a date; include the whole day rather than stopping at
         // midnight, otherwise today's entries never show up.
         var toUtc = to?.Date.AddDays(1).AddTicks(-1);
 
-        var rows = await _activity.SearchAsync(adminUser, action, from?.Date, toUtc);
+        var rows = await _activity.SearchAsync(adminUser, actionFilter, from?.Date, toUtc);
 
-        ViewBag.AdminUsers = await _db.AdminUsers.AsNoTracking()
-            .Where(u => u.UserName != null)
-            .OrderBy(u => u.UserName)
-            .Select(u => u.UserName!)
-            .ToListAsync();
+        // Same list the permission screen governs - live m_usermaster accounts.
+        // Reading the DbSet directly listed disabled and deleted accounts too, so
+        // the two admin screens disagreed about who an "admin" even is.
+        ViewBag.AdminUsers = (await _permissions.GetAdminUsersAsync())
+            .Select(u => u.UserName)
+            .OrderBy(u => u)
+            .ToList();
 
         // Action prefixes actually present, so the filter offers real options
         // rather than a hardcoded list that rots as features are added.
@@ -135,7 +150,7 @@ public class AdminAccessController : Controller
 
         ViewBag.GroupIds = await _permissions.GetGroupIdsAsync();
         ViewBag.FilterUser = adminUser;
-        ViewBag.FilterAction = action;
+        ViewBag.FilterAction = actionFilter;
         ViewBag.FilterFrom = from;
         ViewBag.FilterTo = to;
         ViewBag.Title = "Log Report";

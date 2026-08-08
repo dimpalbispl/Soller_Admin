@@ -1,4 +1,4 @@
-﻿@using SolarPortal.Application.Interfaces.Services
+@using SolarPortal.Application.Interfaces.Services
 @{
     ViewData["Title"] = "User Permissions";
     var admins = (List<AdminUserRow>)(ViewBag.Admins ?? new List<AdminUserRow>());
@@ -11,6 +11,7 @@
     var editSet = current.Where(c => c.CanEdit).Select(c => c.MenuKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     var picked = admins.FirstOrDefault(a => string.Equals(a.UserName, selected, StringComparison.OrdinalIgnoreCase));
+    var isMe = picked != null && string.Equals(picked.UserName, ViewBag.MyId as string, StringComparison.OrdinalIgnoreCase);
 }
 
 <div class="page active">
@@ -25,7 +26,8 @@
         <div style="padding:12px 14px;font-size:13px;line-height:1.7">
             • An admin with <strong>nothing ticked keeps full access</strong> — permissions are opt-in.
               Tick at least one menu to restrict someone; untick everything to give full access back.<br />
-            • You cannot change your <strong>own</strong> access here — another admin has to.<br />
+            • Your <strong>own</strong> account can be edited too — but keep <strong>User Permissions</strong>
+              ticked, or you will not be able to open this page again.<br />
             • Only <strong>active</strong> accounts from m_usermaster are listed.
         </div>
     </div>
@@ -70,87 +72,76 @@
 
     @if (picked != null)
     {
-        @* The grid applies to every admin now - no account gets a dead-end screen.
-           The one exception is YOUR OWN account: restricting yourself out of this
-           page would leave nobody able to undo it. *@
-        @if (string.Equals(picked.UserName, ViewBag.MyId as string, StringComparison.OrdinalIgnoreCase))
-        {
-            @* Showing an editable grid here would be a lie - the filter lets main
-               admins through whatever the grid says. *@
+        @* The grid applies to every admin, your own account included. Editing
+           yourself is allowed - the only real risk is un-ticking this very page,
+           so that is called out instead of hiding the grid. *@
+        <form asp-action="SavePermissions" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="userName" value="@picked.UserName" />
+
             <div class="card">
-                <div class="ct"><span class="ct-dot"></span>@picked.UserName</div>
-                <div style="padding:20px;font-size:13.5px">
-                    🔒 <strong>This is your own account.</strong>
-                    You cannot change your own menus here — locking yourself out of this
-                    page would leave nobody able to undo it.
-                    <div style="margin-top:8px;color:var(--text3);font-size:12.5px">
-                        Ask another admin to change your access.
+                <div class="ct">
+                    <span class="ct-dot"></span>Menus for <strong>@picked.UserName</strong>
+                    <span style="font-size:11.5px;color:var(--text3);margin-left:8px">
+                        @(restricted.Contains(picked.UserName)
+                            ? $"{viewSet.Count} of {menus.Count} menus allowed"
+                            : "currently unrestricted — nothing ticked")
+                    </span>
+                </div>
+                @if (isMe)
+                {
+                    <div style="margin:10px 14px 0;padding:10px 12px;border-radius:8px;background:rgba(255,193,7,.12);font-size:12.5px;line-height:1.6">
+                        ⚠️ <strong>This is your own account.</strong>
+                        If you tick anything here, keep <strong>User Permissions</strong> ticked as well —
+                        otherwise you lock yourself out of this page and another admin has to undo it.
                     </div>
+                }
+                <div style="padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" class="btn btn-s btn-sm" onclick="permAll(true)">Select all</button>
+                    <button type="button" class="btn btn-s btn-sm" onclick="permAll(false)">Clear all</button>
+                </div>
+                <div class="tbl-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Section</th>
+                                <th>Menu</th>
+                                <th style="width:110px">Can open</th>
+                                <th style="width:110px">Can change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var group in menus.GroupBy(m => m.Group))
+                        {
+                            var first = true;
+                            foreach (var m in group)
+                            {
+                                <tr>
+                                    <td style="color:var(--text3);font-size:12px">@(first ? group.Key : "")</td>
+                                    <td class="td-b">@m.Label</td>
+                                    <td>
+                                        <input type="checkbox" class="perm-view" name="view" value="@m.Key"
+                                               @(viewSet.Contains(m.Key) ? "checked" : "") />
+                                    </td>
+                                    <td>
+                                        @* "Can change" implies "can open" - the server forces it,
+                                           and the JS below keeps the grid honest about that. *@
+                                        <input type="checkbox" class="perm-edit" name="edit" value="@m.Key"
+                                               @(editSet.Contains(m.Key) ? "checked" : "") />
+                                    </td>
+                                </tr>
+                                first = false;
+                            }
+                        }
+                        </tbody>
+                    </table>
+                </div>
+                <div style="padding:14px">
+                    <button type="submit" class="btn btn-p"@(isMe ? " onclick=\"return confirmSelf()\"" : "")>💾 Save Permissions</button>
+                    <a class="btn btn-s" asp-action="Permissions">Cancel</a>
                 </div>
             </div>
-        }
-        else
-        {
-            <form asp-action="SavePermissions" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="userName" value="@picked.UserName" />
-
-                <div class="card">
-                    <div class="ct">
-                        <span class="ct-dot"></span>Menus for <strong>@picked.UserName</strong>
-                        <span style="font-size:11.5px;color:var(--text3);margin-left:8px">
-                            @(restricted.Contains(picked.UserName)
-                                ? $"{viewSet.Count} of {menus.Count} menus allowed"
-                                : "currently unrestricted — nothing ticked")
-                        </span>
-                    </div>
-                    <div style="padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap">
-                        <button type="button" class="btn btn-s btn-sm" onclick="permAll(true)">Select all</button>
-                        <button type="button" class="btn btn-s btn-sm" onclick="permAll(false)">Clear all</button>
-                    </div>
-                    <div class="tbl-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Section</th>
-                                    <th>Menu</th>
-                                    <th style="width:110px">Can open</th>
-                                    <th style="width:110px">Can change</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            @foreach (var group in menus.GroupBy(m => m.Group))
-                            {
-                                var first = true;
-                                foreach (var m in group)
-                                {
-                                    <tr>
-                                        <td style="color:var(--text3);font-size:12px">@(first ? group.Key : "")</td>
-                                        <td class="td-b">@m.Label</td>
-                                        <td>
-                                            <input type="checkbox" class="perm-view" name="view" value="@m.Key"
-                                                   @(viewSet.Contains(m.Key) ? "checked" : "") />
-                                        </td>
-                                        <td>
-                                            @* "Can change" implies "can open" - the server forces it,
-                                               and the JS below keeps the grid honest about that. *@
-                                            <input type="checkbox" class="perm-edit" name="edit" value="@m.Key"
-                                                   @(editSet.Contains(m.Key) ? "checked" : "") />
-                                        </td>
-                                    </tr>
-                                    first = false;
-                                }
-                            }
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="padding:14px">
-                        <button type="submit" class="btn btn-p">💾 Save Permissions</button>
-                        <a class="btn btn-s" asp-action="Permissions">Cancel</a>
-                    </div>
-                </div>
-            </form>
-        }
+        </form>
     }
 </div>
 
@@ -159,6 +150,17 @@
     function permAll(on) {
         document.querySelectorAll('.perm-view').forEach(function (c) { c.checked = on; });
         if (!on) document.querySelectorAll('.perm-edit').forEach(function (c) { c.checked = false; });
+    }
+
+    // Saving your OWN account without this page ticked locks you out, so ask
+    // once rather than letting a stray click do it silently.
+    function confirmSelf() {
+        var ticked = document.querySelectorAll('.perm-view:checked').length;
+        if (ticked === 0) return true;   // nothing ticked = unrestricted, safe
+        var self = document.querySelector('.perm-view[value="AdminAccess.Permissions"]');
+        if (self && self.checked) return true;
+        return confirm('You are about to restrict your own account without "User Permissions" ticked. '
+                     + 'You will not be able to open this page again. Continue?');
     }
 
     // Ticking "Can change" ticks "Can open" too, so the grid shows what the

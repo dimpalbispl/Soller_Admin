@@ -185,6 +185,13 @@ public class IncController : Controller
         if (current == decision)
             return Json(new { success = false, message = $"This section is already {decision.ToString().ToLowerInvariant()}." });
 
+        // An approval is final. The grid stops offering Reject once a section is
+        // approved, but a tab left open from before the decision could still POST
+        // one - and silently un-verifying a document the INC has already been told
+        // is accepted is not something a stale click should be able to do.
+        if (current == ApprovalStatus.Approved && decision == ApprovalStatus.Rejected)
+            return Json(new { success = false, message = $"The {key} section is already approved. The INC has to resubmit that document before it can be reviewed again." });
+
         switch (key)
         {
             case "address":
