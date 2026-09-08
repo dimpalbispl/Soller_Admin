@@ -25,7 +25,7 @@
             <a class="btn @(filter == "rejected" ? "btn-danger" : "btn-outline-danger")" asp-route-filter="rejected">Rejected</a>
         </div>
         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPaymentModal">
-            ➕ Add Fund (needs approval)
+            ➕ Add Fund (verify below)
         </button>
     </div>
 
@@ -40,42 +40,47 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        @* Point 7 turned this into step 1 of two. It used to credit
-                           immediately; now it queues. Saying so here stops an admin
-                           wondering why the project total did not move. *@
+                        @* The separate "Approve Fund" report is gone - an added fund
+                           now lands in THIS list as Pending and is credited when it is
+                           verified here. Saying so stops an admin wondering why the
+                           project total did not move the moment they saved it. *@
                         <div class="alert alert-warning" style="font-size:13px">
-                            This is <strong>step 1 of 2</strong>. The money is recorded but
-                            <strong>not credited</strong> until a <strong>different</strong> admin
-                            approves it under <strong>Approve Fund</strong>.
+                            The money is recorded but <strong>not credited</strong> yet. It appears in this
+                            same <strong>Payment Verification</strong> list as <strong>Pending</strong> —
+                            verify it there and the member gets the fund; reject it and it never counts.
                         </div>
                         <div class="alert alert-info" style="font-size:13px">
                             <strong>Admin entry</strong> — bypasses the ₹20,000 minimum and the project-total cap.
-                            Payment is auto-verified.
+                            It counts only once it is verified.
                         </div>
                         <div class="row g-3">
+                            @* Member ID, not a request dropdown. The old dropdown was
+                               built from the payments already on screen, so a member
+                               who had never paid — exactly the one an admin adds a
+                               fund for — could not be picked at all. *@
                             <div class="col-md-6">
-                                <label class="form-label">Solar Request <span class="text-danger">*</span></label>
-                                <select class="form-select" name="solarRequestId" id="adminPaySelectReq" required>
-                                    <option value="">-- pick a request --</option>
-                                    @foreach (var kv in requests)
-                                    {
-                                        var paid = paidMap.TryGetValue(kv.Key, out var pv) ? pv : 0m;
-                                        var due  = System.Math.Max(0, kv.Value.PlanAmount - paid);
-                                        <option value="@kv.Key"
-                                                data-total="@kv.Value.PlanAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                                                data-paid="@paid.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                                                data-due="@due.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                                                data-applicant="@kv.Value.ApplicantName"
-                                                data-reqno="@kv.Value.RequestNumber">
-                                            @kv.Value.RequestNumber — @kv.Value.ApplicantName (₹@kv.Value.PlanAmount.ToString("N0"))
-                                        </option>
-                                    }
-                                </select>
+                                <label class="form-label">Member ID <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="adminPayMemberId"
+                                           placeholder="e.g. SADHNATEST05" autocomplete="off" />
+                                    <button type="button" class="btn btn-outline-secondary" id="adminPayFind">🔍 Find</button>
+                                </div>
+                                <input type="hidden" name="solarRequestId" id="adminPayRequestId" />
+                                <small id="adminPayLookupMsg" class="form-text"></small>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Amount (₹) <span class="text-danger">*</span></label>
                                 <input type="number" step="0.01" min="1" class="form-control" name="amount" id="adminPayAmount" required />
                                 <small id="adminPayAmountHint" class="form-text text-muted">Pick a request to see paid / due info.</small>
+                            </div>
+
+                            @* Member has more than one live project — say which one the
+                               money is for instead of silently taking the newest. *@
+                            <div class="col-12" id="adminPayPicker" style="display:none">
+                                <div class="card" style="background:#fffbeb;border-left:4px solid #f59e0b;padding:12px;margin:0;font-size:13px">
+                                    <div style="margin-bottom:6px">This member has more than one live project — choose which one the money is for:</div>
+                                    <div id="adminPayPickerRows"></div>
+                                </div>
                             </div>
 
                             <!-- Live summary panel: appears once a request is picked -->
@@ -103,7 +108,10 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">UTR / Transaction No. <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" name="utrNumber" required maxlength="50" />
+                                @* Checked as it is typed, same as the Add Fund page. *@
+                                <input type="text" class="form-control" name="utrNumber" id="adminPayUtr"
+                                       required maxlength="50" autocomplete="off" />
+                                <small id="adminPayUtrMsg" class="form-text"></small>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Reference Number</label>
@@ -288,7 +296,12 @@
         var projectAmt = req?.PlanAmount ?? 0m;
         var due = System.Math.Max(0, projectAmt - paidTotal);
         var paidPct = projectAmt > 0 ? (int)System.Math.Min(100, (double)(paidTotal / projectAmt * 100)) : 0;
-        var isAdminEntry = !string.IsNullOrEmpty(p.Notes) && p.Notes.Contains("[ADMIN ENTRY");
+        @* IsAdminFund is the real flag the Add Fund modal sets; the note-text check
+           only ever matched the older "[ADMIN ENTRY" wording, so every fund added
+           from this page was being labelled "User". *@
+        var isAdminEntry = p.IsAdminFund
+                           || (!string.IsNullOrEmpty(p.Notes)
+                               && (p.Notes.Contains("[ADMIN ENTRY") || p.Notes.Contains("[ADMIN FUND")));
         var isRejected = p.Status == SolarPortal.Domain.Enums.PaymentStatus.Rejected;
         var memberName = req == null ? "" :
             (string.IsNullOrWhiteSpace(req.MemberFullName) ? req.ApplicantName : req.MemberFullName);
@@ -686,48 +699,175 @@ $(document).on('click', '.receipt-preview', function () {
     new bootstrap.Modal(document.getElementById('receiptPreviewModal')).show();
 });
 
-// Admin Add Payment modal submit
-// Admin Add Payment modal: live summary when a request is picked
+// Add Fund modal: resolve a Member ID, then show that project's totals.
+// (The Add Fund menu was folded into this page, so this is the only place an
+//  admin records money now.)
 (function () {
-    const sel  = document.getElementById('adminPaySelectReq');
-    const box  = document.getElementById('adminPayReqSummary');
-    const amt  = document.getElementById('adminPayAmount');
-    const hint = document.getElementById('adminPayAmountHint');
-    if (!sel || !box) return;
+    const idBox   = document.getElementById('adminPayMemberId');
+    const findBtn = document.getElementById('adminPayFind');
+    const reqBox  = document.getElementById('adminPayRequestId');
+    const msg     = document.getElementById('adminPayLookupMsg');
+    const picker  = document.getElementById('adminPayPicker');
+    const rowsBox = document.getElementById('adminPayPickerRows');
+    const box     = document.getElementById('adminPayReqSummary');
+    const amt     = document.getElementById('adminPayAmount');
+    const hint    = document.getElementById('adminPayAmountHint');
+    if (!idBox || !findBtn) return;
 
-    function fmt(n) { return '₹' + Number(n || 0).toLocaleString('en-IN'); }
+    const fmt = n => '₹' + Number(n || 0).toLocaleString('en-IN');
+    const esc = s => (s == null ? '' : String(s))
+        .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-    sel.addEventListener('change', function () {
-        const opt = sel.options[sel.selectedIndex];
-        if (!opt || !opt.value) { box.style.display = 'none'; return; }
+    let member = null;
 
-        const total = parseFloat(opt.dataset.total || '0');
-        const paid  = parseFloat(opt.dataset.paid  || '0');
-        const due   = parseFloat(opt.dataset.due   || '0');
-        const reqNo = opt.dataset.reqno || '';
-        const app   = opt.dataset.applicant || '';
+    function clearPick() {
+        reqBox.value = '';
+        reqBox.dispatchEvent(new Event('change'));   // clears the UTR check message
+        box.style.display = 'none';
+        if (hint) hint.textContent = 'Find a member first.';
+    }
 
-        document.getElementById('apSumReq').textContent  = `${reqNo} — ${app}`;
-        document.getElementById('apSumTotal').textContent = fmt(total);
-        document.getElementById('apSumPaid').textContent  = fmt(paid);
-        document.getElementById('apSumDue').textContent   = fmt(due);
+    function reset() {
+        member = null;
+        clearPick();
+        picker.style.display = 'none';
+        rowsBox.innerHTML = '';
+        msg.textContent = '';
+    }
+
+    // Picking a project is what fills in every figure below it.
+    function pick(p) {
+        reqBox.value = p.id;
+        // Setting a hidden input's value fires no event, so tell the UTR check
+        // itself — the same number can be free here and taken on another request.
+        reqBox.dispatchEvent(new Event('change'));
+        document.getElementById('apSumReq').textContent   = `${p.requestNumber} — ${member ? member.name : ''}`;
+        document.getElementById('apSumTotal').textContent = fmt(p.total);
+        document.getElementById('apSumPaid').textContent  = fmt(p.paid);
+        document.getElementById('apSumDue').textContent   = fmt(p.due);
         box.style.display = '';
 
-        // Pre-fill the amount with the remaining due as a helpful default.
-        // Admin can override (this endpoint bypasses caps anyway).
-        if (amt && (!amt.value || parseFloat(amt.value) === 0)) {
-            amt.value = due > 0 ? due : '';
-        }
+        // Remaining due is a helpful default; the admin can override it because
+        // this endpoint bypasses the caps anyway.
+        if (amt && (!amt.value || parseFloat(amt.value) === 0)) amt.value = p.due > 0 ? p.due : '';
         if (hint) {
-            hint.textContent = due > 0
-                ? `Suggested: ₹${due.toLocaleString('en-IN')} (remaining due). Admin can enter any amount — caps don't apply.`
+            hint.textContent = p.due > 0
+                ? `Suggested: ₹${Number(p.due).toLocaleString('en-IN')} (remaining due). Admin can enter any amount — caps don't apply.`
                 : 'This project is fully paid. You can still record an over-payment if needed.';
         }
+    }
+
+    async function find() {
+        const id = idBox.value.trim();
+        reset();
+        if (!id) { msg.textContent = 'Enter a Member ID.'; msg.className = 'form-text text-danger'; return; }
+
+        msg.textContent = 'Searching…';
+        msg.className = 'form-text text-muted';
+
+        let d;
+        try {
+            const r = await fetch('@Url.Action("Lookup")?memberId=' + encodeURIComponent(id));
+            d = await r.json();
+        } catch (e) {
+            msg.textContent = 'Could not reach the server.';
+            msg.className = 'form-text text-danger';
+            return;
+        }
+
+        if (!d.found) {
+            msg.textContent = d.message || 'Not found.';
+            msg.className = 'form-text text-danger';
+            return;
+        }
+
+        member = d;
+        msg.innerHTML = `<strong>${esc(d.name)}</strong> · ${esc(d.memberId)}` +
+                        (d.mobile ? ' · ' + esc(d.mobile) : '') + (d.city ? ' · ' + esc(d.city) : '');
+        msg.className = 'form-text text-success';
+
+        const rows = d.requests || [];
+        if (rows.length === 1) { pick(rows[0]); return; }
+
+        rowsBox.innerHTML = rows.map((p, i) => `
+            <label style="display:block;padding:3px 0;cursor:pointer">
+              <input type="radio" name="adminPayPickReq" value="${i}" style="margin-right:6px">
+              <strong>${esc(p.requestNumber)}</strong> · ${esc(p.plan || '')} ·
+              Due ${fmt(p.due)} <span class="text-muted">· ${esc(p.stage)}</span>
+            </label>`).join('');
+        picker.style.display = '';
+        rowsBox.querySelectorAll('input[name="adminPayPickReq"]').forEach(function (rb) {
+            rb.addEventListener('change', function () { pick(rows[parseInt(this.value, 10)]); });
+        });
+    }
+
+    findBtn.addEventListener('click', find);
+    idBox.addEventListener('input', reset);
+    idBox.addEventListener('keydown', function (e) {
+        // Enter should look up, not submit a form that has no project yet.
+        if (e.key === 'Enter') { e.preventDefault(); find(); }
     });
+})();
+
+// ── Live UTR duplicate check on the Add Fund modal ────────────────────────
+// Same rule the save applies (Funds/CheckUtr), run while the admin types so the
+// clash shows on the field instead of only after pressing save.
+var adminPayUtrDuplicate = false;
+(function () {
+    const utrBox = document.getElementById('adminPayUtr');
+    const utrMsg = document.getElementById('adminPayUtrMsg');
+    const reqBox = document.getElementById('adminPayRequestId');
+    if (!utrBox || !utrMsg || !reqBox) return;
+
+    let timer = null, seq = 0;
+
+    function show(text, cls) {
+        utrMsg.textContent = text || '';
+        utrMsg.className = 'form-text ' + (cls || 'text-muted');
+    }
+
+    async function run() {
+        const utr = utrBox.value.trim();
+        const reqId = reqBox.value;
+        if (!utr || !reqId) { adminPayUtrDuplicate = false; show(''); return; }
+
+        const mine = ++seq;
+        show('Checking…', 'text-muted');
+        try {
+            const r = await fetch('@Url.Action("CheckUtr", "Funds")?solarRequestId=' + encodeURIComponent(reqId)
+                                  + '&utr=' + encodeURIComponent(utr));
+            const d = await r.json();
+            if (mine !== seq) return;                 // a newer keystroke already won
+            adminPayUtrDuplicate = !!d.duplicate;
+            show(adminPayUtrDuplicate ? '⚠ ' + d.message : '✓ UTR is free',
+                 adminPayUtrDuplicate ? 'text-danger' : 'text-success');
+        } catch (e) {
+            if (mine !== seq) return;
+            adminPayUtrDuplicate = false;             // never block on a network hiccup
+            show('Could not check this UTR right now.', 'text-muted');
+        }
+    }
+
+    utrBox.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(run, 350); });
+    utrBox.addEventListener('change', run);
+    // The same UTR can be free on one request and taken on another.
+    reqBox.addEventListener('change', run);
 })();
 
 $('#adminAddPaymentForm').on('submit', function (e) {
     e.preventDefault();
+    if (!document.getElementById('adminPayRequestId').value) {
+        Swal.fire({ icon: 'warning', title: 'Pick a member', text: 'Find a Member ID first.',
+                    background: '#ffffff', color: '#1f2937', confirmButtonColor: '#16a34a' });
+        return;
+    }
+    if (adminPayUtrDuplicate) {
+        Swal.fire({ icon: 'warning', title: 'Duplicate UTR',
+                    text: 'This UTR is already used on this request. Enter a different one.',
+                    background: '#ffffff', color: '#1f2937', confirmButtonColor: '#16a34a' });
+        return;
+    }
     const fd = new FormData(this);
     fetch('@Url.Action("AddByAdmin")', { method: 'POST', body: fd })
         .then(r => r.json())

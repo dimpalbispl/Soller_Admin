@@ -61,7 +61,13 @@ public class SiteSurveyController : Controller
                 !s.IsCompleted && s.ApprovalStatus != ApprovalStatus.Rejected)).ToList();
         }
 
-        var surveyList = surveys.ToList();
+        // Newest submission first. The queue was rendering in whatever order the DB
+        // handed the rows back (effectively insert order), so the oldest survey sat
+        // at the top and the one just submitted was buried at the bottom. Sorted on
+        // the same stamp the "Submitted" column shows; Id only breaks ties.
+        var surveyList = surveys.OrderByDescending(s => s.CreatedAt)
+                                .ThenByDescending(s => s.Id)
+                                .ToList();
         var requestIds = surveyList.Select(s => s.SolarRequestId).Distinct().ToList();
         var requests = (await _uow.SolarRequests.GetAllAsync())
                        .Where(r => requestIds.Contains(r.Id))

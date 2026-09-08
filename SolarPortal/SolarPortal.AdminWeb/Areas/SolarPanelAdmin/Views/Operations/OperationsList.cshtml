@@ -509,7 +509,8 @@
                                                 }
                                                 break;
                                             case "dcr":
-                                                <button class="btn btn-primary btn-sm" onclick="openDCRForm(@r.Id, '@r.RequestNumber')">📄 Submit DCR</button>
+                                                @* Admin ka upload hi approval hai - alag approve button nahi. *@
+                                                <button class="btn btn-primary btn-sm" onclick="openDCRForm(@r.Id, '@r.RequestNumber')">📄 Upload DCR</button>
                                                 break;
                                         }
                                     }
@@ -565,8 +566,8 @@
 }
 <script id="workerOptions" type="application/json">@Html.Raw(workerJson)</script>
 
-@* Existing user-submitted DCR details — used to pre-fill the admin DCR modal so the
-   admin verifies what the user already entered instead of typing it again. *@
+@* Existing DCR details (an admin's earlier upload, or a legacy user-submitted row)
+   — used to pre-fill the DCR modal instead of typing it again. *@
 @{
     var dcrDetailsForJson = ViewBag.DCRDetails as Dictionary<int, SolarPortal.Domain.Entities.DCRDocument>;
     var dcrJson = System.Text.Json.JsonSerializer.Serialize(
@@ -1203,14 +1204,16 @@
         }
 
         function openDCRForm(requestId, requestNumber) {
-        // Pre-fill from the DCR the user already submitted (if any) so the admin
-        // verifies it instead of re-typing.
+        // DCR ab admin khud upload karta hai (user panel se hata diya gaya). Purane
+        // projects par user ka bhara hua record ho sakta hai - wo pre-fill ho jata
+        // hai taki admin dobara type na kare.
         const ex = dcrData[requestId] || {};
-        const docLink = ex.docPath
-        ? `<div style="margin:4px 0 8px"><a href="${fileModalSrc(ex.docPath)}" target="_blank">📄 View user-uploaded DCR document</a></div>`
+        const hasDoc = !!ex.docPath;
+        const docLink = hasDoc
+        ? `<div style="margin:4px 0 8px"><a href="${fileModalSrc(ex.docPath)}" target="_blank">📄 View existing DCR document</a></div>`
         : '';
         Swal.fire({
-        title: '📄 DCR Update — ' + requestNumber,
+        title: '📄 DCR Upload — ' + requestNumber,
         html: `
         <div style="text-align:left;font-size:13px">
         <label>DCR Number *</label>
@@ -1220,15 +1223,17 @@
         <label>Remark</label>
         <textarea id="f-dcr-remark" class="swal2-textarea">${esc(ex.remark)}</textarea>
         ${docLink}
-        <label>DCR Document (optional — re-upload to replace user's)</label>
+        <label>DCR Document (PDF / Image)${hasDoc ? ' — re-upload to replace' : ' *'}</label>
         ${photoPickerHtml('f-dcr-doc', '.pdf,.jpg,.jpeg,.png')}
+        <div style="margin-top:8px;color:#6b7280">Uploading completes the project — no separate approval step.</div>
         </div>`,
         background: '#ffffff', color: '#1f2937',
         showCancelButton: true,
-        confirmButtonText: 'Submit DCR',
+        confirmButtonText: 'Upload DCR',
         preConfirm: async () => {
         const num = document.getElementById('f-dcr-num').value.trim();
         if (!num) { Swal.showValidationMessage('DCR number is required'); return false; }
+        if (!hasDoc && !pickedFile('f-dcr-doc')) { Swal.showValidationMessage('Please attach the DCR document'); return false; }
         const fd = new FormData();
         fd.append('requestId', requestId);
         fd.append('dcrNumber', num);

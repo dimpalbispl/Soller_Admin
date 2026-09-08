@@ -1,0 +1,157 @@
+@using SolarPortal.Application.Interfaces.Services
+@model List<RepurchaseIncomeRow>
+@{
+    ViewData["Title"] = "Remaining BV Report";
+    DateTime? from = ViewBag.From as DateTime?;
+    DateTime? to = ViewBag.To as DateTime?;
+    bool truncated = ViewBag.Truncated as bool? ?? false;
+    int maxRows = ViewBag.MaxRows as int? ?? 1000;
+
+    string Dash(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v!;
+
+    decimal totalBv = Model.Sum(r => r.Bv);
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Remaining BV Report</span></div>
+        <div class="ph-title">📒 Remaining BV Report</div>
+        <div class="ph-sub">
+            Every Remaining BV that has been posted to the MLM ledger, with the member
+            and order details against it. Read-only — a posted entry is corrected
+            through the approval flow, never from here.
+        </div>
+    </div>
+
+    <form method="get" class="card" style="padding:16px 18px;margin-bottom:18px">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:0 1 180px;min-width:150px">
+                <label for="from">Bill date from</label>
+                <input type="date" id="from" name="from" value="@(from?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div style="flex:0 1 180px;min-width:150px">
+                <label for="to">Bill date to</label>
+                <input type="date" id="to" name="to" value="@(to?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div>
+                <button type="submit" class="btn btn-g">Apply</button>
+                <a class="btn btn-s" asp-action="Index">Clear</a>
+            </div>
+        </div>
+    </form>
+
+    @if (Model.Any())
+    {
+        ViewData["FilterTableId"] = "rbvReportTable";
+        ViewData["FilterPlaceholder"] = "Search by member ID, name, bill no, request #, plan, order no...";
+        ViewData["FilterShowMemberId"] = false;
+        ViewData["FilterShowCity"] = false;
+        ViewData["FilterShowState"] = false;
+        // The toolbar has a date range of its own, but it only filters rows that
+        // are already loaded. The card above filters the QUERY, which is the one
+        // that can reach past the row cap — so only that one is shown.
+        ViewData["FilterShowDate"] = false;
+
+        <partial name="_ReportFilterToolbar" />
+    }
+
+    <div class="card">
+        <div class="ct">
+            <span class="ct-dot"></span>
+            Posted Entries (@Model.Count)
+            @if (Model.Any())
+            {
+                <span class="hint" style="margin-left:10px;font-weight:400">
+                    Total BV @totalBv.ToString("N2")
+                </span>
+            }
+        </div>
+
+        @if (truncated)
+        {
+            <div class="hint" style="padding:0 18px 10px">
+                Only the latest @maxRows entries are shown. Narrow the date range to see older ones.
+            </div>
+        }
+
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <div class="es-icon">📒</div>
+                <div class="es-title">Nothing posted yet</div>
+                <div class="es-sub">
+                    Approving a record on Remaining BV Approval writes its BV here.
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="tbl-wrap">
+                <table id="rbvReportTable">
+                    <thead>
+                        <tr>
+                            <th>Bill No</th>
+                            <th>Bill Date</th>
+                            <th>Member</th>
+                            <th>Order / Request</th>
+                            <th>Plan</th>
+                            <th style="text-align:right">BV</th>
+                            <th>Remarks</th>
+                            @* <th>Session</th>
+                            <th>Posted</th> *@
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr data-search="@($"{r.BillNo} {r.MemberIdNo} {r.MemberName} {r.FormNo} {r.RequestNumber} {r.OrderNo} {r.PlanName} {r.Remarks} {r.SponsorIdNo}".ToLower())"
+                            data-date="@(r.BillDate?.ToString("yyyy-MM-dd"))">
+                            <td style="font-weight:700">@Dash(r.BillNo)</td>
+                            <td>@(r.BillDate?.ToString("dd MMM yyyy") ?? "—")</td>
+                            <td>
+                                <div style="font-weight:700">@Dash(r.MemberName)</div>
+                                @* The ledger row only carries a FormNo; the ID number the
+                                   admin actually recognises comes from the M_MemberMaster
+                                   join. The FormNo itself is internal, so it is not shown. *@
+                                <div class="hint">@Dash(r.MemberIdNo)</div>
+                                @if (!string.IsNullOrWhiteSpace(r.Mobile))
+                                {
+                                    <div class="hint">@r.Mobile</div>
+                                }
+                            </td>
+                            <td>
+                                @if (r.FromRemainingBv)
+                                {
+                                    <div style="font-weight:700">@Dash(r.RequestNumber)</div>
+                                    <div class="hint">Order @Dash(r.OrderNo)</div>
+                                    @if (!string.IsNullOrWhiteSpace(r.SponsorIdNo))
+                                    {
+                                        <div class="hint">Sponsor @r.SponsorIdNo</div>
+                                    }
+                                }
+                                else
+                                {
+                                    @* The record it came from could not be matched — it was
+                                       deleted, or posted before SessID started being stamped. *@
+                                    <span class="hint">Record not matched</span>
+                                }
+                            </td>
+                            <td>
+                                @Dash(r.PlanName)
+                                @if (r.SolarTypeKV > 0)
+                                {
+                                    <div class="hint">@r.SolarTypeKV.Value.ToString("0.##") kW</div>
+                                }
+                            </td>
+                            <td style="text-align:right;font-weight:700">@r.Bv.ToString("N2")</td>
+                            <td>@Dash(r.Remarks)</td>
+                          @*   <td><span class="hint">@r.DSessId.ToString("0")</span></td>
+                            <td>@(r.PostedAt?.ToString("dd MMM yyyy HH:mm") ?? "—")</td> *@
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

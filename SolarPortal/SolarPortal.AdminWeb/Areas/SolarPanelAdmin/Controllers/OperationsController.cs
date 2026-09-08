@@ -42,11 +42,11 @@ public class OperationsController : Controller
     // every record after action, not just the pending queue):
     //   pending  → requests AT the given stage (the actionable queue)
     //   approved → requests that have moved PAST this stage (i.e. action done)
-    //   rejected → DCR has approve/reject; rejected = stage at DCRUpdate with
-    //              latest DCRDocument.ApprovalStatus == Rejected. Other
-    //              operations (dispatch) don't have a reject concept, so we
-    //              return an empty set for those (the UI still shows the tab
-    //              for consistency).
+    //   rejected → only ever holds legacy rows now: DCR used to be uploaded by the
+    //              user and approved/rejected here. The DCR is an ADMIN upload
+    //              today (uploaded = approved), so nothing new lands in this tab.
+    //              Other operations (dispatch) never had a reject concept, so they
+    //              return an empty set (the UI still shows the tab for consistency).
     //   all      → everything at-or-past the stage (history)
     private async Task<IEnumerable<SolarRequest>> FilterAsync(
         ProjectStatus stage, string? state, string? city,
@@ -58,19 +58,11 @@ public class OperationsController : Controller
         var mode = (filterMode ?? "pending").ToLowerInvariant();
         if (mode == "all" || showHistory)
         {
+            // DCR ab ADMIN khud upload karta hai, isliye "abhi user ne upload
+            // nahi kiya" wali chhaanti hata di gayi hai: DCRUpdate stage par
+            // khadi HAR request yahan dikhni chahiye, warna admin ke paas use
+            // kholne ka koi rasta hi nahi bachta.
             all = await _uow.SolarRequests.FindAsync(x => (int)x.CurrentStage >= (int)stage);
-
-            // DCR: jo request abhi DCRUpdate stage par hai lekin user ne DCR
-            // upload hi nahi kiya, wo "All" (history) mein bhi nahi aani
-            // chahiye — admin ke liye abhi koi record hai hi nahi. Stage se
-            // aage badh chuki (Completed) rows history hain, wo dikhengi.
-            if (string.Equals(op, "dcr", StringComparison.OrdinalIgnoreCase))
-            {
-                var docIds = (await _uow.DCRDocuments.GetAllAsync())
-                             .Select(d => d.SolarRequestId)
-                             .ToHashSet();
-                all = all.Where(r => (int)r.CurrentStage > (int)stage || docIds.Contains(r.Id)).ToList();
-            }
         }
         else if (mode == "approved")
         {
@@ -79,9 +71,10 @@ public class OperationsController : Controller
         }
         else if (mode == "rejected")
         {
-            // DCR is the only operation with an admin approve/reject. Other
-            // dispatch modes (meter/material/installation) don't have a
-            // rejection state — they're admin-driven actions, not approvals.
+            // Legacy only: DCR used to be a user upload that the admin approved or
+            // rejected. The admin uploads it now (no approve/reject step), so this
+            // tab just keeps the old rejected rows visible. The dispatch modes
+            // (meter/material/installation) never had a rejection state at all.
             if (string.Equals(op, "dcr", StringComparison.OrdinalIgnoreCase))
             {
                 var rejectedIds = (await _uow.DCRDocuments.FindAsync(
@@ -98,21 +91,11 @@ public class OperationsController : Controller
         }
         else // pending
         {
+            // DCR pending queue = Installation ke baad DCRUpdate stage par khadi
+            // har request. Pehle yahan sirf wo rows aati thin jinka DCR USER ne
+            // upload kiya ho; ab upload admin ka kaam hai, to wo shart hata di gayi
+            // hai - warna queue hamesha khaali rehti aur DCR kabhi hota hi nahi.
             all = await _uow.SolarRequests.FindAsync(x => x.CurrentStage == stage);
-
-            // DCR pending queue: sirf wo requests dikhao jinke liye USER ne
-            // apna DCR upload kar diya hai (DCRDocument row Pending status mein).
-            // Installation ke baad stage DCRUpdate par aate hi row pending mein
-            // nahi aani chahiye — jab tak user upload nahi karta, admin ke paas
-            // verify karne ko kuch hai hi nahi. (Same pattern as PM Surya pending.)
-            if (string.Equals(op, "dcr", StringComparison.OrdinalIgnoreCase))
-            {
-                var pendingDocIds = (await _uow.DCRDocuments.FindAsync(
-                                        d => d.ApprovalStatus == ApprovalStatus.Pending))
-                                    .Select(d => d.SolarRequestId)
-                                    .ToHashSet();
-                all = all.Where(r => pendingDocIds.Contains(r.Id)).ToList();
-            }
         }
 
         IEnumerable<SolarRequest> q = all;
@@ -1072,9 +1055,12 @@ public class OperationsController : Controller
             _          => installs.Where(i => i.ApprovalStatus == ApprovalStatus.Pending)
         };
 
-        // Oldest submission first: a batch that has been waiting longest is the
-        // one holding up an installer's money.
-        var list = rows.OrderBy(i => i.SubmittedAt ?? i.CompletedAt ?? i.CreatedAt).ToList();
+        // Newest submission first, like every other admin queue and report. (This
+        // one used to sort oldest-first so the longest-waiting installer showed on
+        // top; the admin asked for one consistent date-descending order instead.)
+        var list = rows.OrderByDescending(i => i.SubmittedAt ?? i.CompletedAt ?? i.CreatedAt)
+                       .ThenByDescending(i => i.Id)
+                       .ToList();
 
         var reqIds = list.Select(i => i.SolarRequestId).ToHashSet();
         ViewBag.Requests = (await _uow.SolarRequests.FindAsync(r => reqIds.Contains(r.Id)))
@@ -1256,6 +1242,11 @@ public class OperationsController : Controller
 
 
     // --- DCR Update (Domestic only) ---
+    //
+    // DCR upload user panel se hata kar yahan laaya gaya hai: ab admin hi DCR
+    // number, date, remark aur document bharta hai. Alag se approve karne ki
+    // zaroorat nahi - admin ka upload hi approval hai (SubmitDCR seedha
+    // Approved + project Completed karta hai).
     public async Task<IActionResult> DCRUpdate(string? state, string? city, string? filter)
     {
         var f = (filter ?? "all").ToLowerInvariant();
@@ -1269,6 +1260,13 @@ public class OperationsController : Controller
         return View("OperationsList", requests);
     }
 
+    /// <summary>
+    /// Admin uploads the DCR — the same four fields the user page used to ask for
+    /// (number, date, document, remark).
+    ///
+    /// There is NO separate approval step: an admin upload is trusted, so the row is
+    /// written straight as Approved / IsVerified and the project moves to Completed.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SubmitDCR(int requestId, string dcrNumber,
@@ -1276,26 +1274,36 @@ public class OperationsController : Controller
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(dcrNumber))
+                return Json(new { success = false, message = "DCR number is required" });
+
             string? docPath = null;
-            if (dcrDoc != null)
+            if (dcrDoc != null && dcrDoc.Length > 0)
             {
                 var (ok, path, err) = await _fileUploadService.UploadAsync(dcrDoc, "dcr");
                 if (!ok) return Json(new { success = false, message = $"Document upload failed: {err}" });
                 docPath = path;
             }
 
-            // Upsert: the user has already submitted a DCR record (number, date, document).
-            // Admin verification must UPDATE that same row — not create a duplicate. We only
-            // create a new row if none exists yet.
+            // Upsert. A row already exists only for legacy projects where the USER
+            // uploaded the DCR before that page moved to the admin panel - update
+            // that same row rather than creating a duplicate.
             var dcr = (await _uow.DCRDocuments.FindAsync(d => d.SolarRequestId == requestId))
                       .OrderByDescending(d => d.Id)
                       .FirstOrDefault();
             bool isNew = dcr == null;
+
+            // The DCR is the admin's own upload now, so the document is mandatory -
+            // unless a legacy row already carries one and the admin is only
+            // correcting the number / date / remark.
+            if (docPath == null && string.IsNullOrWhiteSpace(dcr?.DocumentPath))
+                return Json(new { success = false, message = "Please attach the DCR document" });
+
             if (isNew) dcr = new DCRDocument { SolarRequestId = requestId };
 
             dcr!.DCRNumber = dcrNumber;
             dcr.DCRDate = dcrDate ?? dcr.DCRDate ?? DateTime.UtcNow;
-            if (docPath != null) dcr.DocumentPath = docPath;          // admin re-upload replaces; else keep user's
+            if (docPath != null) dcr.DocumentPath = docPath;          // re-upload replaces the existing file
             if (!string.IsNullOrWhiteSpace(remark)) dcr.Remark = remark;
             dcr.ExtractedData = SimulateOCR(dcrNumber);
             dcr.IsVerified = true;

@@ -1,11 +1,12 @@
 ﻿using SolarPortal.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SolarPortal.Application.Interfaces;
 using SolarPortal.Application.Interfaces.Services;
+using SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Helpers;
 using SolarPortal.Domain.Entities;
+using SolarPortal.Domain.Enums;
 
 namespace SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers;
 
@@ -13,10 +14,17 @@ namespace SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers;
 /// Change request point 7 — "Admin me Add Fund → 2 step. Alag 2 menu:
 /// (1) Add Fund (2) Approve Fund."
 ///
-/// Add Fund records the money as UNVERIFIED; Approve Fund is where a second
-/// admin confirms it. Until then the amount does not count toward the project
-/// total, so nothing downstream (stage gates, dues, reports) moves on an entry
-/// that has only been typed in.
+/// Both menus have since been folded into Payment Verification: first Add Fund
+/// ("add fund ka option alag na dekar payment approve me hi de do"), and now
+/// Approve Fund too ("add fund ki request Payment Verification me hi jayegi, wahin
+/// se verify ya reject karenge to fund mil jayega"). This controller's Index page
+/// is kept (unlinked, reachable by direct URL) and Approve now just redirects.
+///
+/// Add Fund still records the money as UNVERIFIED — it is an ordinary pending
+/// Payment row, so it lands in the Payment Verification queue and does not count
+/// toward the project total (stage gates, dues, reports) until it is verified
+/// there. Because that one screen now both adds and verifies, the old
+/// maker-checker rule (a different admin had to approve) no longer applies.
 /// </summary>
 [Area("SolarPanelAdmin")]
 [Authorize(Roles = "Admin,SuperAdmin")]
@@ -57,88 +65,89 @@ public class FundsController : Controller
         return me?.FullName ?? me?.UserName ?? AdminId;
     }
 
+    /// <summary>Rows per page of the fund history, so this page never grows endlessly.</summary>
+    private const int HistoryPageSize = 10;
+
     // ── Menu 1: Add Fund ──────────────────────────────────────────────────
-    // GET: /SolarPanelAdmin/Funds
-    public async Task<IActionResult> Index()
+    // GET: /SolarPanelAdmin/Funds?filter=all|pending|verified|rejected&page=1
+    public async Task<IActionResult> Index(string? filter, int page = 1)
     {
         // No project list is loaded any more. The admin types a Member ID and
         // Lookup below resolves it - which is what an admin actually has to hand,
         // and one query instead of one-per-project on every page load.
-        ViewBag.MyPending = (await _funds.GetPendingAsync())
-                            .Where(p => string.Equals(p.FundAddedBy, AdminId, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
+        var f = (filter ?? "all").ToLowerInvariant();
+
+        // "Yahan se kab kab fund transfer hua" - the full trail of every fund added
+        // from this screen (and from the Add Fund modal on Payment Verification, the
+        // same entry point), newest first. It used to list only the current admin's
+        // still-pending entries, so a fund disappeared from view the moment it was
+        // decided and there was nowhere to see what had been transferred.
+        var all = (await _funds.GetPendingAsync())
+                  .Concat(await _funds.GetDecidedAsync())
+                  .ToList();
+
+        ViewBag.CountAll      = all.Count;
+        ViewBag.CountPending  = all.Count(p => !p.IsVerified && p.Status != PaymentStatus.Rejected);
+        ViewBag.CountVerified = all.Count(p => p.IsVerified);
+        ViewBag.CountRejected = all.Count(p => p.Status == PaymentStatus.Rejected);
+
+        var rows = f switch
+        {
+            "pending"  => all.Where(p => !p.IsVerified && p.Status != PaymentStatus.Rejected),
+            "verified" => all.Where(p => p.IsVerified),
+            "rejected" => all.Where(p => p.Status == PaymentStatus.Rejected),
+            _          => all
+        };
+
+        var ordered = rows.OrderByDescending(p => p.CreatedAt)
+                          .ThenByDescending(p => p.Id)
+                          .ToList();
+
+        var totalPages = Math.Max(1, (int)Math.Ceiling(ordered.Count / (double)HistoryPageSize));
+        page = Math.Clamp(page, 1, totalPages);
+        var pageRows = ordered.Skip((page - 1) * HistoryPageSize).Take(HistoryPageSize).ToList();
+
+        // Only the rows actually on screen need their request hydrated.
+        var reqIds = pageRows.Select(r => r.SolarRequestId).Distinct().ToHashSet();
+        ViewBag.Requests = (await _uow.SolarRequests.GetAllAsync())
+                           .Where(r => reqIds.Contains(r.Id))
+                           .ToDictionary(r => r.Id);
+
+        ViewBag.History    = pageRows;
+        ViewBag.Filter     = f;
+        ViewBag.Page       = page;
+        ViewBag.TotalPages = totalPages;
+        ViewBag.TotalCount = ordered.Count;
+        ViewBag.PageSize   = HistoryPageSize;
+        ViewBag.MyId       = AdminId;
         ViewBag.Title = "Add Fund";
         return View();
     }
 
     // GET: /SolarPanelAdmin/Funds/Lookup?memberId=SADHNATEST05
     //
-    // Resolves a Member ID to the member and their live project(s).
-    //
-    // The member is looked up in m_membermaster FIRST, separately from their solar
-    // requests. Checking only SolarRequests reported "No member found" for a real
-    // member who simply has not filed a solar request yet - which sent the admin
-    // hunting for a typo that was never there.
+    // Resolves a Member ID to the member and their live project(s). The Payment
+    // Verification page asks the same question through its own Lookup action, so
+    // the answer is built in one shared place.
     [HttpGet]
-    public async Task<IActionResult> Lookup(string? memberId)
+    public async Task<IActionResult> Lookup(string? memberId) =>
+        Json(await MemberFundLookup.ResolveAsync(memberId, _db, _uow, _payments));
+
+    // GET: /SolarPanelAdmin/Funds/CheckUtr?solarRequestId=9&utr=1
+    //
+    // Live duplicate check for the UTR box — the clash used to surface only after
+    // the admin filled the whole form and pressed save. Same rule the save itself
+    // applies, so the field can never say "fine" on something Add would refuse.
+    [HttpGet]
+    public async Task<IActionResult> CheckUtr(int solarRequestId, string? utr)
     {
-        var id = (memberId ?? string.Empty).Trim();
-        if (id.Length == 0)
-            return Json(new { found = false, message = "Enter a Member ID." });
-
-        // Trim BOTH sides: legacy columns are frequently CHAR-padded, and an exact
-        // == against a padded value is the classic silent no-match.
-        var member = await _db.Members.AsNoTracking()
-                             .FirstOrDefaultAsync(m => m.IdNo != null && m.IdNo.Trim() == id);
-
-        var requests = (await _uow.SolarRequests.FindAsync(r => r.UserId != null && r.UserId.Trim() == id))
-                       .OrderByDescending(r => r.CreatedAt)
-                       .ToList();
-
-        if (member == null && requests.Count == 0)
-            return Json(new { found = false, message = $"No member found with ID '{id}'. Check the spelling." });
-
-        var live = requests.Where(r => r.CurrentStage != Domain.Enums.ProjectStatus.Completed).ToList();
-
-        if (live.Count == 0)
-        {
-            // Three different dead ends, three different actions for the admin.
-            var who = member != null ? $" ({member.FullName})" : "";
-            var msg = requests.Count == 0
-                ? $"Member {id}{who} exists but has no solar request yet — a fund needs a request to attach to."
-                : $"Member {id}{who} has no live project — every request is already completed.";
-            return Json(new { found = false, message = msg });
-        }
-
-        var rows = new List<object>();
-        foreach (var r in live)
-        {
-            var paid = await _payments.GetVerifiedPaidAsync(r.Id);
-            rows.Add(new
-            {
-                id = r.Id,
-                requestNumber = r.RequestNumber,
-                plan = r.SelectedPlan,
-                total = r.PlanAmount,
-                paid,
-                due = Math.Max(0m, r.PlanAmount - paid),
-                stage = r.CurrentStage.ToString()
-            });
-        }
-
-        var first = live[0];
-        var name = member?.FullName;
-        if (string.IsNullOrWhiteSpace(name))
-            name = string.IsNullOrWhiteSpace(first.MemberFullName) ? first.ApplicantName : first.MemberFullName;
-
+        var duplicate = await _funds.IsDuplicateUtrAsync(solarRequestId, utr);
         return Json(new
         {
-            found = true,
-            memberId = id,
-            name,
-            mobile = member?.Mobl?.ToString("0") ?? first.MobileNumber,
-            city = member?.City ?? first.City,
-            requests = rows
+            duplicate,
+            message = duplicate
+                ? $"A payment with UTR {utr?.Trim()} already exists on this request."
+                : ""
         });
     }
 
@@ -178,31 +187,26 @@ public class FundsController : Controller
         return Json(new { success = true, message = result.Message });
     }
 
-    // ── Menu 2: Approve Fund ──────────────────────────────────────────────
-    // GET: /SolarPanelAdmin/Funds/Approve?filter=pending|decided|all
-    public async Task<IActionResult> Approve(string? filter)
+    // ── Approve Fund: retired ─────────────────────────────────────────────
+    // The separate Approve Fund report is gone - "add fund ki request lagayenge aur
+    // Payment Verification me hi jayegi, wahin se verify ya reject karenge to fund
+    // mil jayega". An added fund is an unverified Payment row, so it already shows
+    // up as Pending on Payment Verification and is released by Verify there.
+    //
+    // The old URL is kept and simply redirects, so a bookmark lands on the one screen
+    // that now decides funds instead of a second, competing queue.
+    public IActionResult Approve()
     {
-        var f = (filter ?? "pending").ToLowerInvariant();
-
-        var rows = f switch
-        {
-            "decided" => await _funds.GetDecidedAsync(),
-            "all" => (await _funds.GetPendingAsync()).Concat(await _funds.GetDecidedAsync())
-                     .OrderByDescending(p => p.CreatedAt).ToList(),
-            _ => await _funds.GetPendingAsync()
-        };
-
-        var reqIds = rows.Select(r => r.SolarRequestId).Distinct().ToHashSet();
-        ViewBag.Requests = (await _uow.SolarRequests.GetAllAsync())
-                           .Where(r => reqIds.Contains(r.Id))
-                           .ToDictionary(r => r.Id);
-        ViewBag.Filter = f;
-        ViewBag.MyId = AdminId;
-        ViewBag.Title = "Approve Fund";
-        return View(rows);
+        TempData["Info"] = "Approve Fund has moved — added funds now wait here in Payment Verification. "
+                         + "Verify one to credit it, or reject it.";
+        return RedirectToAction("Index", "Payments", new { filter = "pending" });
     }
 
     // POST: /SolarPanelAdmin/Funds/ApproveEntry
+    // No screen posts here any more (the Approve Fund page it belonged to is gone) —
+    // Payment Verification's own Verify/Reject decides these rows now. Left in place
+    // so the maker-checker service path is still callable if that queue is ever
+    // brought back.
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ApproveEntry(int id, string? note)

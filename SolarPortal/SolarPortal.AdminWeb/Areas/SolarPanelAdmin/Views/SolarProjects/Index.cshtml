@@ -27,6 +27,7 @@
         ViewData["FilterShowCity"] = false;
         ViewData["FilterShowState"] = false;
         ViewData["FilterShowDate"] = false;
+        ViewData["FilterPageSize"] = 10;   // plan master is 100+ rows - page them
 
         <partial name="_ReportFilterToolbar" />
 
@@ -36,6 +37,7 @@
                 <table id="solarProjectsTable">
                     <thead>
                         <tr>
+                            <th style="width:60px">S.No</th>
                             <th>Name</th>
                             <th>Solar Type</th>
                             <th>Connection</th>
@@ -53,9 +55,11 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @{ var sno = 0; }
                         @foreach (var p in Model)
                         {
                             <tr data-search="@($"{p.Name} {p.SolarTypeKV} {p.ConnectionType} {(p.IsActive ? "active" : "inactive")}".ToLower())">
+                                <td>@(++sno)</td>
                                 <td class="td-b">@p.Name</td>
                                 <td>@p.SolarTypeKV kV</td>
                                 <td>@p.ConnectionType</td>

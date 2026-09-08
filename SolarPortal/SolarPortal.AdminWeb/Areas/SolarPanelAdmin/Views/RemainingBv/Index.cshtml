@@ -1,0 +1,420 @@
+﻿@using SolarPortal.Domain.Enums
+@model List<SolarPortal.Domain.Entities.RemainingBvUpdate>
+@{
+    ViewData["Title"] = "Remaining BV Approval";
+    string cur = ViewBag.Status as string ?? "all";
+    int pendingCount  = ViewBag.PendingCount  as int? ?? 0;
+    int approvedCount = ViewBag.ApprovedCount as int? ?? 0;
+    int rejectedCount = ViewBag.RejectedCount as int? ?? 0;
+
+    string Pill(ApprovalStatus s) => s switch
+    {
+        ApprovalStatus.Approved => "sts-act",
+        ApprovalStatus.Rejected => "sts-rej",
+        _                       => "sts-pend"
+    };
+    string Dash(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v!;
+
+    // One head as "Self/Other — NAME (ID)", which is what the admin actually
+    // reads. The mode matters because Self and an upline ID can be the same
+    // person on a one-level tree, and the payout run cares which was chosen.
+    string Head(BvBeneficiaryMode mode, string? idNo, string? name) =>
+        $"{mode} — {Dash(name)} ({Dash(idNo)})";
+}
+
+<div class="page active">
+    @Html.AntiForgeryToken()
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Remaining BV Approval</span></div>
+        <div class="ph-title">🧮 Remaining BV Approval</div>
+        <div class="ph-sub">
+            Verify who receives the BV left over after the solar request took its fixed share.
+            Correct the two editable heads if needed, then approve or send it back.
+        </div>
+    </div>
+
+    <form method="get" class="card" style="padding:16px 18px;margin-bottom:18px">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:0 1 220px;min-width:160px">
+                <label for="status">Status</label>
+                <select id="status" name="status" onchange="this.form.submit()">
+                    <option value="pending"  selected="@(cur=="pending")">Pending (@pendingCount)</option>
+                    <option value="approved" selected="@(cur=="approved")">Approved (@approvedCount)</option>
+                    <option value="rejected" selected="@(cur=="rejected")">Rejected (@rejectedCount)</option>
+                    <option value="all"      selected="@(cur=="all")">All</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
+    @if (Model.Any())
+    {
+        ViewData["FilterTableId"] = "rbvTable";
+        ViewData["FilterPlaceholder"] = "Search by request #, member ID, name, plan, beneficiary ID...";
+        ViewData["FilterDateLabel"] = "Submitted";
+        ViewData["FilterShowMemberId"] = false;
+        ViewData["FilterShowCity"] = false;
+        ViewData["FilterShowState"] = false;
+
+        <partial name="_ReportFilterToolbar" />
+    }
+
+    <div class="card">
+        <div class="ct"><span class="ct-dot"></span>Remaining BV Records (@Model.Count)</div>
+
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <div class="es-icon">🧮</div>
+                <div class="es-title">Nothing here</div>
+                <div class="es-sub">
+                    @(cur == "pending"
+                        ? "Records submitted from the member panel will appear here for verification."
+                        : "No record has this status yet.")
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="tbl-wrap">
+                <table id="rbvTable">
+                    <thead>
+                        <tr>
+                            <th>Req #</th>
+                            <th>Member</th>
+                            <th>Plan</th>
+                            <th style="text-align:right">Total BV</th>
+                            <th style="text-align:right">Fixed BV</th>
+                            <th style="text-align:right">Remaining BV</th>
+                            <th>Discom Income</th>
+                            <th>Deal Close</th>
+                            <th>SCI Income</th>
+                            <th style="text-align:right">Total ₹</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var r in Model)
+                    {
+                        var pending = r.Status == ApprovalStatus.Pending && r.PayoutPostedAt == null;
+                        <tr data-search="@($"{r.RequestNumber} {r.MemberIdNo} {r.MemberName} {r.PlanName} {r.SponsorIdNo} {r.DiscomIncomeIdNo} {r.DealCloseIdNo} {r.SciIncomeIdNo} {r.Status}".ToLower())"
+                            data-date="@((r.SubmittedAt ?? r.CreatedAt).ToLocalTime().ToString("yyyy-MM-dd"))">
+                            <td class="td-b">@Dash(r.RequestNumber)</td>
+                            <td>
+                                <div style="font-weight:600">@Dash(r.MemberName)</div>
+                                <div class="hint"><code>@r.MemberIdNo</code></div>
+                                <div class="hint">Sponsor: @Dash(r.SponsorName) (@Dash(r.SponsorIdNo))</div>
+                            </td>
+                            <td>
+                                <div>@Dash(r.PlanName)</div>
+                                <div class="hint">@r.SolarTypeKV.ToString("0.##") kW</div>
+                            </td>
+                            <td style="text-align:right">@r.TotalBV.ToString("N2")</td>
+                            <td style="text-align:right">@r.FixedBV.ToString("N2")</td>
+                            <td style="text-align:right;font-weight:700">@r.RemainingBV.ToString("N2")</td>
+                            <td style="font-size:12.5px">
+                                @Head(r.DiscomIncomeMode, r.DiscomIncomeIdNo, r.DiscomIncomeName)
+                                <div class="hint">₹@r.DiscomIncomeAmount.ToString("N0")</div>
+                            </td>
+                            <td style="font-size:12.5px">
+                                @Head(r.DealCloseMode, r.DealCloseIdNo, r.DealCloseName)
+                                <div class="hint">₹@r.DealCloseAmount.ToString("N0")</div>
+                            </td>
+                            <td style="font-size:12.5px">
+                                @Dash(r.SciIncomeName) (@Dash(r.SciIncomeIdNo))
+                                <div class="hint">₹@r.SciIncomeAmount.ToString("N0") · sponsor, not editable</div>
+                            </td>
+                            <td style="text-align:right;font-weight:600">₹@r.TotalIncome.ToString("N2")</td>
+                            <td>@((r.SubmittedAt ?? r.CreatedAt).ToLocalTime().ToString("dd MMM yyyy"))</td>
+                            <td>
+                                <span class="sts @Pill(r.Status)">@r.Status</span>
+                                @if (r.Status == ApprovalStatus.Rejected && !string.IsNullOrWhiteSpace(r.RejectionReason))
+                                {
+                                    <div class="hint" style="color:var(--red)">@r.RejectionReason</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(r.AdminRemark))
+                                {
+                                    <div class="hint">@r.AdminRemark</div>
+                                }
+                                @if (r.CorrectedAt != null)
+                                {
+                                    <div class="hint">✎ corrected by admin</div>
+                                }
+                                @if (r.PayoutPostedAt != null)
+                                {
+                                    <div class="hint">💸 posted to payout</div>
+                                }
+                            </td>
+                            <td style="white-space:nowrap">
+                                @if (pending)
+                                {
+                                    <button type="button" class="btn btn-s btn-sm"
+                                            data-rbv-id="@r.Id"
+                                            data-rbv-req="@Dash(r.RequestNumber)"
+                                            data-rbv-member="@($"{r.MemberName} ({r.MemberIdNo})")"
+                                            data-rbv-memberid="@r.MemberIdNo"
+                                            data-rbv-remaining="@r.RemainingBV.ToString("N2")"
+                                            data-rbv-dmode="@((int)r.DiscomIncomeMode)"
+                                            data-rbv-did="@r.DiscomIncomeIdNo"
+                                            data-rbv-dname="@Dash(r.DiscomIncomeName)"
+                                            data-rbv-damt="@r.DiscomIncomeAmount.ToString("N0")"
+                                            data-rbv-cmode="@((int)r.DealCloseMode)"
+                                            data-rbv-cid="@r.DealCloseIdNo"
+                                            data-rbv-cname="@Dash(r.DealCloseName)"
+                                            data-rbv-camt="@r.DealCloseAmount.ToString("N0")"
+                                            data-rbv-sciid="@Dash(r.SciIncomeIdNo)"
+                                            data-rbv-sciname="@Dash(r.SciIncomeName)"
+                                            data-rbv-sciamt="@r.SciIncomeAmount.ToString("N0")"
+                                            onclick="rbvReview(this)">✎ Correct</button>
+                                    <button type="button" class="btn btn-g btn-sm" style="margin-left:6px"
+                                            onclick="rbvApprove(@r.Id)">&#10003; Approve</button>
+                                    <button type="button" class="btn btn-d btn-sm" style="margin-left:6px"
+                                            onclick="rbvReject(@r.Id)">✕ Reject</button>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text3)">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@* Correction modal. Only the two beneficiary CHOICES are editable — every BV
+   figure and every rupee amount is the snapshot the member's submit took, and
+   an approved payout has to stay reproducible for the day it was approved. *@
+<div class="modal fade" id="rbvModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-action="Review" id="rbvForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="rbv-id" />
+                <input type="hidden" name="status" value="@cur" />
+                <input type="hidden" name="decision" id="rbv-decision" value="save" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Correct Remaining BV</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="hint" style="margin-bottom:14px">
+                        <strong id="rbv-req"></strong> ·
+                        <span id="rbv-member"></span> ·
+                        Remaining BV <strong id="rbv-remaining"></strong>
+                    </div>
+
+                    <div style="margin-bottom:18px">
+                        <label>Discom Income (₹<span id="rbv-damt"></span>)</label>
+                        <div style="display:flex;gap:14px;align-items:center;margin:6px 0">
+                            <label style="font-weight:400"><input type="radio" name="DiscomIncomeMode" value="1" onchange="rbvToggle('d')" /> Self</label>
+                            <label style="font-weight:400"><input type="radio" name="DiscomIncomeMode" value="2" onchange="rbvToggle('d')" /> Other</label>
+                        </div>
+                        <div id="rbv-d-other" style="display:none">
+                            <div style="display:flex;gap:8px">
+                                <input type="text" name="DiscomIncomeIdNo" id="rbv-did" placeholder="Upline ID number" style="flex:1" />
+                                <button type="button" class="btn btn-s btn-sm" onclick="rbvVerify('d')">Verify</button>
+                            </div>
+                            <div class="hint" id="rbv-d-msg"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:18px">
+                        <label>Deal Close (₹<span id="rbv-camt"></span>)</label>
+                        <div style="display:flex;gap:14px;align-items:center;margin:6px 0">
+                            <label style="font-weight:400"><input type="radio" name="DealCloseMode" value="1" onchange="rbvToggle('c')" /> Self</label>
+                            <label style="font-weight:400"><input type="radio" name="DealCloseMode" value="2" onchange="rbvToggle('c')" /> Other</label>
+                        </div>
+                        <div id="rbv-c-other" style="display:none">
+                            <div style="display:flex;gap:8px">
+                                <input type="text" name="DealCloseIdNo" id="rbv-cid" placeholder="Upline ID number" style="flex:1" />
+                                <button type="button" class="btn btn-s btn-sm" onclick="rbvVerify('c')">Verify</button>
+                            </div>
+                            <div class="hint" id="rbv-c-msg"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:18px">
+                        <label>SCI Income (₹<span id="rbv-sciamt"></span>)</label>
+                        <div class="hint" style="margin-top:4px">
+                            <span id="rbv-sci"></span> — always the sponsor, so it is not editable here.
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="rbv-remark">Admin remark (optional)</label>
+                        <input type="text" name="remark" id="rbv-remark" maxlength="1000"
+                               placeholder="Shown to the member as-is" />
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    @* One button only. Approving is done from the row's own Approve
+                       button outside this modal, so correcting and approving stay two
+                       deliberate acts instead of one click that does both. *@
+                    <button type="button" class="btn btn-s" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-g">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var rbvModal = null;
+    var rbvMemberId = '';
+
+    // DOUBLE-CLICK GUARD. Approve posts real money into the MLM ledger, so the
+    // second half of a double-click must never become a second request. Once one
+    // POST is on its way every action button on the page is dead until the
+    // browser navigates to the result. The server refuses a replay too
+    // (RemainingBvController.ClaimForPostAsync) — this only stops it being sent.
+    var rbvPosting = false;
+
+    function rbvLockActions() {
+        var btns = document.querySelectorAll('#rbvTable button, #rbvForm button');
+        for (var i = 0; i < btns.length; i++) { btns[i].disabled = true; }
+    }
+
+    function rbvPostForm(url, data) {
+        if (rbvPosting) { return; }
+        rbvPosting = true;
+        rbvLockActions();
+
+        var f = document.createElement('form');
+        f.method = 'post'; f.action = url;
+        for (var k in data) {
+            var i = document.createElement('input');
+            i.type = 'hidden'; i.name = k; i.value = data[k];
+            f.appendChild(i);
+        }
+        var t = document.querySelector('input[name="__RequestVerificationToken"]');
+        if (t) { f.appendChild(t.cloneNode(true)); }
+        document.body.appendChild(f);
+        f.submit();
+    }
+
+    function rbvSetMode(prefix, mode) {
+        var name = prefix === 'd' ? 'DiscomIncomeMode' : 'DealCloseMode';
+        var radios = document.getElementsByName(name);
+        for (var i = 0; i < radios.length; i++) { radios[i].checked = (radios[i].value === String(mode)); }
+        rbvToggle(prefix);
+    }
+
+    function rbvToggle(prefix) {
+        var name = prefix === 'd' ? 'DiscomIncomeMode' : 'DealCloseMode';
+        var radios = document.getElementsByName(name);
+        var other = false;
+        for (var i = 0; i < radios.length; i++) { if (radios[i].checked && radios[i].value === '2') { other = true; } }
+        document.getElementById('rbv-' + prefix + '-other').style.display = other ? 'block' : 'none';
+    }
+
+    function rbvReview(btn) {
+        var d = btn.dataset;
+        rbvMemberId = d.rbvMemberid;
+
+        document.getElementById('rbv-id').value = d.rbvId;
+        document.getElementById('rbv-req').textContent = d.rbvReq;
+        document.getElementById('rbv-member').textContent = d.rbvMember;
+        document.getElementById('rbv-remaining').textContent = d.rbvRemaining;
+        document.getElementById('rbv-damt').textContent = d.rbvDamt;
+        document.getElementById('rbv-camt').textContent = d.rbvCamt;
+        document.getElementById('rbv-sciamt').textContent = d.rbvSciamt;
+        document.getElementById('rbv-sci').textContent = d.rbvSciname + ' (' + d.rbvSciid + ')';
+
+        // "Self" pre-fills nothing: the server resolves Self to the member, so a
+        // stale ID in the box can never be saved against it.
+        document.getElementById('rbv-did').value = d.rbvDmode === '2' ? (d.rbvDid || '') : '';
+        document.getElementById('rbv-cid').value = d.rbvCmode === '2' ? (d.rbvCid || '') : '';
+        document.getElementById('rbv-d-msg').textContent = '';
+        document.getElementById('rbv-c-msg').textContent = '';
+        document.getElementById('rbv-remark').value = '';
+
+        rbvSetMode('d', d.rbvDmode);
+        rbvSetMode('c', d.rbvCmode);
+
+        if (!rbvModal) { rbvModal = new bootstrap.Modal(document.getElementById('rbvModal')); }
+        rbvModal.show();
+    }
+
+    // Convenience only — the POST re-runs the same check server-side, so a
+    // skipped or stale verify cannot get a bad ID saved.
+    function rbvVerify(prefix) {
+        var id = document.getElementById('rbv-id').value;
+        var idNo = document.getElementById('rbv-' + prefix + 'id').value;
+        var msg = document.getElementById('rbv-' + prefix + '-msg');
+        if (!idNo || !idNo.trim()) { msg.textContent = 'Enter an ID number first.'; msg.style.color = ''; return; }
+
+        msg.textContent = 'Checking...'; msg.style.color = '';
+        fetch('@Url.Action("VerifyId")?id=' + encodeURIComponent(id) + '&idNo=' + encodeURIComponent(idNo))
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+                msg.textContent = j.message;
+                msg.style.color = j.ok ? 'var(--green)' : 'var(--red)';
+            })
+            .catch(function () { msg.textContent = 'Could not check that ID right now.'; msg.style.color = 'var(--red)'; });
+    }
+
+    function rbvApprove(id) {
+        // A second click while the first approval is in flight opens nothing.
+        if (rbvPosting) { return; }
+
+        Swal.fire({
+            title: 'Give final approval?',
+            text: 'Approving freezes this record for everyone and makes the income payable today.',
+            input: 'text',
+            inputLabel: 'Approval remark (optional)',
+            inputPlaceholder: 'Shown to the member as-is',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Approve',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#059669'
+        }).then(function (r) {
+            if (r.isConfirmed) {
+                rbvPostForm('@Url.Action("Approve")', { id: id, remark: r.value || '', status: '@cur' });
+            }
+        });
+    }
+
+    function rbvReject(id) {
+        if (rbvPosting) { return; }
+
+        Swal.fire({
+            title: 'Send back to the member?',
+            input: 'text',
+            inputLabel: 'Rejection reason',
+            inputPlaceholder: 'What does the member need to correct?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Reject',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#dc2626',
+            inputValidator: function (v) {
+                if (!v || !v.trim()) { return 'Please enter a reason'; }
+            }
+        }).then(function (r) {
+            if (r.isConfirmed) {
+                rbvPostForm('@Url.Action("Reject")', { id: id, reason: r.value, status: '@cur' });
+            }
+        });
+    }
+
+    // The correction modal posts itself rather than going through rbvPostForm, so
+    // it needs the same guard: a double-clicked Save would otherwise send the
+    // correction twice, and with decision=approve that is two approvals.
+    document.getElementById('rbvForm').addEventListener('submit', function (e) {
+        if (rbvPosting) { e.preventDefault(); return; }
+        rbvPosting = true;
+        rbvLockActions();
+    });
+</script>
+}

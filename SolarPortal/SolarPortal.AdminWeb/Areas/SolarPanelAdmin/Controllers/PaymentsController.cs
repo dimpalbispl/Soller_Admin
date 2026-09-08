@@ -5,8 +5,10 @@ using SolarPortal.Application.DTOs;
 using SolarPortal.Application.Interfaces;
 using SolarPortal.Application.Interfaces.Services;
 using SolarPortal.Application.Services;
+using SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Helpers;
 using SolarPortal.Domain.Entities;
 using SolarPortal.Domain.Enums;
+using SolarPortal.Infrastructure.Data;
 
 namespace SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers;
 
@@ -14,6 +16,12 @@ namespace SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers;
 /// Admin Payment Verification — approve/reject user payments.
 /// When cumulative *verified* amount reaches ₹20,000, the project's stage
 /// is auto-advanced from Payment → PMSurvey here (NOT on the user side).
+///
+/// This page also owns ADD FUND now ("add fund ka option alag na dekar payment
+/// approve me hi de do"): the separate Add Fund menu is gone and the money is
+/// entered from the modal here. It is still only step 1 — a different admin
+/// confirms it under Approve Fund, which is the maker-checker rule from change
+/// request point 7 and is deliberately left alone.
 /// </summary>
 [Area("SolarPanelAdmin")]
 [Authorize(Roles = "Admin,SuperAdmin")]
@@ -26,6 +34,7 @@ public class PaymentsController : Controller
     private readonly IFileUploadService _fileUploadService;
     private readonly IAdminFundService _funds;
     private readonly IActiveIdDepositService _deposits;
+    private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public PaymentsController(
@@ -36,6 +45,7 @@ public class PaymentsController : Controller
         IFileUploadService fileUploadService,
         IAdminFundService funds,
         IActiveIdDepositService deposits,
+        ApplicationDbContext db,
         UserManager<ApplicationUser> userManager)
     {
         _uow = uow;
@@ -45,8 +55,19 @@ public class PaymentsController : Controller
         _fileUploadService = fileUploadService;
         _funds = funds;
         _deposits = deposits;
+        _db = db;
         _userManager = userManager;
     }
+
+    // GET: /Admin/Payments/Lookup?memberId=SADHNATEST05
+    //
+    // Feeds the Add Fund modal on this page. A member with no payment rows yet
+    // never appeared in the old request dropdown (it was built from the payments
+    // on screen), so the fund could not be added to exactly the projects that
+    // needed one. Same resolver the Add Fund page uses.
+    [HttpGet]
+    public async Task<IActionResult> Lookup(string? memberId) =>
+        Json(await MemberFundLookup.ResolveAsync(memberId, _db, _uow, _payments));
 
     // GET: /Admin/Payments
     public async Task<IActionResult> Index(string? filter)
@@ -194,6 +215,18 @@ public class PaymentsController : Controller
             var result = await _payments.VerifyAsync(id, adminId);
             if (!result.IsSuccess)
                 return Json(new { success = false, message = result.Message });
+
+            // A fund added from the Add Fund modal is decided right here now that the
+            // separate Approve Fund report is gone. Stamp the fund audit columns too,
+            // so who released the money is recorded on the row itself and not only in
+            // the generic VerifiedBy field.
+            if (payment.IsAdminFund)
+            {
+                payment.FundApprovedBy = adminId;
+                payment.FundApprovedAt = DateTime.UtcNow;
+                _uow.Payments.Update(payment);
+                await _uow.SaveChangesAsync();
+            }
 
             // Notify user that this payment was verified
             await _notifications.CreateAsync(new CreateNotificationDto
@@ -367,6 +400,15 @@ public class PaymentsController : Controller
             payment.VerifiedBy = _userManager.GetUserId(User);
             payment.VerifiedAt = DateTime.UtcNow;   // re-using as "decision timestamp"
             payment.Notes = (payment.Notes ?? "") + $"\n[REJECTED by admin] {reason}";
+
+            // Same reason as in Verify: an admin-added fund is decided on this page
+            // now, so its own rejection columns have to be filled in here.
+            if (payment.IsAdminFund)
+            {
+                payment.FundRejectionReason = reason;
+                payment.FundApprovedBy = _userManager.GetUserId(User);
+                payment.FundApprovedAt = DateTime.UtcNow;
+            }
             _uow.Payments.Update(payment);
             await _uow.SaveChangesAsync();
 
@@ -390,12 +432,15 @@ public class PaymentsController : Controller
 
     // POST: /Admin/Payments/AddByAdmin
     //
-    // Change request point 7 turned admin fund entry into two steps. This entry
-    // point is kept because the "Add payment" modal on this page still posts to
-    // it, but it no longer credits anything on its own: the money is queued as an
-    // UNVERIFIED admin fund and a SECOND admin confirms it under
-    // Funds → Approve Fund. The shared logic lives in IAdminFundService so this
-    // and the Add Fund menu cannot drift apart.
+    // The ONE place an admin records money now — the Add Fund modal on this page
+    // posts here (the separate Add Fund menu was folded in).
+    //
+    // This still credits nothing on its own: the money is saved as an UNVERIFIED
+    // admin fund and shows up as a Pending row in the list on this very page, where
+    // Verify releases it and Reject kills it. (The separate Approve Fund report is
+    // gone - "add fund ki request Payment Verification me hi jayegi, wahin se verify
+    // ya reject".) The shared logic lives in IAdminFundService so this and the (now
+    // unlinked) Add Fund page cannot drift apart.
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddByAdmin(int solarRequestId, decimal amount, string utrNumber,
