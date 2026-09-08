@@ -1,4 +1,4 @@
-/* ============================================================================
+﻿/* ============================================================================
    SEED-AdminPermissions.sql   (OPTIONAL — you usually do not need this)
    ----------------------------------------------------------------------------
    AdminPermissions is empty by design after a data clear, and an EMPTY table is
@@ -35,7 +35,9 @@ INSERT INTO @Menus (MenuKey, CanView, CanEdit) VALUES
     (N'Payments',                         1, 1),
     (N'Funds.Add',                        1, 1),
     (N'Funds.Approve',                    1, 1),
+    (N'RemainingBv',                      1, 1),
     (N'ActivationHistory',                1, 0),
+    (N'RemainingBvReport',                1, 0),
     (N'AdminAccess.Logs',                 1, 0),
     (N'PMSurya',                          1, 1),
     (N'Operations.MeterDispatch',         1, 1),

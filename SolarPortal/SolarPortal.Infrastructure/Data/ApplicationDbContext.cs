@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SolarPortal.Domain.Entities;
 
@@ -43,6 +43,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AdminPermission> AdminPermissions => Set<AdminPermission>();
     public DbSet<IncKycDocument> IncKycDocuments => Set<IncKycDocument>();
     public DbSet<InstallationPhoto> InstallationPhotos => Set<InstallationPhoto>();
+
+    // "Update Remaining BV" - one row per SolarRequest, filled by the member in
+    // the user panel, then corrected and approved (or rejected) here. Table is
+    // created out-of-band by ADD-RemainingBv.sql, same as the rows above.
+    public DbSet<RemainingBvUpdate> RemainingBvUpdates => Set<RemainingBvUpdate>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -332,6 +337,52 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
              .WithMany(i => i.Photos)
              .HasForeignKey(x => x.InstallationId)
              .OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        // RemainingBvUpdate config - one row per SolarRequest. Must match the
+        // user panel's mapping exactly: both sites read and write this table.
+        builder.Entity<RemainingBvUpdate>(e =>
+        {
+            e.ToTable("RemainingBvUpdates");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.RequestNumber).HasMaxLength(30);
+            e.Property(x => x.MemberIdNo).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MemberName).HasMaxLength(150);
+            e.Property(x => x.MemberFormNo).HasColumnType("decimal(18,0)");
+            e.Property(x => x.SponsorIdNo).HasMaxLength(50);
+            e.Property(x => x.SponsorName).HasMaxLength(150);
+            e.Property(x => x.PlanName).HasMaxLength(150);
+            e.Property(x => x.SolarTypeKV).HasColumnType("decimal(8,2)");
+            e.Property(x => x.OrderNo).HasMaxLength(50);
+            e.Property(x => x.ProductName).HasMaxLength(250);
+            e.Property(x => x.BvSource).HasMaxLength(250);
+            e.Property(x => x.DiscomIncomeIdNo).HasMaxLength(50);
+            e.Property(x => x.DiscomIncomeName).HasMaxLength(150);
+            e.Property(x => x.DealCloseIdNo).HasMaxLength(50);
+            e.Property(x => x.DealCloseName).HasMaxLength(150);
+            e.Property(x => x.SciIncomeIdNo).HasMaxLength(50);
+            e.Property(x => x.SciIncomeName).HasMaxLength(150);
+            e.Property(x => x.AdminRemark).HasMaxLength(1000);
+            e.Property(x => x.RejectionReason).HasMaxLength(1000);
+            e.Property(x => x.TotalBV).HasColumnType("decimal(18,2)");
+            e.Property(x => x.FixedBV).HasColumnType("decimal(18,2)");
+            e.Property(x => x.RemainingBV).HasColumnType("decimal(18,2)");
+            e.Property(x => x.DiscomIncomeAmount).HasColumnType("decimal(18,2)");
+            e.Property(x => x.DealCloseAmount).HasColumnType("decimal(18,2)");
+            e.Property(x => x.SciIncomeAmount).HasColumnType("decimal(18,2)");
+            // Computed on the entity, never stored.
+            e.Ignore(x => x.IsLocked);
+            e.Ignore(x => x.IsRejected);
+            e.Ignore(x => x.TotalIncome);
+            e.HasOne(x => x.SolarRequest)
+             .WithMany()
+             .HasForeignKey(x => x.SolarRequestId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.SolarRequestId)
+             .IsUnique()
+             .HasFilter("[IsDeleted] = 0");
+            e.HasIndex(x => x.MemberIdNo);
             e.HasQueryFilter(x => !x.IsDeleted);
         });
     }

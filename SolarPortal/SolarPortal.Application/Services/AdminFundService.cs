@@ -38,13 +38,10 @@ public class AdminFundService : IAdminFundService
 
             // The same UTR must not already be sitting in the queue for this
             // request — a double-click on Add Fund would otherwise queue the same
-            // money twice and both entries would be approvable.
+            // money twice and both entries would be approvable. Same check the
+            // screens run while the admin types, so both answers always agree.
             var utr = input.UtrNumber.Trim();
-            var duplicate = (await _uow.Payments.FindAsync(p =>
-                                p.SolarRequestId == input.SolarRequestId &&
-                                p.UTRNumber == utr))
-                            .Any(p => p.Status != PaymentStatus.Rejected);
-            if (duplicate)
+            if (await IsDuplicateUtrAsync(input.SolarRequestId, utr))
                 return ServiceResult<Payment>.Failure($"A payment with UTR {utr} already exists on this request.");
 
             var count = await _uow.Payments.CountAsync() + 1;
@@ -61,8 +58,8 @@ public class AdminFundService : IAdminFundService
                 ReceiptImagePath = input.ReceiptPath,
                 ReceiptNumber = $"RCP-{DateTime.Now:yyyy}-{count:D4}",
 
-                // Point 7: NOT verified on entry any more. It waits in the
-                // Approve Fund queue until a second admin confirms it.
+                // NOT verified on entry: it waits in the Payment Verification queue
+                // like any other pending payment until an admin verifies it there.
                 Status = PaymentStatus.Pending,
                 IsVerified = false,
                 IsAdminFund = true,
@@ -74,7 +71,7 @@ public class AdminFundService : IAdminFundService
             await _uow.SaveChangesAsync();
 
             return ServiceResult<Payment>.Success(payment,
-                $"Fund of ₹{input.Amount:N0} added and sent for approval. It will not count toward the project total until approved.");
+                $"Fund of ₹{input.Amount:N0} added. It is now Pending in Payment Verification — verify it there and it counts toward the project total.");
         }
         catch (Exception ex)
         {
@@ -182,6 +179,19 @@ public class AdminFundService : IAdminFundService
         {
             return ServiceResult<bool>.Failure($"Reject fund failed: {ex.InnerException?.Message ?? ex.Message}");
         }
+    }
+
+    public async Task<bool> IsDuplicateUtrAsync(int solarRequestId, string? utr)
+    {
+        var trimmed = (utr ?? string.Empty).Trim();
+        if (solarRequestId <= 0 || trimmed.Length == 0) return false;
+
+        // A rejected entry does not block: that money was refused, so the same UTR
+        // may legitimately be entered again.
+        return (await _uow.Payments.FindAsync(p =>
+                   p.SolarRequestId == solarRequestId &&
+                   p.UTRNumber == trimmed))
+               .Any(p => p.Status != PaymentStatus.Rejected);
     }
 
     public async Task<IReadOnlyList<Payment>> GetPendingAsync() =>

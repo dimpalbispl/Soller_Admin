@@ -1,4 +1,4 @@
-namespace SolarPortal.Application.Interfaces.Services;
+﻿namespace SolarPortal.Application.Interfaces.Services;
 
 /// <summary>
 /// Which admin can open which menu ("admin → user permission").
@@ -77,8 +77,10 @@ public static class AdminMenus
         new Item("Payments",                  "Payment Verification", "Users & Payments", "Payments",          "Index"),
         new Item("Funds.Add",                 "Add Fund",             "Users & Payments", "Funds",             "Index"),
         new Item("Funds.Approve",             "Approve Fund",         "Users & Payments", "Funds",             "Approve"),
+        new Item("RemainingBv",              "Remaining BV Approval","Users & Payments", "RemainingBv",       "Index"),
 
         new Item("ActivationHistory",         "Activation History",   "Reports",          "ActivationHistory", "Index"),
+        new Item("RemainingBvReport",         "Remaining BV Report",  "Reports",          "RemainingBvReport", "Index"),
         new Item("AdminAccess.Logs",          "Log Report",           "Reports",          "AdminAccess",       "Logs"),
 
         new Item("PMSurya",                   "PM Surya Ghar",        "Workflow",         "PMSurya",           "Index"),
@@ -88,7 +90,7 @@ public static class AdminMenus
         new Item("Operations.FinalDispatch",  "Final Dispatch",       "Workflow",         "Operations",        "FinalDispatch"),
         new Item("Operations.Installation",   "Installation",         "Workflow",         "Operations",        "Installation"),
         new Item("Operations.InstallationApprovals", "Installation Approval", "Workflow",     "Operations",        "InstallationApprovals"),
-        new Item("Operations.DCRUpdate",      "DCR Verify",           "Workflow",         "Operations",        "DCRUpdate"),
+        new Item("Operations.DCRUpdate",      "DCR Upload",           "Workflow",         "Operations",        "DCRUpdate"),
 
         new Item("SolarProjects",             "Solar Projects",       "Masters",          "SolarProjects",     "Index"),
         new Item("Workers",                   "Installers (INC)",     "Masters",          "Workers",           "Index"),

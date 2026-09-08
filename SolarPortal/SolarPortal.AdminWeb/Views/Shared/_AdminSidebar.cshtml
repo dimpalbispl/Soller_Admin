@@ -60,18 +60,25 @@
             <span class="sbi">💰</span>Payment Verification
         </a>
     }
-    @* Change request point 7: Add Fund is two steps, so it gets two menus.
-       Adding queues the money; a different admin confirms it under Approve Fund. *@
+    @* Add Fund ka apna menu rehta hai - "ye bahar add fund ka hai jo rakhna hai".
+       Wahi paisa Payment Verification page ke "Add Fund" modal se bhi add hota hai;
+       dono ek hi service par jaate hain. *@
     @if (Can("Funds.Add"))
     {
         <a class="sb-item @IsActiveAction("Funds", "Index")" asp-area="SolarPanelAdmin" asp-controller="Funds" asp-action="Index">
             <span class="sbi">➕</span>Add Fund
         </a>
     }
-    @if (Can("Funds.Approve"))
+    @* Approve Fund ka alag report hata diya gaya hai - "approve fund ka hatana hai
+       aur wo approve/verify Payment Verification se hoga". Added fund usi Payment
+       Verification list me Pending aati hai aur wahin verify hone par credit hoti
+       hai, isliye do jagah decide karne ki zaroorat nahi rahi. *@
+    @* Remaining BV: the member submits who receives each income head, the
+       admin corrects it if needed and then approves or sends it back. *@
+    @if (Can("RemainingBv"))
     {
-        <a class="sb-item @IsActiveAction("Funds", "Approve")" asp-area="SolarPanelAdmin" asp-controller="Funds" asp-action="Approve">
-            <span class="sbi">✅</span>Approve Fund
+        <a class="sb-item @IsActive("RemainingBv")" asp-area="SolarPanelAdmin" asp-controller="RemainingBv" asp-action="Index">
+            <span class="sbi">🧮</span>Remaining BV Approval
         </a>
     }
 </div>
@@ -81,6 +88,13 @@
     {
         <a class="sb-item @IsActive("ActivationHistory")" asp-area="SolarPanelAdmin" asp-controller="ActivationHistory" asp-action="Index">
             <span class="sbi">🔓</span>Activation History
+        </a>
+    }
+    @* What Remaining BV approval posted into the legacy Repurchincome ledger. *@
+    @if (Can("RemainingBvReport"))
+    {
+        <a class="sb-item @IsActive("RemainingBvReport")" asp-area="SolarPanelAdmin" asp-controller="RemainingBvReport" asp-action="Index">
+            <span class="sbi">📒</span>Remaining BV Report
         </a>
     }
     @* admin -> log reports: every admin decision that was recorded. *@
@@ -141,10 +155,12 @@
             <span class="sbi">📷</span>Installation Approval
         </a>
     }
+    @* DCR upload user panel se hata kar yahan aa gaya hai - admin hi document
+       upload karta hai aur wahi approval hai, alag verify step nahi. *@
     @if (Can("Operations.DCRUpdate"))
     {
         <a class="sb-item @IsActiveAction("Operations", "DCRUpdate")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="DCRUpdate">
-            <span class="sbi">📄</span>DCR Verify
+            <span class="sbi">📄</span>DCR Upload
         </a>
     }
 </div>

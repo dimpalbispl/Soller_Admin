@@ -1,4 +1,4 @@
-namespace SolarPortal.Domain.Enums;
+﻿namespace SolarPortal.Domain.Enums;
 
 public enum ProjectStatus
 {
@@ -67,4 +67,29 @@ public enum WorkerType
 {
     JOB = 1,
     INC = 2
+}
+
+/// <summary>
+/// Who receives one of the Remaining-BV income heads (Discom Income / Deal Close).
+/// Self  = the member's own IdNo is saved.
+/// Other = a typed-in IdNo, which must sit ABOVE the member in the sponsor tree.
+/// </summary>
+public enum BvBeneficiaryMode
+{
+    Self = 1,
+    Other = 2
+}
+
+/// <summary>
+/// Where a typed-in IdNo sits relative to the member in the SPONSOR tree
+/// (m_membermaster.RefFormNo chain). Only <see cref="Upline"/> may be saved
+/// against a Remaining-BV income head.
+/// </summary>
+public enum SponsorRelation
+{
+    NotFound  = 0,
+    Self      = 1,
+    Upline    = 2,
+    Downline  = 3,
+    Unrelated = 4
 }

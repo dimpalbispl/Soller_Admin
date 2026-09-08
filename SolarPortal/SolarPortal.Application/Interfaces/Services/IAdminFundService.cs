@@ -28,6 +28,14 @@ public interface IAdminFundService
 
     Task<ServiceResult<bool>> RejectAsync(int paymentId, string approverId, string reason);
 
+    /// <summary>
+    /// True when this request already carries a non-rejected payment with the same
+    /// UTR. <see cref="AddAsync"/> refuses such an entry; the Add Fund screens call
+    /// this while the admin is still typing so the clash is shown on the field
+    /// instead of only after they press save.
+    /// </summary>
+    Task<bool> IsDuplicateUtrAsync(int solarRequestId, string? utr);
+
     /// <summary>Admin funds awaiting approval, newest first.</summary>
     Task<IReadOnlyList<Payment>> GetPendingAsync();
 

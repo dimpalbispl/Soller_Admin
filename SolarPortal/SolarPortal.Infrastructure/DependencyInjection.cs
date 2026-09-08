@@ -106,6 +106,13 @@ public static class DependencyInjection
         // other one skips. That shared key is the ONLY thing preventing a double
         // payment; read IncCommissionCreditService before changing it.
         services.AddScoped<IIncCommissionCreditService, IncCommissionCreditService>();
+        // Update Remaining BV — final approval runs Sp_UpdateReaminingBV, which
+        // writes the member's remaining BV into Repurchincome and stamps
+        // RemainingBvUpdates.SessID with today's date in 112 form. It runs BEFORE
+        // the row is frozen; PayoutPostedAt is what stops a second credit.
+        services.AddScoped<IRemainingBvIncomeService, RemainingBvIncomeService>();
+        // Read-only report over what that post wrote into Repurchincome.
+        services.AddScoped<IRepurchaseIncomeReportService, RepurchaseIncomeReportService>();
         // Already-Active cPanel deposit (point 1). The user panel already credits
         // it against the project; admin has to read the SAME figure or Payment
         // Verification shows a due the member has in fact already paid.
@@ -135,6 +142,11 @@ public static class DependencyInjection
         // so admin can see when a member moved from "Without Activation" to an
         // activated ID taking "Active Now" projects.
         services.AddScoped<IActivationHistoryService, ActivationHistoryService>();
+
+        // Sponsor-tree reads (m_membermaster.RefFormNo chain). The admin needs
+        // these to re-validate a CORRECTED Remaining-BV beneficiary against the
+        // same upline rule the user panel enforces on the member's own choice.
+        services.AddScoped<ISponsorTreeService, SponsorTreeService>();
 
         return services;
     }
