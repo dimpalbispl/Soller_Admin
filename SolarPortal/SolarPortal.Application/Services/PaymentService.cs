@@ -10,12 +10,16 @@ namespace SolarPortal.Application.Services;
 public class PaymentService : IPaymentService
 {
     /// <summary>
-    /// Business rule: cumulative paid amount must be ≥ ₹20,000 before the
+    /// Business rule: cumulative paid amount must be ≥ ₹15,900 before the
     /// workflow can advance past Payment stage. Each payment is allowed
-    /// (e.g. a user can pay ₹5,000 + ₹15,000), but the request stays in
+    /// (e.g. a user can pay ₹5,000 + ₹10,900), but the request stays in
     /// Payment stage until the cumulative total clears the minimum.
+    ///
+    /// The floor was ₹20,000 until the admin lowered it to ₹15,900. Every screen
+    /// that quotes a minimum reads THIS constant, so the number lives in one
+    /// place and the two panels can never disagree about it.
     /// </summary>
-    public const decimal MinimumPaymentThreshold = 20000m;
+    public const decimal MinimumPaymentThreshold = 15900m;
 
     private readonly IUnitOfWork _uow;
     private readonly IMapper _mapper;

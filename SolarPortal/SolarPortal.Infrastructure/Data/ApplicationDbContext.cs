@@ -49,6 +49,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     // created out-of-band by ADD-RemainingBv.sql, same as the rows above.
     public DbSet<RemainingBvUpdate> RemainingBvUpdates => Set<RemainingBvUpdate>();
 
+    // "Extra Payment Refund" - one row per refund an admin raises for money a
+    // member overpaid. Approving it credits the member's wallet in the legacy
+    // IncTrnvoucher ledger. Table created out-of-band by
+    // ADD-ExtraPaymentRefunds.sql, same as the rows above.
+    public DbSet<ExtraPaymentRefund> ExtraPaymentRefunds => Set<ExtraPaymentRefund>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -382,6 +388,33 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             e.HasIndex(x => x.SolarRequestId)
              .IsUnique()
              .HasFilter("[IsDeleted] = 0");
+            e.HasIndex(x => x.MemberIdNo);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        // ExtraPaymentRefund config — refunds of money a member overpaid on a
+        // project. Raised here, decided here, and only an approved one reaches
+        // the legacy IncTrnvoucher ledger.
+        builder.Entity<ExtraPaymentRefund>(e =>
+        {
+            e.ToTable("ExtraPaymentRefunds");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.RequestNumber).HasMaxLength(30);
+            e.Property(x => x.MemberIdNo).HasMaxLength(50).IsRequired();
+            e.Property(x => x.MemberName).HasMaxLength(150);
+            e.Property(x => x.Amount).HasColumnType("decimal(18,2)");
+            e.Property(x => x.VoucherAcType).HasMaxLength(1).IsRequired();
+            e.Property(x => x.VoucherTypeName).HasMaxLength(100);
+            e.Property(x => x.Remark).HasMaxLength(1000);
+            e.Property(x => x.RejectionReason).HasMaxLength(1000);
+            e.Property(x => x.RequestedBy).HasMaxLength(100);
+            e.Property(x => x.DecidedBy).HasMaxLength(100);
+            e.Property(x => x.VoucherRefNo).HasMaxLength(150);
+            e.HasOne(x => x.SolarRequest)
+             .WithMany()
+             .HasForeignKey(x => x.SolarRequestId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.SolarRequestId);
             e.HasIndex(x => x.MemberIdNo);
             e.HasQueryFilter(x => !x.IsDeleted);
         });

@@ -1,4 +1,4 @@
-@{
+﻿@{
     ViewData["Title"] = "PM Surya Ghar Review";
     var req = (SolarPortal.Domain.Entities.SolarRequest)ViewBag.Request;
     var docs = (IEnumerable<SolarPortal.Application.DTOs.PMDocumentDto>)ViewBag.Documents;
@@ -29,7 +29,22 @@
     <div class="row g-3">
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-header">Uploaded Documents</div>
+                @{
+                    @* How many files this case actually carries — the admin was asking
+                       "kitni files aayi hain" and had to count the rows by hand. Split
+                       so it is obvious what the USER sent versus what admin attached. *@
+                    var userDocCount  = docs.Count(x =>
+                        x.DocumentType != SolarPortal.Domain.Enums.DocumentType.PMApprovalDocument &&
+                        x.DocumentType != SolarPortal.Domain.Enums.DocumentType.PMApprovalPhoto &&
+                        x.DocumentType != SolarPortal.Domain.Enums.DocumentType.PMApprovalSignature);
+                    var adminDocCount = docs.Count() - userDocCount;
+                }
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Uploaded Documents</span>
+                    <span class="badge bg-secondary" title="Files uploaded by the user / by admin">
+                        @docs.Count() file(s) — @userDocCount user, @adminDocCount admin
+                    </span>
+                </div>
                 <div class="card-body">
                     @if (!docs.Any())
                     {
@@ -98,7 +113,12 @@
                                     {
                                         if (d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Pending)
                                         {
-                                            <button class="btn btn-sm btn-success btn-approve" data-id="@d.Id">Approve</button>
+                                            @* No per-document Approve any more: there were two Approve
+                                               buttons for the same job, and the admin had to click every
+                                               row before the final one unlocked. "Approve All & Open Meter
+                                               Dispatch + Site Survey" below already approves every pending
+                                               document in one go, so this row only keeps Reject — the one
+                                               verdict that IS per document. *@
                                             <button class="btn btn-sm btn-danger btn-reject" data-id="@d.Id">Reject</button>
                                         }
                                         else if (d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Approved)
@@ -222,11 +242,12 @@
                     <div class="card-header bg-success text-white">Approve &amp; Advance</div>
                     <div class="card-body">
                         <p>
-                            Verify all documents, then enter the PM Surya Ghar ID <strong>and</strong> attach the
+                            Check the documents above, then enter the PM Surya Ghar ID <strong>and</strong> attach the
                             approval document(s) the user can download. <strong>Both are required</strong> — the
-                            project cannot move to the next stage without them. Approval opens
-                            <strong>Meter Dispatch</strong> &amp; <strong>Site Survey</strong> together.
-                            The user's mobile and email are shown at the top for quick contact.
+                            project cannot move to the next stage without them. This <strong>one button approves
+                            every pending document</strong> and opens <strong>Meter Dispatch</strong> &amp;
+                            <strong>Site Survey</strong> together — there is no need to approve them row by row.
+                            Reject a row above only when you want that file re-uploaded.
                         </p>
 
                         @* Document-status hint. Approving docs one-by-one no longer hides this
@@ -240,7 +261,7 @@
                         else if (pendingDocCount > 0)
                         {
                             <div class="alert alert-info py-2 small mb-2">
-                                @pendingDocCount document(s) still pending review.
+                                @pendingDocCount document(s) pending — this button approves them all.
                             </div>
                         }
                         else if (docs.Any())
@@ -254,7 +275,7 @@
                         <input id="pmAppNo" class="form-control mb-2" placeholder="e.g., RJ-PMSG-2026-000123" value="@(req.PmSuryaApplicationNo ?? "")" />
                         <label class="form-label mb-1">Approval Document(s) — user downloadable <span class="text-danger">*</span></label>
                         @* Point 5: Camera / Gallery — photo-picker.js turns this into two buttons. *@
-                        <input id="approvalDocs" type="file" class="form-control mb-1" multiple accept=".pdf,.png,.jpg,.jpeg" data-photo-picker />
+                        <input id="approvalDocs" type="file" class="form-control mb-1" multiple accept=".pdf,.png,.jpg,.jpeg" data-photo-picker data-camera />
                         @if (hasApprovalDoc)
                         {
                             <p class="text-muted small mb-2">An approval document is already attached — leave this empty to keep it.</p>
@@ -305,7 +326,7 @@
                         </ul>
                     }
                     <label class="form-label mb-1">Upload new approval document(s)</label>
-                    <input id="reUploadDocs" type="file" class="form-control mb-2" multiple accept=".pdf,.png,.jpg,.jpeg" data-photo-picker />
+                    <input id="reUploadDocs" type="file" class="form-control mb-2" multiple accept=".pdf,.png,.jpg,.jpeg" data-photo-picker data-camera />
                     <button id="btnReUpload" class="btn btn-primary w-100">⬆ Upload</button>
                     <p class="text-muted small mt-2 mb-0">
                         Delete an existing document and upload a replacement whenever the
@@ -362,13 +383,9 @@ $('#btnAcceptCase').on('click', function () {
     }).fail(function () { $btn.prop('disabled', false).text('📥 Accept Case'); });
 });
 
-$('.btn-approve').on('click', function () {
-    const id = $(this).data('id');
-    $.post('@Url.Action("ApproveDocument")', { docId: id, __RequestVerificationToken: token }, function (r) {
-        // global toast shows r.message; just reload after a short delay
-        if (r.success) { setTimeout(function () { location.reload(); }, 600); }
-    });
-});
+@* The per-row Approve handler is gone with its button — "Approve All & Open Meter
+   Dispatch + Site Survey" is now the single approve action on this page. The
+   ApproveDocument endpoint is left in place; nothing on this screen calls it. *@
 $('.btn-reject').on('click', function () {
     const id = $(this).data('id');
     // A reason is mandatory server-side — the user needs to know what to re-upload.

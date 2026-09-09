@@ -88,9 +88,13 @@ public class IncCommissionCreditService : IIncCommissionCreditService
 
         int? projectId;
         string requestNumber;
+        string memberIdNo;
         await using (var q = conn.CreateCommand())
         {
-            q.CommandText = "SELECT SolarProjectId, RequestNumber FROM dbo.SolarRequests WHERE Id = @r";
+            // UserId comes along for the narration: the ledger row used to name only
+            // the request number, so anyone reading the INC voucher had to look the
+            // member up separately.
+            q.CommandText = "SELECT SolarProjectId, RequestNumber, UserId FROM dbo.SolarRequests WHERE Id = @r";
             q.Parameters.Add(new SqlParameter("@r", solarRequestId));
             await using var rd = await q.ExecuteReaderAsync();
             if (!await rd.ReadAsync())
@@ -100,6 +104,7 @@ public class IncCommissionCreditService : IIncCommissionCreditService
             }
             projectId = rd.IsDBNull(0) ? null : Convert.ToInt32(rd.GetValue(0));
             requestNumber = rd.IsDBNull(1) ? string.Empty : (rd.GetValue(1)?.ToString() ?? string.Empty).Trim();
+            memberIdNo    = rd.IsDBNull(2) ? string.Empty : (rd.GetValue(2)?.ToString() ?? string.Empty).Trim();
         }
 
         if (projectId is null or 0)
@@ -126,7 +131,12 @@ public class IncCommissionCreditService : IIncCommissionCreditService
             return result;
         }
 
-        var narration = $"INC commission for {requestNumber}";
+        // Narration carries the MEMBER ID as well as the request number — the INC
+        // voucher is read on its own in the legacy ledger, where "SCR-010" alone
+        // says nothing about whose project it was. (Narration is varchar(2500).)
+        var narration = string.IsNullOrWhiteSpace(memberIdNo)
+            ? $"INC commission for {requestNumber}"
+            : $"INC commission for {requestNumber} · Member ID {memberIdNo}";
         var refNo = $"INC/{requestNumber}";
 
         // Ledger row and wallet voucher go together or not at all — a ledger row

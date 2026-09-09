@@ -13,7 +13,7 @@
         <div class="ph-sub">
             Review and approve/reject incoming solar connection requests.
             <strong>Note:</strong> Approval here only releases the request into payment workflow.
-            Final approval happens automatically once cumulative verified payment ≥ ₹20,000
+            Final approval happens automatically once cumulative verified payment ≥ ₹@SolarPortal.Application.Services.PaymentService.MinimumPaymentThreshold.ToString("N0")
             via the Payment Verification screen.
         </div>
     </div>

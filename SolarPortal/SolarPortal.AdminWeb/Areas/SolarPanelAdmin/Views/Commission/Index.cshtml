@@ -64,9 +64,15 @@
             <a class="btn @(filter == "pending" ? "btn-warning" : "btn-outline-warning")" asp-route-filter="pending">Pending</a>
             <a class="btn @(filter == "paid" ? "btn-success" : "btn-outline-success")" asp-route-filter="paid">Paid</a>
         </div>
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#planCommissionModal">
-            ➕ Set Plan Commission
-        </button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+            @* Exports whichever tab is open, as CSV — Excel opens it directly. *@
+            <a class="btn btn-outline-success" asp-action="Export" asp-route-filter="@filter">
+                ⬇ Export to Excel
+            </a>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#planCommissionModal">
+                ➕ Set Plan Commission
+            </button>
+        </div>
     </div>
 
     @* ── Plan-wise commission amounts ──────────────────────────────────── *@

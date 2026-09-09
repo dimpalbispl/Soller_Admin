@@ -73,6 +73,14 @@
        aur wo approve/verify Payment Verification se hoga". Added fund usi Payment
        Verification list me Pending aati hai aur wahin verify hone par credit hoti
        hai, isliye do jagah decide karne ki zaroorat nahi rahi. *@
+    @* Extra Payment Refund: money a member paid over their project total, raised
+       here and credited to their wallet only once it is approved. *@
+    @if (Can("Refunds"))
+    {
+        <a class="sb-item @IsActive("Refunds")" asp-area="SolarPanelAdmin" asp-controller="Refunds" asp-action="Index">
+            <span class="sbi">💸</span>Extra Payment Refund
+        </a>
+    }
     @* Remaining BV: the member submits who receives each income head, the
        admin corrects it if needed and then approves or sends it back. *@
     @if (Can("RemainingBv"))

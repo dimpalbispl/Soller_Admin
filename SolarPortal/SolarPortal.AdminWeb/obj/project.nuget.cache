@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Ahk8sEAo5jI=",
+  "dgSpecHash": "BFj2U7Qkg6k=",
   "success": true,
-  "projectFilePath": "\\\\localhost\\Sadhna\\SolerGithub\\Soller_Admin\\SolarPortal\\SolarPortal.AdminWeb\\SolarPortal.AdminWeb.csproj",
+  "projectFilePath": "\\\\localhost\\Sadhna\\New Github\\Solar_Github\\Soller_Admin\\SolarPortal\\SolarPortal.AdminWeb\\SolarPortal.AdminWeb.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Claude1\\.nuget\\packages\\automapper\\13.0.1\\automapper.13.0.1.nupkg.sha512",
     "C:\\Users\\Claude1\\.nuget\\packages\\azure.core\\1.25.0\\azure.core.1.25.0.nupkg.sha512",

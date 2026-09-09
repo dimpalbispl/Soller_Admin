@@ -65,6 +65,14 @@
     var showState = ViewData["FilterShowState"]    as bool? ?? true;
     var showDate  = ViewData["FilterShowDate"]     as bool? ?? true;
 
+    // Optional SECOND date range, for reports that are looked up by a different
+    // date than the one they are listed by — e.g. Remaining BV, where the admin
+    // asks "what did I approve on this date", not "what was submitted then".
+    // Off by default, so every existing report is untouched. Rows supply it as
+    // data-date2 (YYYY-MM-DD, blank when the row has no such date yet).
+    var showDate2  = ViewData["FilterShowDate2"]  as bool? ?? false;
+    var date2Label = ViewData["FilterDate2Label"] as string ?? "Approve Date";
+
     // Worker/installer filter is opt-IN — only the operations queues that carry
     // an assigned person (Material Dispatch, Installation) switch it on.
     var showWorker  = ViewData["FilterShowWorker"]  as bool? ?? false;
@@ -79,6 +87,8 @@
     ViewData.Remove("FilterShowCity");
     ViewData.Remove("FilterShowState");
     ViewData.Remove("FilterShowDate");
+    ViewData.Remove("FilterShowDate2");
+    ViewData.Remove("FilterDate2Label");
     ViewData.Remove("FilterShowWorker");
     ViewData.Remove("FilterWorkerLabel");
     ViewData.Remove("FilterDateLabel");
@@ -94,6 +104,8 @@
     var idWorker = $"rf_{tableId}_worker";
     var idFrom   = $"rf_{tableId}_from";
     var idTo     = $"rf_{tableId}_to";
+    var idFrom2  = $"rf_{tableId}_from2";
+    var idTo2    = $"rf_{tableId}_to2";
     var idClear  = $"rf_{tableId}_clear";
     var idCount  = $"rf_{tableId}_count";
     var idPager  = $"rf_{tableId}_pager";
@@ -155,6 +167,17 @@
             <input id="@idTo" type="date" class="rf-input" />
         </div>
     }
+    @if (showDate2)
+    {
+        <div class="rf-field rf-field-narrow">
+            <label class="rf-label" for="@idFrom2">@date2Label From</label>
+            <input id="@idFrom2" type="date" class="rf-input" />
+        </div>
+        <div class="rf-field rf-field-narrow">
+            <label class="rf-label" for="@idTo2">@date2Label To</label>
+            <input id="@idTo2" type="date" class="rf-input" />
+        </div>
+    }
     <div class="rf-field">
         <label class="rf-label">&nbsp;</label>
         <button type="button" id="@idClear" class="rf-clear">✕ Clear</button>
@@ -191,6 +214,8 @@
         var $worker = document.getElementById('@idWorker');
         var $from   = document.getElementById('@idFrom');
         var $to     = document.getElementById('@idTo');
+        var $from2  = document.getElementById('@idFrom2');
+        var $to2    = document.getElementById('@idTo2');
         var $clear  = document.getElementById('@idClear');
         var $count  = document.getElementById('@idCount');
 
@@ -264,6 +289,19 @@
             }
             if (ok && from  && date && date < from) ok = false;
             if (ok && to    && date && date > to)   ok = false;
+
+            // Second date range (opt-in). A row with no such date — e.g. a Remaining
+            // BV record that has not been approved yet — is filtered OUT as soon as
+            // an approve-date range is set, which is what "show me what was approved
+            // between these dates" means.
+            var from2 = ($from2 && $from2.value) || '';
+            var to2   = ($to2   && $to2.value)   || '';
+            if (ok && (from2 || to2)) {
+                var date2 = r.getAttribute('data-date2') || '';
+                if (!date2) ok = false;
+                else if (from2 && date2 < from2) ok = false;
+                else if (to2   && date2 > to2)   ok = false;
+            }
             return ok;
         }
 
@@ -338,9 +376,9 @@
         }
 
         [$search, $mid].forEach(function (el) { if (el) el.addEventListener('input', apply); });
-        [$city, $state, $worker, $from, $to].forEach(function (el) { if (el) el.addEventListener('change', apply); });
+        [$city, $state, $worker, $from, $to, $from2, $to2].forEach(function (el) { if (el) el.addEventListener('change', apply); });
         if ($clear) $clear.addEventListener('click', function () {
-            [$search, $mid, $city, $state, $worker, $from, $to].forEach(function (el) { if (el) el.value = ''; });
+            [$search, $mid, $city, $state, $worker, $from, $to, $from2, $to2].forEach(function (el) { if (el) el.value = ''; });
             apply();
         });
 

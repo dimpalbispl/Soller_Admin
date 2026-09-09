@@ -53,7 +53,10 @@ public enum DocumentType
     PMApprovalSignature = 14,   // admin-uploaded PM Surya approval signature, user-downloadable
     // Applicant-side (user panel) live photo & signature on the PM Surya page
     Photo = 15,
-    Signature = 16
+    Signature = 16,
+    // Aadhaar has two sides. AadharCard (=1) stays the FRONT so every existing row
+    // keeps its meaning; the back gets its own type and its own upload slot.
+    AadharCardBack = 17
 }
 
 public enum RequestType

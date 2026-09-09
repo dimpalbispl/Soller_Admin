@@ -94,6 +94,11 @@
        Camera and a Gallery button. Loaded before the page's own scripts so a
        view can call enhancePhotoPickers() on markup it injects later. *@
     <script src="~/js/photo-picker.js" asp-append-version="true"></script>
+    @* photo-picker's Camera button only reaches a phone's camera — on a desktop the
+       `capture` attribute is ignored, so an admin at a PC could not photograph a
+       document at all. camera-capture.js opens the webcam there instead; mark an
+       input with data-camera (or call openCameraFor(input)) to get that button. *@
+    <script src="~/js/camera-capture.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
     <script>

@@ -52,6 +52,10 @@
         ViewData["FilterTableId"] = "rbvTable";
         ViewData["FilterPlaceholder"] = "Search by request #, member ID, name, plan, beneficiary ID...";
         ViewData["FilterDateLabel"] = "Submitted";
+        @* Second range: "is date ko kya approve hua" — the submitted date cannot
+           answer that, and it is what this queue gets looked up by. *@
+        ViewData["FilterShowDate2"] = true;
+        ViewData["FilterDate2Label"] = "Approve Date";
         ViewData["FilterShowMemberId"] = false;
         ViewData["FilterShowCity"] = false;
         ViewData["FilterShowState"] = false;
@@ -91,6 +95,7 @@
                             <th>SCI Income</th>
                             <th style="text-align:right">Total ₹</th>
                             <th>Submitted</th>
+                            <th>Approved On</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -100,7 +105,8 @@
                     {
                         var pending = r.Status == ApprovalStatus.Pending && r.PayoutPostedAt == null;
                         <tr data-search="@($"{r.RequestNumber} {r.MemberIdNo} {r.MemberName} {r.PlanName} {r.SponsorIdNo} {r.DiscomIncomeIdNo} {r.DealCloseIdNo} {r.SciIncomeIdNo} {r.Status}".ToLower())"
-                            data-date="@((r.SubmittedAt ?? r.CreatedAt).ToLocalTime().ToString("yyyy-MM-dd"))">
+                            data-date="@((r.SubmittedAt ?? r.CreatedAt).ToLocalTime().ToString("yyyy-MM-dd"))"
+                            data-date2="@(r.ApprovedAt?.ToLocalTime().ToString("yyyy-MM-dd") ?? "")">
                             <td class="td-b">@Dash(r.RequestNumber)</td>
                             <td>
                                 <div style="font-weight:600">@Dash(r.MemberName)</div>
@@ -128,6 +134,9 @@
                             </td>
                             <td style="text-align:right;font-weight:600">₹@r.TotalIncome.ToString("N2")</td>
                             <td>@((r.SubmittedAt ?? r.CreatedAt).ToLocalTime().ToString("dd MMM yyyy"))</td>
+                            @* Shown next to Submitted so the Approve Date filter above
+                               has a visible column to match against. *@
+                            <td>@(r.ApprovedAt?.ToLocalTime().ToString("dd MMM yyyy") ?? "—")</td>
                             <td>
                                 <span class="sts @Pill(r.Status)">@r.Status</span>
                                 @if (r.Status == ApprovalStatus.Rejected && !string.IsNullOrWhiteSpace(r.RejectionReason))

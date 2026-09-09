@@ -82,6 +82,62 @@ public class CommissionController : Controller
         return View(rows);
     }
 
+    // GET: /SolarPanelAdmin/Commission/Export?filter=all|paid|pending
+    //
+    // The payout list was screen-only, so anyone who needed it in Excel retyped it.
+    // CSV (not .xlsx) on purpose: Excel opens it directly, and it needs no library
+    // on the server. Honours whichever tab the admin is looking at.
+    public async Task<IActionResult> Export(string? filter)
+    {
+        var query = _uow.Commissions.Query().Include(c => c.Worker).Include(c => c.SolarRequest);
+        IQueryable<Commission> q = filter switch
+        {
+            "paid"    => query.Where(c => c.IsPaid),
+            "pending" => query.Where(c => !c.IsPaid),
+            _         => query
+        };
+
+        var rows = await q.OrderByDescending(c => c.CreatedAt).ToListAsync();
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Request #,Member ID,Member Name,Mobile,City,State,Plan,Installer (INC),Commission,Status,Created On,Paid On");
+        foreach (var c in rows)
+        {
+            var r = c.SolarRequest;
+            var memberName = r == null
+                ? ""
+                : (string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName);
+            sb.AppendLine(string.Join(",", new[]
+            {
+                Csv(r?.RequestNumber),
+                Csv(r?.UserId),
+                Csv(memberName),
+                Csv(r?.MobileNumber),
+                Csv(r?.City),
+                Csv(r?.State),
+                Csv(r?.SelectedPlan),
+                Csv(c.Worker?.Name),
+                Csv(c.CommissionAmount.ToString("0.##")),
+                Csv(c.IsPaid ? "Paid" : "Pending"),
+                Csv(c.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")),
+                Csv(c.PaidAt?.ToLocalTime().ToString("dd MMM yyyy HH:mm"))
+            }));
+        }
+
+        // BOM so Excel reads the rupee sign and Hindi names correctly.
+        var bytes = new byte[] { 0xEF, 0xBB, 0xBF }
+            .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
+        var name = $"inc-commission-{(filter ?? "all")}-{DateTime.Now:yyyyMMdd-HHmm}.csv";
+        return File(bytes, "text/csv", name);
+    }
+
+    /// <summary>One CSV cell: quoted, with embedded quotes doubled.</summary>
+    private static string Csv(string? value)
+    {
+        var v = value ?? string.Empty;
+        return "\"" + v.Replace("\"", "\"\"") + "\"";
+    }
+
     // POST: set the flat commission amount for one solar plan
     [HttpPost]
     [ValidateAntiForgeryToken]

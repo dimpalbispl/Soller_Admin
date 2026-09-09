@@ -1,0 +1,73 @@
+/* ===========================================================================
+   Extra Payment Refund — refunds of money a member paid over and above what
+   their project needed.
+
+   An admin raises the refund (member IdNo, amount, which wallet), and a second
+   decision approves or rejects it. ONLY an approved refund is written to the
+   legacy ledger (IncTrnvoucher, credited to the member's wallet with the
+   project's request number on it) — a pending or rejected row moves no money.
+
+   Hand-rolled like the rest of this schema: __EFMigrationsHistory is empty on
+   the live DB, so EF migrations are never applied there. Safe to re-run.
+   =========================================================================== */
+
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ExtraPaymentRefunds')
+BEGIN
+    CREATE TABLE dbo.ExtraPaymentRefunds
+    (
+        Id               INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ExtraPaymentRefunds PRIMARY KEY,
+
+        SolarRequestId   INT             NOT NULL,
+        RequestNumber    VARCHAR(30)     NULL,
+        MemberIdNo       VARCHAR(50)     NOT NULL,
+        MemberName       VARCHAR(150)    NULL,
+
+        Amount           DECIMAL(18,2)   NOT NULL,
+
+        /* IncVouchertype: Acid / Actype / WalletName of the wallet credited. */
+        VoucherTypeId    INT             NOT NULL,
+        VoucherAcType    VARCHAR(1)      NOT NULL,
+        VoucherTypeName  VARCHAR(100)    NULL,
+
+        Remark           VARCHAR(1000)   NULL,
+
+        /* ApprovalStatus: 1 = Pending, 2 = Approved, 3 = Rejected */
+        Status           INT             NOT NULL CONSTRAINT DF_ExtraPaymentRefunds_Status DEFAULT (1),
+
+        RequestedBy      VARCHAR(100)    NULL,
+        RequestedAt      DATETIME2       NULL,
+        DecidedBy        VARCHAR(100)    NULL,
+        DecidedAt        DATETIME2       NULL,
+        RejectionReason  VARCHAR(1000)   NULL,
+
+        /* RefNo written on the IncTrnvoucher row + when it was posted. PostedAt
+           is the double-credit guard: a refund with a value here is never
+           posted again. */
+        VoucherRefNo     VARCHAR(150)    NULL,
+        PostedAt         DATETIME2       NULL,
+
+        /* BaseEntity columns, same shape as every other table here. */
+        CreatedAt        DATETIME2       NOT NULL CONSTRAINT DF_ExtraPaymentRefunds_CreatedAt DEFAULT (GETUTCDATE()),
+        UpdatedAt        DATETIME2       NULL,
+        CreatedBy        NVARCHAR(450)   NULL,
+        UpdatedBy        NVARCHAR(450)   NULL,
+        IsDeleted        BIT             NOT NULL CONSTRAINT DF_ExtraPaymentRefunds_IsDeleted DEFAULT (0),
+
+        CONSTRAINT FK_ExtraPaymentRefunds_SolarRequests
+            FOREIGN KEY (SolarRequestId) REFERENCES dbo.SolarRequests(Id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IX_ExtraPaymentRefunds_SolarRequestId ON dbo.ExtraPaymentRefunds(SolarRequestId);
+    CREATE INDEX IX_ExtraPaymentRefunds_MemberIdNo     ON dbo.ExtraPaymentRefunds(MemberIdNo);
+
+    PRINT 'ExtraPaymentRefunds created.';
+END
+ELSE
+BEGIN
+    PRINT 'ExtraPaymentRefunds already exists — nothing to do.';
+END
+GO
+
+/* The screen's menu key is "Refunds" (AdminMenus.All in the app). Admins with no
+   AdminPermissions rows at all stay unrestricted and see it straight away; a
+   SCOPED admin needs the row, which SEED-AdminPermissions.sql now includes. */

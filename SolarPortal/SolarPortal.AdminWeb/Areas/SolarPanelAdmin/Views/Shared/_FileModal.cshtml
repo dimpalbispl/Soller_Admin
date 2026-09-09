@@ -45,6 +45,15 @@
         return '/SolarPanelAdmin/File/View?path=' + encodeURIComponent(p);
     }
 
+    // Download goes to its own action, NOT to View(): View redirects user-panel
+    // files to the other host, and an <a download> is ignored across origins — so
+    // the link used to just open the file. Download() always answers from here and
+    // always as an attachment.
+    function fileModalDownloadSrc(storedPath) {
+        var p = (storedPath || '').replace(/\\/g, '/');
+        return '/SolarPanelAdmin/File/Download?path=' + encodeURIComponent(p);
+    }
+
     function openFileModal(storedPath) {
         if (!storedPath) return;
         var src = fileModalSrc(storedPath);
@@ -60,7 +69,10 @@
                 'onerror="this.parentNode.innerHTML=\'<div style=\\\'color:#fff;padding:40px;text-align:center\\\'>⚠ File not found on the server.<br><span style=\\\'font-size:12px;opacity:.7\\\'>' +
                 (storedPath.replace(/'/g, '')) + '</span></div>\'" />';
         }
-        document.getElementById('fileModalDownload').href = src;
+        var dl = document.getElementById('fileModalDownload');
+        dl.href = fileModalDownloadSrc(storedPath);
+        // Suggest the stored file's own name rather than "View".
+        dl.setAttribute('download', (storedPath.split('/').pop() || '').split('\\').pop());
         document.getElementById('filePreviewModal').style.display = 'flex';
     }
 

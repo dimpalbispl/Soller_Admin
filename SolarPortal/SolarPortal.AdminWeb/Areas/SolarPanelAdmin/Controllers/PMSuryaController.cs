@@ -356,13 +356,20 @@ public class PMSuryaController : Controller
         //    none is still in Rejected state. ──────────────────────────────────────
         // Required user document types (PM Surya Ghar Application is now admin-uploaded
         // per Task 9, so it is NOT part of the user-required set).
+        // Property Document is OPTIONAL now — a member who cannot produce a Farad /
+        // पट्टा / Registry must not be stuck at this stage — so it is no longer part
+        // of what blocks approval.
+        //
+        // AadharCardBack is deliberately NOT here either: the user panel now asks for
+        // both sides, but every case already in flight was filed when one Aadhaar
+        // image was the whole requirement. Demanding the back here would freeze those
+        // cases until the member re-uploads something they were never asked for.
         var requiredTypes = new[]
         {
             DocumentType.AadharCard,
             DocumentType.PANCard,
             DocumentType.LightBill,
             DocumentType.BankPassbook,
-            DocumentType.PropertyDocument,
             DocumentType.GPSPhoto
         };
         var presentTypes = docs.Select(d => d.DocumentType).ToHashSet();

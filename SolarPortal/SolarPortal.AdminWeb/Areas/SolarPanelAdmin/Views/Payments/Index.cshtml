@@ -13,7 +13,8 @@
 
 <div class="page-header" style="padding:16px">
     <h2>Payment Verification</h2>
-    <p class="text-muted">Verify user-submitted payments. ₹20,000 cumulative minimum required to advance.</p>
+    @* Quotes the one server constant, so this line can never advertise an old floor. *@
+    <p class="text-muted">Verify user-submitted payments. ₹@SolarPortal.Application.Services.PaymentService.MinimumPaymentThreshold.ToString("N0") cumulative minimum required to advance.</p>
 </div>
 
 <div class="container-fluid">
@@ -50,7 +51,7 @@
                             verify it there and the member gets the fund; reject it and it never counts.
                         </div>
                         <div class="alert alert-info" style="font-size:13px">
-                            <strong>Admin entry</strong> — bypasses the ₹20,000 minimum and the project-total cap.
+                            <strong>Admin entry</strong> — bypasses the ₹@SolarPortal.Application.Services.PaymentService.MinimumPaymentThreshold.ToString("N0") minimum and the project-total cap.
                             It counts only once it is verified.
                         </div>
                         <div class="row g-3">
@@ -125,7 +126,7 @@
                             <div class="col-md-6">
                                 <label class="form-label">Receipt (Image / PDF)</label>
                                 @* Point 5: Camera / Gallery — see wwwroot/js/photo-picker.js *@
-                                <input type="file" class="form-control" name="receiptImage" accept="image/*,.pdf" data-photo-picker />
+                                <input type="file" class="form-control" name="receiptImage" accept="image/*,.pdf" data-photo-picker data-camera />
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Notes</label>

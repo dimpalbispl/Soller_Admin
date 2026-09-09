@@ -121,6 +121,101 @@ public class FileController : Controller
         return NotFound();
     }
 
+    // GET: /SolarPanelAdmin/File/Download?path=/uploads/payments/abc.jpg
+    //
+    // The preview modal's "⬇ Download" used to point at View() with an <a download>.
+    // That attribute is IGNORED on a cross-origin URL, and View() redirects
+    // user-panel files to the other host — so for exactly the files an admin wants
+    // (member receipts, PM Surya docs) the link opened the file instead of saving
+    // it. This action always answers from this origin and always as an attachment:
+    // local files are streamed from disk, remote ones are fetched server-side first.
+    [HttpGet]
+    public async Task<IActionResult> Download(string? path)
+    {
+        var rel = Sanitise(path, out var error);
+        if (rel == null) return error!;
+
+        var fileName = Path.GetFileName(rel);
+
+        foreach (var root in CandidateRoots())
+        {
+            var full = Path.GetFullPath(Path.Combine(root, rel.Replace('/', Path.DirectorySeparatorChar)));
+            if (!full.StartsWith(Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (System.IO.File.Exists(full))
+                return PhysicalFile(full, GetContentType(full), fileName);   // attachment
+        }
+
+        // Not on this server — pull it from the user panel and hand it over as a
+        // download, so the browser never has to deal with another origin.
+        var userPanelBase = _config["UserPanelBaseUrl"];
+        if (!string.IsNullOrWhiteSpace(userPanelBase))
+        {
+            try
+            {
+                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+                var bytes = await http.GetByteArrayAsync(userPanelBase.TrimEnd('/') + "/" + rel);
+                return File(bytes, GetContentType(rel), fileName);
+            }
+            catch
+            {
+                // Fall through to NotFound — a broken link is better than a 500.
+            }
+        }
+
+        return NotFound();
+    }
+
+    /// <summary>
+    /// Shared path check for View/Download: normalises slashes, refuses traversal
+    /// and anything outside an uploads folder. Returns null (with the result to
+    /// send back) when the path is not acceptable.
+    /// </summary>
+    private string? Sanitise(string? path, out IActionResult? error)
+    {
+        error = null;
+        if (string.IsNullOrWhiteSpace(path)) { error = NotFound(); return null; }
+
+        var rel = path.Replace("\\", "/").TrimStart('/');
+        if (rel.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+            rel = rel.Substring("wwwroot/".Length);
+        if (rel.Contains("..") || Path.IsPathRooted(rel)) { error = BadRequest("Invalid path"); return null; }
+        if (!rel.StartsWith("uploads/", StringComparison.OrdinalIgnoreCase))
+        {
+            error = BadRequest("Only upload files can be served");
+            return null;
+        }
+        return rel;
+    }
+
+    /// <summary>Same root list View() walks, kept in one place for both actions.</summary>
+    private List<string> CandidateRoots()
+    {
+        var roots = new List<string>();
+        if (!string.IsNullOrWhiteSpace(_env.WebRootPath))
+            roots.Add(_env.WebRootPath);
+
+        var shared = _config["SharedUploadsPath"];
+        if (!string.IsNullOrWhiteSpace(shared))
+        {
+            var parent = Directory.GetParent(shared.TrimEnd('/', '\\'))?.FullName;
+            if (!string.IsNullOrWhiteSpace(parent)) roots.Add(parent);
+        }
+
+        string[] probes = {
+            Path.Combine(_env.ContentRootPath, "..", "..", "..", "..", "..",
+                         "UserPanel", "SolarPortal", "SolarPortal", "SolarPortal.Web", "wwwroot"),
+            Path.Combine(_env.ContentRootPath, "..", "..", "..", "..",
+                         "SolarPortal", "SolarPortal", "SolarPortal.Web", "wwwroot"),
+            Path.Combine(_env.ContentRootPath, "..", "SolarPortal.Web", "wwwroot"),
+        };
+        foreach (var p in probes)
+        {
+            try { roots.Add(Path.GetFullPath(p)); } catch { /* ignore bad path */ }
+        }
+        return roots;
+    }
+
     private static string GetContentType(string path)
     {
         var ext = Path.GetExtension(path).ToLowerInvariant();
