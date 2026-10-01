@@ -113,6 +113,13 @@ public static class DependencyInjection
         services.AddScoped<IRemainingBvIncomeService, RemainingBvIncomeService>();
         // Read-only report over what that post wrote into Repurchincome.
         services.AddScoped<IRepurchaseIncomeReportService, RepurchaseIncomeReportService>();
+        // Read-only report over the wallet ledger (IncTrnvoucher): every credit and
+        // debit, whether it came from INC commission, an INC withdrawal, or an
+        // Extra Payment Refund / debit.
+        services.AddScoped<IWalletLedgerReportService, WalletLedgerReportService>();
+        // The member's SOLAR wallet (dbo.SolarTrnvoucher): a verified solar payment
+        // credits it, and Fund Transfer credits or debits it.
+        services.AddScoped<ISolarWalletService, SolarWalletService>();
         // Already-Active cPanel deposit (point 1). The user panel already credits
         // it against the project; admin has to read the SAME figure or Payment
         // Verification shows a due the member has in fact already paid.

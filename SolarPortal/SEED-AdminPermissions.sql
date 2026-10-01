@@ -39,6 +39,7 @@ INSERT INTO @Menus (MenuKey, CanView, CanEdit) VALUES
     (N'Refunds',                          1, 1),
     (N'ActivationHistory',                1, 0),
     (N'RemainingBvReport',                1, 0),
+    (N'WalletReport',                     1, 0),
     (N'AdminAccess.Logs',                 1, 0),
     (N'PMSurya',                          1, 1),
     (N'Operations.MeterDispatch',         1, 1),

@@ -9,6 +9,10 @@ public class DCRDocument : BaseEntity
     public string? DCRNumber { get; set; }
     public DateTime? DCRDate { get; set; }
     public string? DocumentPath { get; set; }
+    // "DCR & Work Upload": admin uploads exactly two PDFs — DocumentPath holds the
+    // DCR PDF, WorkDocumentPath the work-completion PDF. Column added by
+    // ADD-DCRWorkDocument.sql.
+    public string? WorkDocumentPath { get; set; }
     public string? Remark { get; set; }
     public string? ExtractedData { get; set; } // JSON from OCR
     public bool IsVerified { get; set; } = false;

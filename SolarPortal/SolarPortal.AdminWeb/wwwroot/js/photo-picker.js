@@ -31,9 +31,23 @@
     function label(input) {
         var el = input.parentNode.querySelector('.pp-name');
         if (!el) return;
-        var f = input.files && input.files[0];
-        el.textContent = f ? f.name : 'No file chosen';
-        el.style.color = f ? 'var(--text2, #475569)' : 'var(--text3, #94a3b8)';
+        var files = input.files;
+        var n = files ? files.length : 0;
+
+        if (n === 0) {
+            el.textContent = 'No file chosen';
+        } else if (n === 1) {
+            el.textContent = files[0].name;
+        } else {
+            // Say HOW MANY when several are picked — the admin was choosing 2 or 10
+            // files and the box only ever named the first one, so there was no way
+            // to tell whether the rest had been taken.
+            var names = [];
+            for (var i = 0; i < n; i++) names.push(files[i].name);
+            el.textContent = n + ' files selected — ' + names.join(', ');
+        }
+        el.style.color = n ? 'var(--text2, #475569)' : 'var(--text3, #94a3b8)';
+        el.title = el.textContent;
     }
 
     function enhance(input) {
@@ -85,7 +99,21 @@
         wrap.appendChild(input);
 
         galBtn.addEventListener('click', function () { input.click(); });
-        camBtn.addEventListener('click', function () { cam.click(); });
+        camBtn.addEventListener('click', function () {
+            // On a PC the `capture` attribute is ignored, so this button used to
+            // open the same file dialog as Gallery. camera-capture.js opens the
+            // webcam there and drops the shot into the original input; on a phone
+            // it still goes straight to the OS camera through `cam`.
+            var mobileLike = false;
+            try { mobileLike = window.matchMedia && window.matchMedia('(pointer: coarse)').matches; } catch (e) { }
+            if (!mobileLike) mobileLike = /Android|iPhone|iPad|iPod|Windows Phone|Mobile/i.test(navigator.userAgent || '');
+
+            if (!mobileLike && typeof window.openCameraFor === 'function') {
+                window.openCameraFor(input);
+                return;
+            }
+            cam.click();
+        });
 
         input.addEventListener('change', function () {
             cam.value = '';                 // gallery wins; clear any stale capture

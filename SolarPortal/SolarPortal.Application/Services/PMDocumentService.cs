@@ -50,6 +50,10 @@ public class PMDocumentService : IPMDocumentService
                 existing.FileSize    = fileSize;
                 existing.Status      = ApprovalStatus.Pending;   // fresh upload → re-review
                 existing.Remarks     = null;                     // clear old rejection note
+                // The row now stands for the file uploaded JUST NOW, so its date moves
+                // with it — otherwise every screen keeps showing the first upload's
+                // date for a file that was replaced today.
+                existing.CreatedAt   = DateTime.UtcNow;
                 existing.UpdatedAt   = DateTime.UtcNow;
                 _unitOfWork.PMDocuments.Update(existing);
                 await _unitOfWork.SaveChangesAsync();

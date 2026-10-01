@@ -43,7 +43,7 @@
     @if (Model.Any())
     {
         ViewData["FilterTableId"] = "rbvReportTable";
-        ViewData["FilterPlaceholder"] = "Search by member ID, name, bill no, request #, plan, order no...";
+        ViewData["FilterPlaceholder"] = "Search by member ID, name, bill no, request #, plan, order no, approve remark...";
         ViewData["FilterShowMemberId"] = false;
         ViewData["FilterShowCity"] = false;
         ViewData["FilterShowState"] = false;
@@ -51,6 +51,11 @@
         // are already loaded. The card above filters the QUERY, which is the one
         // that can reach past the row cap — so only that one is shown.
         ViewData["FilterShowDate"] = false;
+        // Approve date IS offered here: the query above ranges on the ledger's
+        // BillDate (when the post ran), which answers a different question than
+        // "what did the admin approve between these dates".
+        ViewData["FilterShowDate2"] = true;
+        ViewData["FilterDate2Label"] = "Approve Date";
 
         <partial name="_ReportFilterToolbar" />
     }
@@ -96,6 +101,8 @@
                             <th>Order / Request</th>
                             <th>Plan</th>
                             <th style="text-align:right">BV</th>
+                            <th>Approved On</th>
+                            <th>Approve Remark</th>
                             <th>Remarks</th>
                             @* <th>Session</th>
                             <th>Posted</th> *@
@@ -104,8 +111,11 @@
                     <tbody>
                     @foreach (var r in Model)
                     {
-                        <tr data-search="@($"{r.BillNo} {r.MemberIdNo} {r.MemberName} {r.FormNo} {r.RequestNumber} {r.OrderNo} {r.PlanName} {r.Remarks} {r.SponsorIdNo}".ToLower())"
-                            data-date="@(r.BillDate?.ToString("yyyy-MM-dd"))">
+                        @* Approve remark is in data-search so the search box finds it, and the
+                           approve date is data-date2 so the "Approve Date" range filters on it. *@
+                        <tr data-search="@($"{r.BillNo} {r.MemberIdNo} {r.MemberName} {r.FormNo} {r.RequestNumber} {r.OrderNo} {r.PlanName} {r.Remarks} {r.AdminRemark} {r.SponsorIdNo}".ToLower())"
+                            data-date="@(r.BillDate?.ToString("yyyy-MM-dd"))"
+                            data-date2="@(r.ApprovedAt?.ToLocalTime().ToString("yyyy-MM-dd") ?? "")">
                             <td style="font-weight:700">@Dash(r.BillNo)</td>
                             <td>@(r.BillDate?.ToString("dd MMM yyyy") ?? "—")</td>
                             <td>
@@ -144,6 +154,20 @@
                                 }
                             </td>
                             <td style="text-align:right;font-weight:700">@r.Bv.ToString("N2")</td>
+                            @* When the admin approved the Remaining BV record — the ledger's own
+                               Bill Date only says when the post ran. *@
+                            <td style="white-space:nowrap">
+                                @if (r.ApprovedAt.HasValue)
+                                {
+                                    @r.ApprovedAt.Value.ToLocalTime().ToString("dd MMM yyyy")
+                                    <div class="hint">@r.ApprovedAt.Value.ToLocalTime().ToString("HH:mm")</div>
+                                }
+                                else
+                                {
+                                    <span class="hint">—</span>
+                                }
+                            </td>
+                            <td style="max-width:220px">@Dash(r.AdminRemark)</td>
                             <td>@Dash(r.Remarks)</td>
                           @*   <td><span class="hint">@r.DSessId.ToString("0")</span></td>
                             <td>@(r.PostedAt?.ToString("dd MMM yyyy HH:mm") ?? "—")</td> *@

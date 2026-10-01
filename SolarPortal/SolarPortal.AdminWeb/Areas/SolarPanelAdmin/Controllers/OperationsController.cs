@@ -1254,7 +1254,7 @@ public class OperationsController : Controller
         ViewBag.Filter = f;
         var requests = await FilterAsync(ProjectStatus.DCRUpdate, state, city, ConnectionType.Domestic, showHistory: showHistory, filterMode: f, op: "dcr");
         await PopulateFilterViewBags(state, city, requests);
-        ViewBag.Title = "DCR Update";
+        ViewBag.Title = "DCR & Work Upload";
         ViewBag.Op = "dcr";
         await PopulateOperationDetailsAsync("dcr", requests);
         return View("OperationsList", requests);
@@ -1270,20 +1270,20 @@ public class OperationsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SubmitDCR(int requestId, string dcrNumber,
-        DateTime? dcrDate, string? remark, IFormFile? dcrDoc)
+        DateTime? dcrDate, string? remark, List<IFormFile>? dcrDocs)
     {
         try
         {
             if (string.IsNullOrWhiteSpace(dcrNumber))
                 return Json(new { success = false, message = "DCR number is required" });
 
-            string? docPath = null;
-            if (dcrDoc != null && dcrDoc.Length > 0)
-            {
-                var (ok, path, err) = await _fileUploadService.UploadAsync(dcrDoc, "dcr");
-                if (!ok) return Json(new { success = false, message = $"Document upload failed: {err}" });
-                docPath = path;
-            }
+            // "DCR & Work Upload": exactly two files — the DCR and the work document.
+            // PDF or image (Camera / Gallery). Zero files is allowed only when both
+            // are already on record and the admin is just correcting number / date / remark.
+            var allowedExt = new[] { ".pdf", ".jpg", ".jpeg", ".png" };
+            var files = (dcrDocs ?? new List<IFormFile>()).Where(f => f != null && f.Length > 0).ToList();
+            if (files.Any(f => !allowedExt.Contains(Path.GetExtension(f.FileName).ToLowerInvariant())))
+                return Json(new { success = false, message = "Only PDF / JPG / PNG files are allowed" });
 
             // Upsert. A row already exists only for legacy projects where the USER
             // uploaded the DCR before that page moved to the admin panel - update
@@ -1293,17 +1293,29 @@ public class OperationsController : Controller
                       .FirstOrDefault();
             bool isNew = dcr == null;
 
-            // The DCR is the admin's own upload now, so the document is mandatory -
-            // unless a legacy row already carries one and the admin is only
-            // correcting the number / date / remark.
-            if (docPath == null && string.IsNullOrWhiteSpace(dcr?.DocumentPath))
-                return Json(new { success = false, message = "Please attach the DCR document" });
+            var hasBoth = !string.IsNullOrWhiteSpace(dcr?.DocumentPath) &&
+                          !string.IsNullOrWhiteSpace(dcr?.WorkDocumentPath);
+            if (files.Count != 2 && !(files.Count == 0 && hasBoth))
+                return Json(new { success = false, message = "Please upload exactly 2 files (DCR + Work document)" });
+
+            var paths = new List<string>();
+            foreach (var file in files)
+            {
+                var (ok, path, err) = await _fileUploadService.UploadAsync(file, "dcr");
+                if (!ok || string.IsNullOrWhiteSpace(path))
+                    return Json(new { success = false, message = $"Document upload failed: {err}" });
+                paths.Add(path);
+            }
 
             if (isNew) dcr = new DCRDocument { SolarRequestId = requestId };
 
             dcr!.DCRNumber = dcrNumber;
             dcr.DCRDate = dcrDate ?? dcr.DCRDate ?? DateTime.UtcNow;
-            if (docPath != null) dcr.DocumentPath = docPath;          // re-upload replaces the existing file
+            if (paths.Count == 2)                                     // re-upload replaces both files
+            {
+                dcr.DocumentPath = paths[0];
+                dcr.WorkDocumentPath = paths[1];
+            }
             if (!string.IsNullOrWhiteSpace(remark)) dcr.Remark = remark;
             dcr.ExtractedData = SimulateOCR(dcrNumber);
             dcr.IsVerified = true;

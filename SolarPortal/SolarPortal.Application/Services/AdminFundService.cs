@@ -13,14 +13,17 @@ public class AdminFundService : IAdminFundService
     private readonly IPaymentService _payments;
     private readonly ISolarRequestService _requests;
     private readonly INotificationService _notifications;
+    private readonly ISolarWalletService _solarWallet;
 
     public AdminFundService(IUnitOfWork uow, IPaymentService payments,
-        ISolarRequestService requests, INotificationService notifications)
+        ISolarRequestService requests, INotificationService notifications,
+        ISolarWalletService solarWallet)
     {
         _uow = uow;
         _payments = payments;
         _requests = requests;
         _notifications = notifications;
+        _solarWallet = solarWallet;
     }
 
     public async Task<ServiceResult<Payment>> AddAsync(AddFundInput input)
@@ -69,6 +72,16 @@ public class AdminFundService : IAdminFundService
 
             await _uow.Payments.AddAsync(payment);
             await _uow.SaveChangesAsync();
+
+            // Money added by admin lands in the member's solar wallet straight away,
+            // exactly like a payment the member submits. It is still PENDING for
+            // verification; a rejection posts the opposing debit.
+            try
+            {
+                await _solarWallet.CreditVerifiedPaymentAsync(
+                    payment.Id, payment.UserId, payment.Amount, req.RequestNumber, payment.UTRNumber);
+            }
+            catch { /* ignored - the fund entry itself must survive */ }
 
             return ServiceResult<Payment>.Success(payment,
                 $"Fund of ₹{input.Amount:N0} added. It is now Pending in Payment Verification — verify it there and it counts toward the project total.");

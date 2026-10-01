@@ -82,6 +82,9 @@
               '<div data-cc-msg style="display:none;padding:14px 16px;color:#b91c1c;font-size:13px"></div>' +
               '<div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 16px">' +
                 '<button type="button" data-cc-cancel style="padding:8px 16px;border:1px solid #d1d5db;background:#fff;border-radius:8px;cursor:pointer">Cancel</button>' +
+                // Always offered: a PC with no webcam, or one where the browser blocks
+                // camera access, still needs a way to attach the file.
+                '<button type="button" data-cc-gallery style="padding:8px 16px;border:1px solid #d1d5db;background:#fff;border-radius:8px;cursor:pointer">🖼️ Gallery</button>' +
                 '<button type="button" data-cc-shoot style="padding:8px 18px;border:0;background:#10b981;color:#fff;border-radius:8px;font-weight:600;cursor:pointer">Capture</button>' +
               '</div>' +
             '</div>';
@@ -89,6 +92,11 @@
         videoEl = modal.querySelector('video');
         modal.querySelector('[data-cc-cancel]').addEventListener('click', closeModal);
         modal.querySelector('[data-cc-shoot]').addEventListener('click', shoot);
+        modal.querySelector('[data-cc-gallery]').addEventListener('click', function () {
+            var input = target;                 // closeModal() clears it
+            closeModal();
+            if (input) input.click();           // the ordinary file picker
+        });
         modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
     }
 
@@ -130,13 +138,15 @@
         modal.style.display = 'flex';
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showError('This browser cannot open a camera. Please use the file button instead.');
+            showError('This browser cannot open a camera — pick the file with 🖼️ Gallery instead.');
             return;
         }
         navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
             .then(function (s) { stream = s; videoEl.srcObject = s; })
             .catch(function () {
-                showError('Camera not available — it may be blocked for this site, or in use by another app. Please allow camera access, or use the file button.');
+                // No webcam, access blocked, or another app holds it. Gallery stays
+                // on screen, so the upload is never a dead end.
+                showError('Camera not available — it may be blocked for this site, in use by another app, or this PC has no camera. Use 🖼️ Gallery to pick the file instead.');
             });
     }
 

@@ -12,6 +12,9 @@
      2. RemainingBvUpdates.SessID column ko aaj ki date se bharta hai,
         112 format me (yyyymmdd) -- wahi format jo RepurchIncome.DSessid me
         ja raha hai, taki dono taraf ka din match kare.
+     3. RemainingBvUpdates ke DiscomIncFormNo / DcloseIncFormNo / SciIncFormNo
+        ko DiscomIncomeIdNo / DealCloseIdNo / SciIncomeIdNo se M_MemberMaster
+        me FormNo dhoondh kar bharta hai.
 
    @RbvId  = RemainingBvUpdates.Id. Naya OPTIONAL parameter (default 0), isliye
              purane callers jo 4 parameter bhejte the wo bina change ke chalte
@@ -81,11 +84,20 @@ BEGIN
              @DSessID,
              0);
 
-        -- Naya SessID column RemainingBvUpdates par.
-        UPDATE dbo.RemainingBvUpdates
-        SET SessID = @DSessID
-        WHERE (@RbvId > 0 AND Id = @RbvId)
-           OR (@RbvId = 0 AND MemberIdNo = @IDNo AND ISNULL(IsDeleted, 0) = 0);
+        -- Naya SessID column RemainingBvUpdates par, aur teeno income heads ke
+        -- FormNo unke IdNo se M_MemberMaster me dhoondh kar. Approval ke time
+        -- jo IdNo final hai usi ka FormNo jaata hai -- chahe row user panel ne
+        -- insert ki ho (FormNo NULL) ya admin ne correct ki ho.
+        -- CAST: RemainingBvUpdates ke IdNo nvarchar hain, M_MemberMaster.IDNo
+        -- varchar -- bina cast ke poora M_MemberMaster convert/scan hota.
+        UPDATE r
+        SET SessID          = @DSessID,
+            DiscomIncFormNo = (SELECT TOP 1 m.FormNo FROM M_MemberMaster m WHERE m.IDNo = CAST(r.DiscomIncomeIdNo AS varchar(50))),
+            DcloseIncFormNo = (SELECT TOP 1 m.FormNo FROM M_MemberMaster m WHERE m.IDNo = CAST(r.DealCloseIdNo    AS varchar(50))),
+            SciIncFormNo    = (SELECT TOP 1 m.FormNo FROM M_MemberMaster m WHERE m.IDNo = CAST(r.SciIncomeIdNo    AS varchar(50)))
+        FROM dbo.RemainingBvUpdates r
+        WHERE (@RbvId > 0 AND r.Id = @RbvId)
+           OR (@RbvId = 0 AND r.MemberIdNo = @IDNo AND ISNULL(r.IsDeleted, 0) = 0);
 
         COMMIT TRANSACTION;
         SET @Msg = 'SUCCESS';
@@ -110,4 +122,26 @@ BEGIN
     -- varchar isme implicitly convert ho jaata hai.
     ALTER TABLE dbo.RemainingBvUpdates ADD SessID Numeric(18,0) NULL;
 END
+GO
+
+-- Teeno income heads ke FormNo -- M_MemberMaster.FormNo wala type.
+IF COL_LENGTH('dbo.RemainingBvUpdates', 'DiscomIncFormNo') IS NULL
+    ALTER TABLE dbo.RemainingBvUpdates ADD DiscomIncFormNo Numeric(18,0) NULL;
+IF COL_LENGTH('dbo.RemainingBvUpdates', 'DcloseIncFormNo') IS NULL
+    ALTER TABLE dbo.RemainingBvUpdates ADD DcloseIncFormNo Numeric(18,0) NULL;
+IF COL_LENGTH('dbo.RemainingBvUpdates', 'SciIncFormNo') IS NULL
+    ALTER TABLE dbo.RemainingBvUpdates ADD SciIncFormNo Numeric(18,0) NULL;
+GO
+
+
+/* ----------------------------------------------------------------------------
+   Backfill: purani rows jinke FormNo abhi NULL hain, unko IdNo se bhar do.
+   Sirf NULL wale column bharta hai, isliye dobara chalana safe hai.
+---------------------------------------------------------------------------- */
+UPDATE r
+SET DiscomIncFormNo = ISNULL(r.DiscomIncFormNo, (SELECT TOP 1 m.FormNo FROM M_MemberMaster m WHERE m.IDNo = CAST(r.DiscomIncomeIdNo AS varchar(50)))),
+    DcloseIncFormNo = ISNULL(r.DcloseIncFormNo, (SELECT TOP 1 m.FormNo FROM M_MemberMaster m WHERE m.IDNo = CAST(r.DealCloseIdNo    AS varchar(50)))),
+    SciIncFormNo    = ISNULL(r.SciIncFormNo,    (SELECT TOP 1 m.FormNo FROM M_MemberMaster m WHERE m.IDNo = CAST(r.SciIncomeIdNo    AS varchar(50))))
+FROM dbo.RemainingBvUpdates r
+WHERE r.DiscomIncFormNo IS NULL OR r.DcloseIncFormNo IS NULL OR r.SciIncFormNo IS NULL;
 GO

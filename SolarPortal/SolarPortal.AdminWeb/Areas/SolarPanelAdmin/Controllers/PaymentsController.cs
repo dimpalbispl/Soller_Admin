@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SolarPortal.Application.DTOs;
@@ -34,6 +34,7 @@ public class PaymentsController : Controller
     private readonly IFileUploadService _fileUploadService;
     private readonly IAdminFundService _funds;
     private readonly IActiveIdDepositService _deposits;
+    private readonly ISolarWalletService _solarWallet;
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
 
@@ -45,6 +46,7 @@ public class PaymentsController : Controller
         IFileUploadService fileUploadService,
         IAdminFundService funds,
         IActiveIdDepositService deposits,
+        ISolarWalletService solarWallet,
         ApplicationDbContext db,
         UserManager<ApplicationUser> userManager)
     {
@@ -55,6 +57,7 @@ public class PaymentsController : Controller
         _fileUploadService = fileUploadService;
         _funds = funds;
         _deposits = deposits;
+        _solarWallet = solarWallet;
         _db = db;
         _userManager = userManager;
     }
@@ -216,6 +219,20 @@ public class PaymentsController : Controller
             if (!result.IsSuccess)
                 return Json(new { success = false, message = result.Message });
 
+            // -- Solar Wallet ---------------------------------------------------
+            // Verified money is real money, so it lands in the member's own solar
+            // wallet ledger (SolarTrnvoucher) as a credit - that ledger is what the
+            // Fund Transfer page and the Wallet Transaction report read. Keyed on
+            // the payment id, so re-verifying can never credit twice. Non-fatal:
+            // the payment is already verified either way.
+            try
+            {
+                var reqForWallet = await _uow.SolarRequests.GetByIdAsync(payment.SolarRequestId);
+                await _solarWallet.CreditVerifiedPaymentAsync(
+                    payment.Id, payment.UserId, payment.Amount,
+                    reqForWallet?.RequestNumber, payment.UTRNumber);
+            }
+            catch { /* ignored - a wallet write must never undo a verification */ }
             // A fund added from the Add Fund modal is decided right here now that the
             // separate Approve Fund report is gone. Stamp the fund audit columns too,
             // so who released the money is recorded on the row itself and not only in
@@ -412,6 +429,20 @@ public class PaymentsController : Controller
             _uow.Payments.Update(payment);
             await _uow.SaveChangesAsync();
 
+            // -- Solar Wallet reversal -------------------------------------------
+            // The credit was posted when the payment was submitted, so a rejection
+            // has to take it back out - otherwise the wallet keeps money the admin
+            // refused. Its own RefNo, so the reversal itself cannot double-post.
+            try
+            {
+                var reqForWallet = await _uow.SolarRequests.GetByIdAsync(payment.SolarRequestId);
+                await _solarWallet.PostAsync(
+                    payment.UserId, payment.Amount, isCredit: false,
+                    refNo: $"PAYREJ/{payment.Id}",
+                    narration: $"Payment rejected for {reqForWallet?.RequestNumber ?? "solar request"}" +
+                               $" (UTR {payment.UTRNumber}) - reason: {reason}");
+            }
+            catch { /* ignored - the rejection itself already stands */ }
             await _notifications.CreateAsync(new CreateNotificationDto
             {
                 UserId = payment.UserId,

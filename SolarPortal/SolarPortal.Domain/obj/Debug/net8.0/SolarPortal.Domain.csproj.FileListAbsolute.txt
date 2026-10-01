@@ -139,3 +139,6 @@ C:\Users\Claude1\AppData\Local\Temp\claude\--localhost-Sadhna-SolerGithub-Soller
 \\localhost\Sadhna\New Github\Solar_Github\Soller_Admin\SolarPortal\SolarPortal.Domain\obj\Debug\net8.0\refint\SolarPortal.Domain.dll
 \\localhost\Sadhna\New Github\Solar_Github\Soller_Admin\SolarPortal\SolarPortal.Domain\obj\Debug\net8.0\SolarPortal.Domain.pdb
 \\localhost\Sadhna\New Github\Solar_Github\Soller_Admin\SolarPortal\SolarPortal.Domain\obj\Debug\net8.0\ref\SolarPortal.Domain.dll
+C:\Users\Claude1\AppData\Local\Temp\claude_adminweb_build\SolarPortal.Domain.deps.json
+C:\Users\Claude1\AppData\Local\Temp\claude_adminweb_build\SolarPortal.Domain.dll
+C:\Users\Claude1\AppData\Local\Temp\claude_adminweb_build\SolarPortal.Domain.pdb

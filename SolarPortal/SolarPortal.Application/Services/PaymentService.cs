@@ -23,11 +23,13 @@ public class PaymentService : IPaymentService
 
     private readonly IUnitOfWork _uow;
     private readonly IMapper _mapper;
+    private readonly ISolarWalletService _solarWallet;
 
-    public PaymentService(IUnitOfWork uow, IMapper mapper)
+    public PaymentService(IUnitOfWork uow, IMapper mapper, ISolarWalletService solarWallet)
     {
         _uow = uow;
         _mapper = mapper;
+        _solarWallet = solarWallet;
     }
 
     public async Task<ServiceResult<PaymentDto>> CreateAsync(CreatePaymentDto dto)
@@ -59,6 +61,21 @@ public class PaymentService : IPaymentService
 
             await _uow.Payments.AddAsync(payment);
             await _uow.SaveChangesAsync();
+
+            // ── Solar Wallet ──────────────────────────────────────────────────
+            // The payment lands in the member's solar wallet the moment it is
+            // submitted, so the wallet reads like a passbook of everything that
+            // came in. It is still PENDING for the admin — if the admin rejects it,
+            // the rejection posts an opposing debit and the wallet nets to zero.
+            // Keyed on the payment id, so nothing can be credited twice.
+            try
+            {
+                var req = await _uow.SolarRequests.GetByIdAsync(payment.SolarRequestId);
+                await _solarWallet.CreditVerifiedPaymentAsync(
+                    payment.Id, payment.UserId, payment.Amount,
+                    req?.RequestNumber, payment.UTRNumber);
+            }
+            catch { /* ignored — a wallet write must never lose the payment itself */ }
 
             // Compute cumulative paid (verified + just-added pending) for hint message
             var totalPaid = await GetTotalPaidAsync(dto.SolarRequestId);

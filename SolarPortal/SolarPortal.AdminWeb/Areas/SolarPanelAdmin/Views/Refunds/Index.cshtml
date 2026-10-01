@@ -2,10 +2,10 @@
 @using SolarPortal.Domain.Enums
 @model IEnumerable<ExtraPaymentRefund>
 @{
-    ViewData["Title"] = "Extra Payment Refund";
+    ViewData["Title"] = "Fund Transfer";
     var status   = (ViewBag.Status as string) ?? "all";
-    var vtypes   = ViewBag.VoucherTypes as List<SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.RefundsController.VoucherTypeRow>
-                   ?? new List<SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.RefundsController.VoucherTypeRow>();
+    var vtypes   = ViewBag.VoucherTypes as List<SolarPortal.Application.Interfaces.Services.SolarWalletOption>
+                   ?? new List<SolarPortal.Application.Interfaces.Services.SolarWalletOption>();
     var pendingCount  = (int)(ViewBag.PendingCount ?? 0);
     var approvedCount = (int)(ViewBag.ApprovedCount ?? 0);
     var rejectedCount = (int)(ViewBag.RejectedCount ?? 0);
@@ -20,20 +20,38 @@
 
 <div class="page active">
     <div class="ph">
-        <div class="ph-bc">🛡️ Admin / <span>Extra Payment Refund</span></div>
-        <div class="ph-title">💸 Extra Payment Refund</div>
+        <div class="ph-bc">🛡️ Admin / <span>Fund Transfer</span></div>
+        <div class="ph-title">💸 Fund Transfer</div>
         <div class="ph-sub">
-            Money a member paid over and above their project total, sent back to their wallet.
-            Raising a refund moves nothing — it is credited only when it is <strong>approved</strong>,
-            and the ledger entry carries the project it belongs to.
+            Money a member paid over and above their project total — <strong>credited</strong> back to
+            their wallet, or <strong>debited</strong> out of it when something has to be taken back.
+            Raising an entry moves nothing: it reaches the ledger only when it is
+            <strong>approved</strong>, and carries the project it belongs to.
         </div>
     </div>
 
     <!-- ── Raise a refund ─────────────────────────────────────────────── -->
     <div class="card" style="margin-bottom:14px">
-        <div class="ct"><span class="ct-dot"></span>Raise a Refund</div>
+        <div class="ct"><span class="ct-dot"></span>Raise a Fund Transfer</div>
         <form id="refundForm">
             @Html.AntiForgeryToken()
+
+            @* Which way the money moves. Credit pays the member back, Debit takes it
+               out again — both land in the same ledger, in the shape that ledger
+               already uses for each. *@
+            <div class="fg" style="margin-bottom:12px">
+                <label>Entry Type *</label>
+                <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0">
+                        <input type="radio" name="entryType" value="C" checked style="width:auto" />
+                        <span>⬆️ <strong>Credit</strong> — refund into the member's wallet</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0">
+                        <input type="radio" name="entryType" value="D" style="width:auto" />
+                        <span>⬇️ <strong>Debit</strong> — deduct from the member's wallet</span>
+                    </label>
+                </div>
+            </div>
 
             <div class="fr3">
                 <div class="fg">
@@ -57,7 +75,7 @@
                     @if (!vtypes.Any())
                     {
                         <div style="font-size:11.5px;color:#b91c1c;margin-top:4px">
-                            No wallet found in IncVouchertype — a refund cannot be posted until one exists.
+                            No wallet found in SolarVouchertype — a refund cannot be posted until one exists.
                         </div>
                     }
                 </div>
@@ -77,14 +95,14 @@
                 <textarea name="remark" rows="2" placeholder="Why this refund is being given"></textarea>
             </div>
 
-            <button type="submit" class="btn btn-p" id="btnRefSubmit" disabled>💸 Raise Refund Request</button>
+            <button type="submit" class="btn btn-p" id="btnRefSubmit" disabled>💸 Raise Request</button>
             <span id="refBlockedHint" style="font-size:12px;color:var(--text3);margin-left:8px">Find a member first.</span>
         </form>
     </div>
 
     <!-- ── History / decisions ────────────────────────────────────────── -->
     <div class="card">
-        <div class="ct"><span class="ct-dot"></span>Refund Requests (@Model.Count())</div>
+        <div class="ct"><span class="ct-dot"></span>Fund Transfer Requests (@Model.Count())</div>
 
         <div style="display:flex;gap:8px;padding:12px 14px;flex-wrap:wrap">
             <a class="btn btn-sm @(status == "all" ? "btn-p" : "btn-s")" asp-action="Index" asp-route-status="all">📋 All</a>
@@ -96,7 +114,7 @@
         @if (!Model.Any())
         {
             <div style="padding:20px;color:var(--text3);font-size:13px">
-                Nothing here yet. A refund raised above appears in this list until it is approved or rejected.
+                Nothing here yet. A refund or debit raised above appears in this list until it is approved or rejected.
             </div>
         }
         else
@@ -118,6 +136,7 @@
                             <th>Request #</th>
                             <th>Member</th>
                             <th>Wallet</th>
+                            <th>Type</th>
                             <th style="text-align:right">Amount</th>
                             <th>Remark</th>
                             <th>Status</th>
@@ -139,7 +158,19 @@
                                     <div class="cell-sub">@r.MemberIdNo</div>
                                 </td>
                                 <td>@r.VoucherTypeName</td>
-                                <td class="td-b" style="text-align:right">₹@r.Amount.ToString("N0")</td>
+                                <td>
+                                    @if (r.IsCredit)
+                                    {
+                                        <span class="sts sts-act">⬆️ Credit</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="sts sts-rej">⬇️ Debit</span>
+                                    }
+                                </td>
+                                <td class="td-b" style="text-align:right;color:@(r.IsCredit ? "#15803d" : "#b91c1c")">
+                                    @(r.IsCredit ? "+" : "−")₹@r.Amount.ToString("N0")
+                                </td>
                                 <td style="max-width:220px">@r.Remark</td>
                                 <td>
                                     <span class="sts @Pill(r.Status)">@r.Status</span>
@@ -295,15 +326,15 @@
             .then(r => r.json())
             .then(d => {
                 if (d.success) {
-                    Swal.fire('Refund raised', d.message, 'success').then(() => location.reload());
+                    Swal.fire('Request raised', d.message, 'success').then(() => location.reload());
                 } else {
-                    Swal.fire('Could not raise refund', d.message || 'Failed', 'error');
-                    btn.disabled = false; btn.textContent = '💸 Raise Refund Request';
+                    Swal.fire('Could not raise request', d.message || 'Failed', 'error');
+                    btn.disabled = false; btn.textContent = '💸 Raise Request';
                 }
             })
             .catch(() => {
                 Swal.fire('Error', 'Could not reach the server.', 'error');
-                btn.disabled = false; btn.textContent = '💸 Raise Refund Request';
+                btn.disabled = false; btn.textContent = '💸 Raise Request';
             });
     });
 
@@ -323,9 +354,9 @@
         b.addEventListener('click', function () {
             const btn = this, id = this.dataset.id, amt = this.dataset.amt;
             Swal.fire({
-                title: 'Approve refund?',
-                text: '₹' + amt + ' will be credited to the member\'s wallet. This cannot be undone.',
-                icon: 'question', showCancelButton: true, confirmButtonText: 'Yes, refund'
+                title: 'Approve this entry?',
+                text: '₹' + amt + ' will be posted to the member\'s wallet in the direction shown. This cannot be undone.',
+                icon: 'question', showCancelButton: true, confirmButtonText: 'Yes, post it'
             }).then(function (res) {
                 if (!res.isConfirmed) return;
                 const fd = new FormData(); fd.append('id', id);
@@ -338,8 +369,8 @@
         b.addEventListener('click', function () {
             const btn = this, id = this.dataset.id;
             Swal.fire({
-                title: 'Reject refund',
-                input: 'text', inputLabel: 'Reason', inputPlaceholder: 'Why is this refund refused?',
+                title: 'Reject this entry',
+                input: 'text', inputLabel: 'Reason', inputPlaceholder: 'Why is this entry refused?',
                 showCancelButton: true, confirmButtonText: 'Reject'
             }).then(function (res) {
                 if (!res.isConfirmed) return;

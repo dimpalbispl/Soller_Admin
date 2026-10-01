@@ -113,12 +113,10 @@
                                     {
                                         if (d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Pending)
                                         {
-                                            @* No per-document Approve any more: there were two Approve
-                                               buttons for the same job, and the admin had to click every
-                                               row before the final one unlocked. "Approve All & Open Meter
-                                               Dispatch + Site Survey" below already approves every pending
-                                               document in one go, so this row only keeps Reject — the one
-                                               verdict that IS per document. *@
+                                            @* One approve action on this page, and it is the one below:
+                                               "Approve All & Open Meter Dispatch + Site Survey" approves
+                                               EVERY pending document in one go. A row keeps only Reject —
+                                               the verdict that genuinely belongs to a single file. *@
                                             <button class="btn btn-sm btn-danger btn-reject" data-id="@d.Id">Reject</button>
                                         }
                                         else if (d.Status == SolarPortal.Domain.Enums.ApprovalStatus.Approved)
@@ -229,8 +227,15 @@
                         {
                             <p class="mb-2"><strong>PM Surya Ghar ID:</strong> <code>@req.PmSuryaApplicationNo</code></p>
                         }
+                        @* Admin approval documents can be added at ANY time, right here in the
+                           PM Surya Ghar card. Already-uploaded ones are listed once — in the
+                           documents table (Admin rows, with Delete) — not repeated here. *@
+                        <label class="form-label mb-1">Upload approval document(s) — images / PDF</label>
+                        <input id="reUploadDocs" type="file" class="form-control mb-2" multiple accept=".pdf,.png,.jpg,.jpeg" data-photo-picker />
+                        <button id="btnReUpload" class="btn btn-primary w-100 mb-2">⬆ Upload</button>
                         <p class="text-muted small mb-2">
-                            Approval is locked, but you can still manage the approval document(s) below.
+                            Approval is locked. Uploads are saved as approved; delete an old one from the
+                            documents table (Admin rows) when the paperwork changes.
                         </p>
                         <a asp-action="Index" class="btn btn-outline-secondary w-100">← Back to PM Surya list</a>
                     </div>
@@ -275,7 +280,7 @@
                         <input id="pmAppNo" class="form-control mb-2" placeholder="e.g., RJ-PMSG-2026-000123" value="@(req.PmSuryaApplicationNo ?? "")" />
                         <label class="form-label mb-1">Approval Document(s) — user downloadable <span class="text-danger">*</span></label>
                         @* Point 5: Camera / Gallery — photo-picker.js turns this into two buttons. *@
-                        <input id="approvalDocs" type="file" class="form-control mb-1" multiple accept=".pdf,.png,.jpg,.jpeg" data-photo-picker data-camera />
+                        <input id="approvalDocs" type="file" class="form-control mb-1" multiple accept=".pdf,.png,.jpg,.jpeg" data-photo-picker />
                         @if (hasApprovalDoc)
                         {
                             <p class="text-muted small mb-2">An approval document is already attached — leave this empty to keep it.</p>
@@ -296,44 +301,6 @@
                     </div>
                 </div>
             }
-
-            @* Admin approval documents can be replaced at ANY time — before or after
-               final approval. Delete removes the row and its file; upload adds new
-               ones, already Approved (admin ka apna upload hai, review ki zaroorat nahi). *@
-            @{
-                var approvalDocs = docs
-                    .Where(d => d.DocumentType == SolarPortal.Domain.Enums.DocumentType.PMApprovalDocument)
-                    .ToList();
-            }
-            <div class="card mt-3">
-                <div class="card-header bg-primary text-white">📎 Admin Approval Document(s)</div>
-                <div class="card-body">
-                    @if (!approvalDocs.Any())
-                    {
-                        <p class="text-muted small mb-2">No approval document uploaded yet.</p>
-                    }
-                    else
-                    {
-                        <ul class="list-group list-group-flush mb-3">
-                            @foreach (var d in approvalDocs)
-                            {
-                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                    <a href="javascript:void(0)" onclick="openFileModal('@d.FilePath')" style="color:#0d9488">@d.FileName</a>
-                                    <button class="btn btn-sm btn-outline-danger btn-delete-doc"
-                                            data-id="@d.Id" data-name="@d.FileName">🗑️</button>
-                                </li>
-                            }
-                        </ul>
-                    }
-                    <label class="form-label mb-1">Upload new approval document(s)</label>
-                    <input id="reUploadDocs" type="file" class="form-control mb-2" multiple accept=".pdf,.png,.jpg,.jpeg" data-photo-picker data-camera />
-                    <button id="btnReUpload" class="btn btn-primary w-100">⬆ Upload</button>
-                    <p class="text-muted small mt-2 mb-0">
-                        Delete an existing document and upload a replacement whenever the
-                        approval paperwork changes. Uploads are saved as approved.
-                    </p>
-                </div>
-            </div>
 
             @* ── Point 9: decision trail — who accepted, who approved/rejected ── *@
             <div class="card mt-3">
@@ -383,9 +350,9 @@ $('#btnAcceptCase').on('click', function () {
     }).fail(function () { $btn.prop('disabled', false).text('📥 Accept Case'); });
 });
 
-@* The per-row Approve handler is gone with its button — "Approve All & Open Meter
-   Dispatch + Site Survey" is now the single approve action on this page. The
-   ApproveDocument endpoint is left in place; nothing on this screen calls it. *@
+@* No per-row Approve handler: "Approve All & Open Meter Dispatch + Site Survey"
+   is the single approve action here. The ApproveDocument endpoint stays for the
+   API, but nothing on this screen calls it. *@
 $('.btn-reject').on('click', function () {
     const id = $(this).data('id');
     // A reason is mandatory server-side — the user needs to know what to re-upload.

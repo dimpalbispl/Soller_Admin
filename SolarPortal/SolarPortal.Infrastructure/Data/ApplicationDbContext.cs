@@ -403,6 +403,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             e.Property(x => x.MemberIdNo).HasMaxLength(50).IsRequired();
             e.Property(x => x.MemberName).HasMaxLength(150);
             e.Property(x => x.Amount).HasColumnType("decimal(18,2)");
+            e.Property(x => x.EntryType).HasMaxLength(1).IsRequired();
+            e.Ignore(x => x.IsCredit);            // computed on the entity, never stored
             e.Property(x => x.VoucherAcType).HasMaxLength(1).IsRequired();
             e.Property(x => x.VoucherTypeName).HasMaxLength(100);
             e.Property(x => x.Remark).HasMaxLength(1000);

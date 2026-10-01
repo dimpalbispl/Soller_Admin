@@ -39,8 +39,9 @@
                             <th>City / State</th>
                             <th>Connection</th>
                             <th>Request Date</th>
-                            @* Point 9: who is holding this case, so two admins don't both open it. *@
-                            <th>Accepted By</th>
+                            @* Who is holding this case (so two admins don't both open it) — and once
+                               it is approved, who approved it, since only the holder can. *@
+                            <th>Accepted / Approved By</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -51,7 +52,8 @@
                         var isActive = user?.IsActive ?? false;
                         var memberName = string.IsNullOrWhiteSpace(r.MemberFullName) ? r.ApplicantName : r.MemberFullName;
 
-                        <tr data-search="@($"{r.UserId} {memberName} {r.MobileNumber} {r.City} {r.State} {r.RequestNumber}".ToLower())"
+                        @* The approving admin's name is searchable too — "kis admin ne approve kiya" *@
+                        <tr data-search="@($"{r.UserId} {memberName} {r.MobileNumber} {r.City} {r.State} {r.RequestNumber} {r.PmSuryaAcceptedByName} {r.PmSuryaAcceptedBy}".ToLower())"
                             data-mid="@r.UserId"
                             data-city="@r.City"
                             data-state="@r.State"
@@ -76,10 +78,33 @@
                             <td><span class="badge bg-info">@r.ConnectionType</span></td>
                             <td>@r.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
                             <td>
-                                @if (r.IsPmSuryaAccepted)
+                                @{
+                                    // Only the admin holding the case can approve it (BlockIfNotMine),
+                                    // so once the request has moved past PM Surya the admin named here
+                                    // IS the one who approved it.
+                                    var pmDone =
+                                        r.CurrentStage == SolarPortal.Domain.Enums.ProjectStatus.MeterDispatch ||
+                                        r.CurrentStage == SolarPortal.Domain.Enums.ProjectStatus.SiteSurvey ||
+                                        r.CurrentStage == SolarPortal.Domain.Enums.ProjectStatus.MaterialDispatch ||
+                                        r.CurrentStage == SolarPortal.Domain.Enums.ProjectStatus.Installation ||
+                                        r.CurrentStage == SolarPortal.Domain.Enums.ProjectStatus.DCRUpdate ||
+                                        r.CurrentStage == SolarPortal.Domain.Enums.ProjectStatus.Completed;
+                                    var pmAdmin = r.PmSuryaAcceptedByName ?? r.PmSuryaAcceptedBy;
+                                }
+                                @if (pmDone && !string.IsNullOrWhiteSpace(pmAdmin))
                                 {
-                                    <span class="mini-pill pill-active">🔒 @(r.PmSuryaAcceptedByName ?? r.PmSuryaAcceptedBy)</span>
+                                    <span class="mini-pill pill-active">✅ @pmAdmin</span>
+                                    <div class="cell-sub">Approved @r.PmSuryaAcceptedAt?.ToLocalTime().ToString("dd MMM, HH:mm")</div>
+                                }
+                                else if (r.IsPmSuryaAccepted)
+                                {
+                                    <span class="mini-pill pill-active">🔒 @pmAdmin</span>
                                     <div class="cell-sub">@r.PmSuryaAcceptedAt?.ToLocalTime().ToString("dd MMM, HH:mm")</div>
+                                }
+                                else if (pmDone)
+                                {
+                                    @* Approved before the claim feature existed — no name was recorded. *@
+                                    <span class="text-muted" style="font-size:12px">✅ Approved</span>
                                 }
                                 else
                                 {

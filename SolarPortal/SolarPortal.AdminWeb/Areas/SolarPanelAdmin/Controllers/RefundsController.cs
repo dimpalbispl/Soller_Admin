@@ -32,6 +32,7 @@ public class RefundsController : Controller
     private readonly ApplicationDbContext _db;
     private readonly IUnitOfWork _uow;
     private readonly IPaymentService _payments;
+    private readonly ISolarWalletService _solarWallet;
     private readonly IAdminActivityLogger _activity;
     private readonly UserManager<ApplicationUser> _userManager;
 
@@ -39,12 +40,14 @@ public class RefundsController : Controller
         ApplicationDbContext db,
         IUnitOfWork uow,
         IPaymentService payments,
+        ISolarWalletService solarWallet,
         IAdminActivityLogger activity,
         UserManager<ApplicationUser> userManager)
     {
         _db = db;
         _uow = uow;
         _payments = payments;
+        _solarWallet = solarWallet;
         _activity = activity;
         _userManager = userManager;
     }
@@ -75,7 +78,7 @@ public class RefundsController : Controller
         ViewBag.PendingCount  = await _db.ExtraPaymentRefunds.CountAsync(x => x.Status == ApprovalStatus.Pending);
         ViewBag.ApprovedCount = await _db.ExtraPaymentRefunds.CountAsync(x => x.Status == ApprovalStatus.Approved);
         ViewBag.RejectedCount = await _db.ExtraPaymentRefunds.CountAsync(x => x.Status == ApprovalStatus.Rejected);
-        ViewBag.VoucherTypes  = await LoadVoucherTypesAsync();
+        ViewBag.VoucherTypes  = await _solarWallet.GetWalletsAsync();
         ViewBag.MyId = AdminId;
         return View(rows);
     }
@@ -126,10 +129,13 @@ public class RefundsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(int solarRequestId, string memberIdNo, decimal amount,
-                                            int voucherTypeId, string? remark)
+                                            int voucherTypeId, string? entryType, string? remark)
     {
         if (amount <= 0)
             return Json(new { success = false, message = "Amount must be greater than zero." });
+
+        // "C" pays the member, "D" takes it back. Anything else is a bad post.
+        var type = string.Equals(entryType, "D", StringComparison.OrdinalIgnoreCase) ? "D" : "C";
         if (string.IsNullOrWhiteSpace(memberIdNo))
             return Json(new { success = false, message = "Member ID is required." });
 
@@ -137,18 +143,20 @@ public class RefundsController : Controller
         if (req == null)
             return Json(new { success = false, message = "Solar request not found." });
 
-        var vtypes = await LoadVoucherTypesAsync();
+        var vtypes = await _solarWallet.GetWalletsAsync();
         var vtype = vtypes.FirstOrDefault(v => v.Acid == voucherTypeId);
         if (vtype == null)
             return Json(new { success = false, message = "Choose a voucher type (wallet)." });
 
-        // One open refund per project at a time: two pending rows for the same
-        // project are almost always the same refund entered twice, and both would
-        // be approvable.
+        // One open entry per project PER DIRECTION: two pending credits on the same
+        // project are almost always the same refund entered twice, and both would be
+        // approvable. A credit and a debit can legitimately be open together.
         var alreadyOpen = await _db.ExtraPaymentRefunds
-            .AnyAsync(x => x.SolarRequestId == solarRequestId && x.Status == ApprovalStatus.Pending);
+            .AnyAsync(x => x.SolarRequestId == solarRequestId
+                        && x.EntryType == type
+                        && x.Status == ApprovalStatus.Pending);
         if (alreadyOpen)
-            return Json(new { success = false, message = "A refund for this project is already waiting for a decision." });
+            return Json(new { success = false, message = $"A {(type == "D" ? "debit" : "credit")} fund transfer for this project is already waiting for a decision." });
 
         var memberName = string.IsNullOrWhiteSpace(req.MemberFullName) ? req.ApplicantName : req.MemberFullName;
 
@@ -159,6 +167,7 @@ public class RefundsController : Controller
             MemberIdNo      = memberIdNo.Trim(),
             MemberName      = memberName,
             Amount          = amount,
+            EntryType       = type,
             VoucherTypeId   = vtype.Acid,
             VoucherAcType   = vtype.Actype,
             VoucherTypeName = vtype.WalletName,
@@ -171,11 +180,12 @@ public class RefundsController : Controller
         _db.ExtraPaymentRefunds.Add(row);
         await _db.SaveChangesAsync();
 
+        var word = type == "D" ? "debit" : "credit";
         await _activity.LogAsync(AdminId, "Refund.Create", "Refund", row.Id.ToString(),
-            $"Raised extra-payment refund ₹{amount:N0} for {memberIdNo} on {req.RequestNumber} " +
+            $"Raised fund transfer ({word}) ₹{amount:N0} for {memberIdNo} on {req.RequestNumber} " +
             $"({vtype.WalletName}). Awaiting approval.", ClientIp);
 
-        return Json(new { success = true, message = $"Refund of ₹{amount:N0} raised for {req.RequestNumber}. It is waiting for approval." });
+        return Json(new { success = true, message = $"{char.ToUpper(word[0])}{word[1..]} of ₹{amount:N0} raised for {req.RequestNumber}. It is waiting for approval." });
     }
 
     // POST: /SolarPanelAdmin/Refunds/Approve
@@ -184,14 +194,16 @@ public class RefundsController : Controller
     public async Task<IActionResult> Approve(int id, string? note)
     {
         var row = await _db.ExtraPaymentRefunds.FirstOrDefaultAsync(x => x.Id == id);
-        if (row == null) return Json(new { success = false, message = "Refund not found." });
+        if (row == null) return Json(new { success = false, message = "Entry not found." });
         if (row.Status == ApprovalStatus.Approved || row.PostedAt != null)
-            return Json(new { success = false, message = "This refund is already approved." });
+            return Json(new { success = false, message = "This entry is already approved." });
         if (row.Status == ApprovalStatus.Rejected)
-            return Json(new { success = false, message = "This refund was rejected. Raise a fresh one instead." });
+            return Json(new { success = false, message = "This entry was rejected. Raise a fresh one instead." });
 
-        var refNo = $"REFUND/{row.RequestNumber}/{row.Id}";
-        var narration = $"Extra payment refund for {row.RequestNumber} · Member ID {row.MemberIdNo}"
+        var refNo = $"FT/{row.RequestNumber}/{row.Id}";
+        var narration = (row.IsCredit
+                            ? $"Fund transfer credited for {row.RequestNumber} · Member ID {row.MemberIdNo}"
+                            : $"Fund transfer debited against {row.RequestNumber} · Member ID {row.MemberIdNo}")
                       + (string.IsNullOrWhiteSpace(row.Remark) ? "" : $". {row.Remark}");
 
         // The ledger row first: if this throws, the refund stays Pending and can be
@@ -210,11 +222,18 @@ public class RefundsController : Controller
         row.UpdatedBy = AdminId;
         await _db.SaveChangesAsync();
 
+        var done = row.IsCredit ? "Credited to" : "Debited from";
         await _activity.LogAsync(AdminId, "Refund.Approve", "Refund", row.Id.ToString(),
-            $"Approved extra-payment refund ₹{row.Amount:N0} for {row.MemberIdNo} on {row.RequestNumber}. " +
-            $"Credited to {row.VoucherTypeName} (ref {refNo}).", ClientIp);
+            $"Approved fund transfer ({(row.IsCredit ? "credit" : "debit")}) ₹{row.Amount:N0} for {row.MemberIdNo} " +
+            $"on {row.RequestNumber}. {done} {row.VoucherTypeName} (ref {refNo}).", ClientIp);
 
-        return Json(new { success = true, message = $"₹{row.Amount:N0} refunded to {row.MemberIdNo} in {row.VoucherTypeName}." });
+        return Json(new
+        {
+            success = true,
+            message = row.IsCredit
+                ? $"₹{row.Amount:N0} credited to {row.MemberIdNo} in {row.VoucherTypeName}."
+                : $"₹{row.Amount:N0} debited from {row.MemberIdNo}'s {row.VoucherTypeName}."
+        });
     }
 
     // POST: /SolarPanelAdmin/Refunds/Reject
@@ -226,11 +245,11 @@ public class RefundsController : Controller
             return Json(new { success = false, message = "A rejection reason is required." });
 
         var row = await _db.ExtraPaymentRefunds.FirstOrDefaultAsync(x => x.Id == id);
-        if (row == null) return Json(new { success = false, message = "Refund not found." });
+        if (row == null) return Json(new { success = false, message = "Entry not found." });
         if (row.Status == ApprovalStatus.Approved || row.PostedAt != null)
-            return Json(new { success = false, message = "This refund is already approved and cannot be rejected." });
+            return Json(new { success = false, message = "This entry is already approved and cannot be rejected." });
         if (row.Status == ApprovalStatus.Rejected)
-            return Json(new { success = false, message = "This refund is already rejected." });
+            return Json(new { success = false, message = "This entry is already rejected." });
 
         row.Status          = ApprovalStatus.Rejected;
         row.RejectionReason = reason.Trim();
@@ -241,83 +260,22 @@ public class RefundsController : Controller
         await _db.SaveChangesAsync();
 
         await _activity.LogAsync(AdminId, "Refund.Reject", "Refund", row.Id.ToString(),
-            $"Rejected extra-payment refund #{row.Id} (₹{row.Amount:N0}, {row.MemberIdNo}). Reason: {reason}", ClientIp);
+            $"Rejected fund transfer #{row.Id} (₹{row.Amount:N0}, {row.MemberIdNo}). Reason: {reason}", ClientIp);
 
-        return Json(new { success = true, message = "Refund rejected. No money was moved." });
+        return Json(new { success = true, message = "Fund transfer rejected. No money was moved." });
     }
 
     /// <summary>
-    /// Writes the refund credit into IncTrnvoucher — the same ledger the INC
-    /// commission is written to. Guarded on RefNo so a replayed approve can never
-    /// credit twice (PostedAt above is the first guard; this is the second,
-    /// because a double credit is real money).
+    /// Writes the entry into the member's SOLAR wallet ledger (SolarTrnvoucher) in
+    /// whichever direction the row says - credit pays the member, debit takes it
+    /// back. The INC wallet is deliberately NOT touched: that one belongs to the
+    /// installer's commission, and solar money is the member's.
+    ///
+    /// SolarWalletService guards on RefNo + direction, so a replayed approve can
+    /// never post twice (PostedAt on the row is the first guard).
     /// </summary>
     private async Task PostVoucherAsync(ExtraPaymentRefund row, string refNo, string narration)
     {
-        const string sql = @"
-IF NOT EXISTS (SELECT 1 FROM IncTrnvoucher WHERE RefNo = @refNo AND VType = 'C')
-BEGIN
-    INSERT INTO IncTrnvoucher
-        (VoucherNo, VoucherDate, DrTo, CrTo, Amount, Narration, RefNo,
-         AcType, RecTimeStamp, VType, SessID, WSessID, Balance, UserId, FromID)
-    SELECT
-        ISNULL(MAX(VoucherNo), 0) + 1,
-        CAST(CONVERT(varchar(8), GETDATE(), 112) AS datetime),
-        '0',
-        @account,
-        @amount,
-        @narration,
-        @refNo,
-        @acType,
-        GETDATE(),
-        'C',
-        CAST(CONVERT(varchar(8), GETDATE(), 112) AS numeric(18,0)),
-        1,
-        0,
-        0,
-        NULL
-    FROM IncTrnvoucher;
-END";
-
-        await _db.Database.ExecuteSqlRawAsync(sql,
-            new Microsoft.Data.SqlClient.SqlParameter("@account",   row.MemberIdNo),
-            new Microsoft.Data.SqlClient.SqlParameter("@amount",    row.Amount),
-            new Microsoft.Data.SqlClient.SqlParameter("@narration", narration),
-            new Microsoft.Data.SqlClient.SqlParameter("@refNo",     refNo),
-            new Microsoft.Data.SqlClient.SqlParameter("@acType",    row.VoucherAcType));
+        await _solarWallet.PostAsync(row.MemberIdNo, row.Amount, row.IsCredit, refNo, narration);
     }
-
-    /// <summary>The wallets a refund can be credited to — read from IncVouchertype.</summary>
-    private async Task<List<VoucherTypeRow>> LoadVoucherTypesAsync()
-    {
-        var list = new List<VoucherTypeRow>();
-        var conn = _db.Database.GetDbConnection();
-        var opened = false;
-        try
-        {
-            if (conn.State != System.Data.ConnectionState.Open) { await conn.OpenAsync(); opened = true; }
-            await using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT Acid, WalletName, Actype FROM IncVouchertype WHERE ISNULL(ActiveStatus,'Y') = 'Y' ORDER BY Acid";
-            await using var rd = await cmd.ExecuteReaderAsync();
-            while (await rd.ReadAsync())
-            {
-                list.Add(new VoucherTypeRow(
-                    Convert.ToInt32(rd["Acid"]),
-                    (rd["WalletName"]?.ToString() ?? "").Trim(),
-                    (rd["Actype"]?.ToString() ?? "I").Trim()));
-            }
-        }
-        catch
-        {
-            // Legacy table unreachable — the page still renders, with no wallet to
-            // pick, rather than 500ing.
-        }
-        finally
-        {
-            if (opened) await conn.CloseAsync();
-        }
-        return list;
-    }
-
-    public record VoucherTypeRow(int Acid, string WalletName, string Actype);
 }

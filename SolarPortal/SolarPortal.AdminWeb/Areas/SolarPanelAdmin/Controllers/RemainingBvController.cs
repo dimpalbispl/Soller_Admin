@@ -201,6 +201,7 @@ public class RemainingBvController : Controller
             // fails the row stays Pending, and the admin should not have to type
             // their correction a second time to retry the approval.
             await _db.SaveChangesAsync();
+            await SyncHeadFormNosAsync(row);
 
             // Claim the row BEFORE the ledger runs — see ClaimForPostAsync. The
             // second half of a double-click lands here and stops.
@@ -238,6 +239,7 @@ public class RemainingBvController : Controller
         }
 
         await _db.SaveChangesAsync();
+        await SyncHeadFormNosAsync(row);
 
         if (changed)
         {
@@ -530,6 +532,25 @@ UPDATE RemainingBvUpdates
             $"UPDATE RemainingBvUpdates SET PayoutPostedAt = NULL WHERE Id = {row.Id}");
         row.PayoutPostedAt = null;
     }
+
+    /// <summary>
+    /// Fills DiscomIncFormNo / DcloseIncFormNo / SciIncFormNo from the three
+    /// heads' IdNo via m_membermaster, so a correction carries the right FormNo
+    /// even before approval. Sp_UpdateReaminingBV does the same at approval.
+    ///
+    /// Raw SQL because FormNo is not on the MMemberMaster EF mapping and these
+    /// three columns are not on the entity either — the user panel shares this
+    /// table's mapping. The CAST keeps the m_membermaster.IDNo (varchar) lookup
+    /// an index seek instead of converting the whole column to nvarchar.
+    /// </summary>
+    private Task SyncHeadFormNosAsync(RemainingBvUpdate row) =>
+        _db.Database.ExecuteSqlInterpolatedAsync($@"
+UPDATE r
+   SET DiscomIncFormNo = (SELECT TOP 1 m.FormNo FROM m_membermaster m WHERE m.IDNo = CAST(r.DiscomIncomeIdNo AS varchar(50))),
+       DcloseIncFormNo = (SELECT TOP 1 m.FormNo FROM m_membermaster m WHERE m.IDNo = CAST(r.DealCloseIdNo    AS varchar(50))),
+       SciIncFormNo    = (SELECT TOP 1 m.FormNo FROM m_membermaster m WHERE m.IDNo = CAST(r.SciIncomeIdNo    AS varchar(50)))
+  FROM RemainingBvUpdates r
+ WHERE r.Id = {row.Id}");
 
     private const string AlreadyApprovedMessage =
         "This record is ALREADY APPROVED — the BV was posted just now, so nothing was done a second time.";

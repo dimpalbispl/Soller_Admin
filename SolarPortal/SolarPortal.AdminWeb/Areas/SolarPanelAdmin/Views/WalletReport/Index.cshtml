@@ -1,0 +1,175 @@
+@using SolarPortal.Application.Interfaces.Services
+@model List<WalletLedgerRow>
+@{
+    ViewData["Title"] = "Wallet Transaction Report";
+
+    var from     = ViewBag.From as DateTime?;
+    var to       = ViewBag.To as DateTime?;
+    var wallet   = ViewBag.Wallet as string;
+    var memberId = ViewBag.MemberId as string;
+    var wallets  = ViewBag.Wallets as List<WalletOption> ?? new List<WalletOption>();
+    var maxRows  = (int)(ViewBag.MaxRows ?? 1000);
+    var truncated = (bool)(ViewBag.Truncated ?? false);
+    var totalCredit = (decimal)(ViewBag.TotalCredit ?? 0m);
+    var totalDebit  = (decimal)(ViewBag.TotalDebit ?? 0m);
+
+    string Dash(string? v) => string.IsNullOrWhiteSpace(v) ? "—" : v;
+}
+
+<div class="page active">
+    <div class="ph">
+        <div class="ph-bc">🛡️ Admin / <span>Wallet Transaction Report</span></div>
+        <div class="ph-title">👛 Wallet Transaction Report</div>
+        <div class="ph-sub">
+            Every credit and debit that has touched a wallet — INC commission, withdrawals,
+            and Extra Payment Refund / debit entries — with the remark that says what each one was for.
+        </div>
+    </div>
+
+    @* Date / wallet / member run in the QUERY, so they reach past the row cap.
+       The toolbar below then searches the remark within what came back. *@
+    <div class="card" style="margin-bottom:14px">
+        <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;padding:14px">
+            <div class="fg" style="margin:0">
+                <label>From</label>
+                <input type="date" name="from" value="@(from?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="fg" style="margin:0">
+                <label>To</label>
+                <input type="date" name="to" value="@(to?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="fg" style="margin:0">
+                <label>Wallet</label>
+                <select name="wallet">
+                    <option value="">All wallets</option>
+                    @foreach (var w in wallets)
+                    {
+                        <option value="@w.Actype" selected="@(wallet == w.Actype)">@w.WalletName</option>
+                    }
+                </select>
+            </div>
+            <div class="fg" style="margin:0">
+                <label>Member ID / Installer ID</label>
+                <input type="text" name="memberId" value="@memberId" placeholder="e.g. TESTSUNIL or 19" autocomplete="off" />
+            </div>
+            <div style="display:flex;gap:8px">
+                <button type="submit" class="btn btn-p btn-sm">🔍 Apply</button>
+                <a class="btn btn-s btn-sm" asp-action="Index">✕ Clear</a>
+                <a class="btn btn-s btn-sm" asp-action="Export"
+                   asp-route-from="@(from?.ToString("yyyy-MM-dd"))" asp-route-to="@(to?.ToString("yyyy-MM-dd"))"
+                   asp-route-wallet="@wallet" asp-route-memberId="@memberId">⬇ Export to Excel</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="g3" style="margin-bottom:14px">
+        <div class="sc">
+            <div class="sc-label">Entries</div>
+            <div class="sc-val">@Model.Count</div>
+            <div class="sc-sub">@(truncated ? $"capped at {maxRows} — narrow the dates" : "in this range")</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Total Credit</div>
+            <div class="sc-val" style="color:#15803d">₹@totalCredit.ToString("N2")</div>
+            <div class="sc-sub">money into wallets</div>
+        </div>
+        <div class="sc">
+            <div class="sc-label">Total Debit</div>
+            <div class="sc-val" style="color:#b91c1c">₹@totalDebit.ToString("N2")</div>
+            <div class="sc-sub">money out of wallets</div>
+        </div>
+    </div>
+
+    @if (truncated)
+    {
+        <div class="alert alert-w" style="margin-bottom:14px">
+            <span class="ai">!</span>
+            Showing the newest @maxRows entries only. Pick a date range to see the rest.
+        </div>
+    }
+
+    @if (Model.Any())
+    {
+        ViewData["FilterTableId"] = "walletTable";
+        ViewData["FilterPlaceholder"] = "Search by remark, reference, name, account...";
+        ViewData["FilterShowMemberId"] = false;
+        ViewData["FilterShowCity"] = false;
+        ViewData["FilterShowState"] = false;
+        ViewData["FilterShowDate"] = false;   // the query above owns the date range
+        ViewData["FilterPageSize"] = 25;
+
+        <partial name="_ReportFilterToolbar" />
+    }
+
+    <div class="card">
+        <div class="ct"><span class="ct-dot"></span>Wallet Entries (@Model.Count)</div>
+
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <div class="es-icon">👛</div>
+                <div class="es-title">Nothing in this range</div>
+                <div class="es-sub">No wallet credit or debit matches these filters.</div>
+            </div>
+        }
+        else
+        {
+            <div class="tbl-wrap">
+                <table id="walletTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Voucher</th>
+                            <th>Wallet</th>
+                            <th>Account</th>
+                            <th>Type</th>
+                            <th style="text-align:right">Credit</th>
+                            <th style="text-align:right">Debit</th>
+                            <th>Reference</th>
+                            <th>Remark</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var r in Model)
+                    {
+                        <tr data-search="@($"{r.AccountId} {r.AccountName} {r.RefNo} {r.Remark} {r.WalletName} {(r.IsCredit ? "credit" : "debit")}".ToLower())"
+                            data-date="@(r.VoucherDate?.ToString("yyyy-MM-dd"))">
+                            <td style="white-space:nowrap">
+                                @(r.VoucherDate?.ToString("dd MMM yyyy") ?? "—")
+                                @if (r.PostedAt.HasValue)
+                                {
+                                    <div class="hint">@r.PostedAt.Value.ToLocalTime().ToString("HH:mm")</div>
+                                }
+                            </td>
+                            <td><span class="hint">@Dash(r.VoucherNo)</span></td>
+                            <td>@Dash(r.WalletName ?? r.AcType)</td>
+                            <td>
+                                <div style="font-weight:600">@Dash(r.AccountName)</div>
+                                <div class="hint">@Dash(r.AccountId)</div>
+                            </td>
+                            <td>
+                                @if (r.IsCredit)
+                                {
+                                    <span class="sts sts-act">⬆️ Credit</span>
+                                }
+                                else
+                                {
+                                    <span class="sts sts-rej">⬇️ @(string.Equals(r.VType, "W", StringComparison.OrdinalIgnoreCase) ? "Withdrawal" : "Debit")</span>
+                                }
+                            </td>
+                            <td style="text-align:right;font-weight:700;color:#15803d">
+                                @(r.IsCredit ? "₹" + r.Amount.ToString("N2") : "")
+                            </td>
+                            <td style="text-align:right;font-weight:700;color:#b91c1c">
+                                @(r.IsCredit ? "" : "₹" + r.Amount.ToString("N2"))
+                            </td>
+                            <td><span class="hint">@Dash(r.RefNo)</span></td>
+                            <td style="max-width:320px">@Dash(r.Remark)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

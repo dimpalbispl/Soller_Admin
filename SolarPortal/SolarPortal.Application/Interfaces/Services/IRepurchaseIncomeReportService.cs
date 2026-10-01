@@ -65,6 +65,16 @@ public class RepurchaseIncomeRow
     /// <summary>The Remaining BV record's own status, null for a legacy row.</summary>
     public ApprovalStatus? BvStatus { get; set; }
 
+    /// <summary>
+    /// When the admin approved the Remaining BV record behind this ledger row.
+    /// Not the same as BillDate / PostedAt, which say when the POST ran. Null on a
+    /// legacy row that has no approval record to match.
+    /// </summary>
+    public DateTime? ApprovedAt { get; set; }
+
+    /// <summary>The remark the admin left on that approval (RemainingBvUpdates.AdminRemark).</summary>
+    public string? AdminRemark { get; set; }
+
     /// <summary>True when this row could be matched back to a Remaining BV record.</summary>
     public bool FromRemainingBv => RequestNumber != null;
 }

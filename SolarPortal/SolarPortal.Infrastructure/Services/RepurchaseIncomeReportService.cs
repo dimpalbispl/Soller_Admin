@@ -60,12 +60,16 @@ SELECT TOP (@top)
     b.SolarTypeKV,
     b.RemainingBV,
     b.SponsorIdNo,
-    b.Status AS BvStatus
+    b.Status AS BvStatus,
+    -- When the admin approved the Remaining BV record, and what they wrote on it.
+    -- The ledger row itself carries neither, so both come from the approval record.
+    b.ApprovedAt,
+    b.AdminRemark
 FROM RepurchIncome r
 LEFT JOIN M_MemberMaster m ON m.FormNo = r.FormNo
 OUTER APPLY (
     SELECT TOP 1 x.RequestNumber, x.PlanName, x.OrderNo, x.SolarTypeKV,
-                 x.RemainingBV, x.SponsorIdNo, x.Status
+                 x.RemainingBV, x.SponsorIdNo, x.Status, x.ApprovedAt, x.AdminRemark
     FROM RemainingBvUpdates x
     WHERE x.MemberFormNo = r.FormNo
       AND x.SessID       = r.DSessID
@@ -123,7 +127,9 @@ ORDER BY r.RId DESC;";
                 SolarTypeKV   = Num(rd, "SolarTypeKV"),
                 RemainingBv   = Num(rd, "RemainingBV"),
                 SponsorIdNo   = Str(rd, "SponsorIdNo"),
-                BvStatus      = Num(rd, "BvStatus") is decimal s ? (ApprovalStatus)(int)s : null
+                BvStatus      = Num(rd, "BvStatus") is decimal s ? (ApprovalStatus)(int)s : null,
+                ApprovedAt    = Dt(rd, "ApprovedAt"),
+                AdminRemark   = Str(rd, "AdminRemark")
             });
         }
 

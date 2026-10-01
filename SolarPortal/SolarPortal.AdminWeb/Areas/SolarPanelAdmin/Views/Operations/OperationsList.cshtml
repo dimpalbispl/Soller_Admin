@@ -407,7 +407,11 @@
                                                     }
                                                     if (!string.IsNullOrWhiteSpace(dcr.DocumentPath))
                                                     {
-                                                        <div><a href="javascript:void(0)" onclick="openFileModal('@dcr.DocumentPath')" style="color:var(--sun)">📄 Document</a></div>
+                                                        <div><a href="javascript:void(0)" onclick="openFileModal('@dcr.DocumentPath')" style="color:var(--sun)">📄 DCR Document</a></div>
+                                                    }
+                                                    if (!string.IsNullOrWhiteSpace(dcr.WorkDocumentPath))
+                                                    {
+                                                        <div><a href="javascript:void(0)" onclick="openFileModal('@dcr.WorkDocumentPath')" style="color:var(--sun)">📄 Work Document</a></div>
                                                     }
                                                 }
                                                 else
@@ -510,7 +514,7 @@
                                                 break;
                                             case "dcr":
                                                 @* Admin ka upload hi approval hai - alag approve button nahi. *@
-                                                <button class="btn btn-primary btn-sm" onclick="openDCRForm(@r.Id, '@r.RequestNumber')">📄 Upload DCR</button>
+                                                <button class="btn btn-primary btn-sm" onclick="openDCRForm(@r.Id, '@r.RequestNumber')">📄 Upload DCR &amp; Work</button>
                                                 break;
                                         }
                                     }
@@ -551,7 +555,7 @@
         "Prepare for Dispatch" => "📋",
         "Final Dispatch" => "🚚",
         "Installation" => "🔧",
-        "DCR Update" => "📄",
+        "DCR & Work Upload" => "📄",
         _ => "📋"
     };
 }
@@ -579,7 +583,8 @@
                 number = kv.Value.DCRNumber ?? "",
                 date = kv.Value.DCRDate.HasValue ? kv.Value.DCRDate.Value.ToString("yyyy-MM-dd") : "",
                 remark = kv.Value.Remark ?? "",
-                docPath = kv.Value.DocumentPath ?? ""
+                docPath = kv.Value.DocumentPath ?? "",
+                workDocPath = kv.Value.WorkDocumentPath ?? ""
             }));
 }
 <script id="dcrData" type="application/json">@Html.Raw(dcrJson)</script>
@@ -1203,17 +1208,20 @@
         });
         }
 
+        let dcrPicked = [];   // files chosen in the DCR & Work modal (max 2)
         function openDCRForm(requestId, requestNumber) {
         // DCR ab admin khud upload karta hai (user panel se hata diya gaya). Purane
         // projects par user ka bhara hua record ho sakta hai - wo pre-fill ho jata
         // hai taki admin dobara type na kare.
         const ex = dcrData[requestId] || {};
-        const hasDoc = !!ex.docPath;
-        const docLink = hasDoc
-        ? `<div style="margin:4px 0 8px"><a href="${fileModalSrc(ex.docPath)}" target="_blank">📄 View existing DCR document</a></div>`
-        : '';
+        // Exactly 2 PDFs: DCR + Work. Both must be on file already to skip re-upload.
+        const hasDoc = !!ex.docPath && !!ex.workDocPath;
+        const docLink = (ex.docPath
+        ? `<div style="margin:4px 0"><a href="${fileModalSrc(ex.docPath)}" target="_blank">📄 View existing DCR document</a></div>` : '')
+        + (ex.workDocPath
+        ? `<div style="margin:4px 0 8px"><a href="${fileModalSrc(ex.workDocPath)}" target="_blank">📄 View existing Work document</a></div>` : '');
         Swal.fire({
-        title: '📄 DCR Upload — ' + requestNumber,
+        title: '📄 DCR & Work Upload — ' + requestNumber,
         html: `
         <div style="text-align:left;font-size:13px">
         <label>DCR Number *</label>
@@ -1223,24 +1231,64 @@
         <label>Remark</label>
         <textarea id="f-dcr-remark" class="swal2-textarea">${esc(ex.remark)}</textarea>
         ${docLink}
-        <label>DCR Document (PDF / Image)${hasDoc ? ' — re-upload to replace' : ' *'}</label>
-        ${photoPickerHtml('f-dcr-doc', '.pdf,.jpg,.jpeg,.png')}
-        <div style="margin-top:8px;color:#6b7280">Uploading completes the project — no separate approval step.</div>
+        <label>DCR &amp; Work Documents (PDF / Image) — 2 files${hasDoc ? ' — re-upload both to replace' : ' *'}</label>
+        <div style="display:flex;gap:8px;margin:4px 0">
+          <button type="button" class="swal2-styled file-pick-btn"
+                  style="background:#0d9488;font-size:12px;padding:6px 12px;margin:0"
+                  onclick="document.getElementById('f-dcr-cam').click()">📷 Camera</button>
+          <button type="button" class="swal2-styled file-pick-btn"
+                  style="background:#475569;font-size:12px;padding:6px 12px;margin:0"
+                  onclick="document.getElementById('f-dcr-gal').click()">🖼️ Gallery</button>
+        </div>
+        <input id="f-dcr-cam" type="file" accept="image/*" capture="environment" style="display:none">
+        <input id="f-dcr-gal" type="file" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none">
+        <div id="f-dcr-list" style="font-size:12px;color:#6b7280">No file chosen (0 / 2)</div>
+        <div style="margin-top:8px;color:#6b7280">Exactly 2 files required — 1st = DCR, 2nd = Work. Uploading completes the project — no separate approval step.</div>
         </div>`,
         background: '#ffffff', color: '#1f2937',
         showCancelButton: true,
-        confirmButtonText: 'Upload DCR',
+        confirmButtonText: 'Upload DCR & Work',
+        didOpen: () => {
+        // One picker collects both files: Gallery can multi-select, Camera adds
+        // one photo per shot. Capped at 2; ✕ removes a file to swap it.
+        dcrPicked = [];
+        const render = () => {
+        const list = document.getElementById('f-dcr-list');
+        if (!dcrPicked.length) { list.innerHTML = 'No file chosen (0 / 2)'; return; }
+        list.innerHTML = dcrPicked.map((f, i) =>
+        `<div>${i === 0 ? 'DCR' : 'Work'}: ${esc(f.name)}
+        <a href="javascript:void(0)" data-rm="${i}" style="color:#dc2626;margin-left:6px">✕</a></div>`).join('')
+        + `<div>(${dcrPicked.length} / 2)</div>`;
+        list.querySelectorAll('[data-rm]').forEach(a => a.onclick = () => {
+        dcrPicked.splice(+a.dataset.rm, 1); render();
+        });
+        };
+        const add = (input) => {
+        for (const f of Array.from(input.files)) {
+        if (dcrPicked.length >= 2) { Swal.showValidationMessage('Only 2 files allowed — remove one first'); break; }
+        dcrPicked.push(f);
+        }
+        input.value = '';
+        render();
+        };
+        document.getElementById('f-dcr-cam').onchange = function () { add(this); };
+        document.getElementById('f-dcr-gal').onchange = function () { add(this); };
+        },
         preConfirm: async () => {
         const num = document.getElementById('f-dcr-num').value.trim();
         if (!num) { Swal.showValidationMessage('DCR number is required'); return false; }
-        if (!hasDoc && !pickedFile('f-dcr-doc')) { Swal.showValidationMessage('Please attach the DCR document'); return false; }
+        const picked = dcrPicked;
+        if (picked.some(f => !/\.(pdf|jpe?g|png)$/i.test(f.name))) { Swal.showValidationMessage('Only PDF / JPG / PNG files are allowed'); return false; }
+        if (picked.length !== 2 && !(picked.length === 0 && hasDoc)) {
+        Swal.showValidationMessage('Please choose exactly 2 files — DCR document and Work document'); return false;
+        }
         const fd = new FormData();
         fd.append('requestId', requestId);
         fd.append('dcrNumber', num);
         fd.append('dcrDate', document.getElementById('f-dcr-date').value);
         fd.append('remark', document.getElementById('f-dcr-remark').value);
-        const file = pickedFile('f-dcr-doc');
-        if (file) fd.append('dcrDoc', file);
+        // Order matters: server stores the first as DCR, the second as Work.
+        picked.forEach(f => fd.append('dcrDocs', f));
         return await postForm('/SolarPanelAdmin/Operations/SubmitDCR', fd);
         }
         }).then(r => {

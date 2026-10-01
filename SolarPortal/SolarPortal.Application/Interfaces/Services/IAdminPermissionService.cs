@@ -1,4 +1,4 @@
-﻿namespace SolarPortal.Application.Interfaces.Services;
+namespace SolarPortal.Application.Interfaces.Services;
 
 /// <summary>
 /// Which admin can open which menu ("admin → user permission").
@@ -78,10 +78,11 @@ public static class AdminMenus
         new Item("Funds.Add",                 "Add Fund",             "Users & Payments", "Funds",             "Index"),
         new Item("Funds.Approve",             "Approve Fund",         "Users & Payments", "Funds",             "Approve"),
         new Item("RemainingBv",              "Remaining BV Approval","Users & Payments", "RemainingBv",       "Index"),
-        new Item("Refunds",                   "Extra Payment Refund", "Users & Payments", "Refunds",           "Index"),
+        new Item("Refunds",                   "Fund Transfer",        "Users & Payments", "Refunds",           "Index"),
 
         new Item("ActivationHistory",         "Activation History",   "Reports",          "ActivationHistory", "Index"),
         new Item("RemainingBvReport",         "Remaining BV Report",  "Reports",          "RemainingBvReport", "Index"),
+        new Item("WalletReport",              "Wallet Transactions",  "Reports",          "WalletReport",      "Index"),
         new Item("AdminAccess.Logs",          "Log Report",           "Reports",          "AdminAccess",       "Logs"),
 
         new Item("PMSurya",                   "PM Surya Ghar",        "Workflow",         "PMSurya",           "Index"),

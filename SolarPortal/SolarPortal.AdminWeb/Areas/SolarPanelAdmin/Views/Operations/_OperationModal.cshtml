@@ -27,7 +27,7 @@
                 <div class="fg">
                     <label for="dispatchDoc">Dispatch Document (PDF/Image)</label>
                     @* Point 5: Camera / Gallery — see wwwroot/js/photo-picker.js *@
-                    <input type="file" name="dispatchDoc" id="dispatchDoc" accept=".pdf,.jpg,.jpeg,.png" data-photo-picker data-camera />
+                    <input type="file" name="dispatchDoc" id="dispatchDoc" accept=".pdf,.jpg,.jpeg,.png" data-photo-picker />
                 </div>
                 <div class="btn-row">
                     <button type="submit" class="btn btn-primary">📦 Dispatch Meter</button>
@@ -52,8 +52,8 @@
                     <input type="text" name="dcrNumber" id="dcrNumber" required />
                 </div>
                 <div class="fg">
-                    <label for="dcrDoc">DCR Document (PDF/Image)</label>
-                    <input type="file" name="dcrDoc" id="dcrDoc" accept=".pdf,.jpg,.jpeg,.png" data-photo-picker data-camera />
+                    <label for="dcrDoc">DCR &amp; Work PDFs (exactly 2) <span class="req">*</span></label>
+                    <input type="file" name="dcrDocs" id="dcrDoc" accept=".pdf,application/pdf" multiple />
                 </div>
                 <div class="btn-row">
                     <button type="submit" class="btn btn-primary">📄 Submit DCR</button>

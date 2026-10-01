@@ -1,4 +1,4 @@
-/* ===========================================================================
+﻿/* ===========================================================================
    Extra Payment Refund — refunds of money a member paid over and above what
    their project needed.
 
@@ -23,6 +23,10 @@ BEGIN
         MemberName       VARCHAR(150)    NULL,
 
         Amount           DECIMAL(18,2)   NOT NULL,
+
+        /* Which way the money moves: 'C' = credit to the member's wallet,
+           'D' = debit out of it (the legacy "Amount deducted..." shape). */
+        EntryType        VARCHAR(1)      NOT NULL CONSTRAINT DF_ExtraPaymentRefunds_EntryType DEFAULT ('C'),
 
         /* IncVouchertype: Acid / Actype / WalletName of the wallet credited. */
         VoucherTypeId    INT             NOT NULL,
@@ -71,3 +75,14 @@ GO
 /* The screen's menu key is "Refunds" (AdminMenus.All in the app). Admins with no
    AdminPermissions rows at all stay unrestricted and see it straight away; a
    SCOPED admin needs the row, which SEED-AdminPermissions.sql now includes. */
+
+/* Added after the first release: refunds can now be a DEBIT as well as a credit.
+   Safe to re-run — the column is only added when it is missing. */
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+               WHERE TABLE_NAME = 'ExtraPaymentRefunds' AND COLUMN_NAME = 'EntryType')
+BEGIN
+    ALTER TABLE dbo.ExtraPaymentRefunds
+        ADD EntryType VARCHAR(1) NOT NULL CONSTRAINT DF_ExtraPaymentRefunds_EntryType DEFAULT ('C');
+    PRINT 'EntryType added.';
+END
+GO

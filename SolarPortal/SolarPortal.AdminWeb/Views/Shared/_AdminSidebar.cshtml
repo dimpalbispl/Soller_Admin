@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Identity
 @using SolarPortal.Application.Interfaces.Services
 @using SolarPortal.Domain.Entities
 @inject IAdminPermissionService AdminPermissions
@@ -78,7 +78,7 @@
     @if (Can("Refunds"))
     {
         <a class="sb-item @IsActive("Refunds")" asp-area="SolarPanelAdmin" asp-controller="Refunds" asp-action="Index">
-            <span class="sbi">💸</span>Extra Payment Refund
+            <span class="sbi">💸</span>Fund Transfer
         </a>
     }
     @* Remaining BV: the member submits who receives each income head, the
@@ -103,6 +103,14 @@
     {
         <a class="sb-item @IsActive("RemainingBvReport")" asp-area="SolarPanelAdmin" asp-controller="RemainingBvReport" asp-action="Index">
             <span class="sbi">📒</span>Remaining BV Report
+        </a>
+    }
+    @* Every wallet credit / debit in one place: INC commission, withdrawals and
+       Extra Payment Refund entries all land in the same ledger. *@
+    @if (Can("WalletReport"))
+    {
+        <a class="sb-item @IsActive("WalletReport")" asp-area="SolarPanelAdmin" asp-controller="WalletReport" asp-action="Index">
+            <span class="sbi">👛</span>Wallet Transactions
         </a>
     }
     @* admin -> log reports: every admin decision that was recorded. *@
@@ -168,7 +176,7 @@
     @if (Can("Operations.DCRUpdate"))
     {
         <a class="sb-item @IsActiveAction("Operations", "DCRUpdate")" asp-area="SolarPanelAdmin" asp-controller="Operations" asp-action="DCRUpdate">
-            <span class="sbi">📄</span>DCR Upload
+            <span class="sbi">📄</span>DCR &amp; Work Upload
         </a>
     }
 </div>

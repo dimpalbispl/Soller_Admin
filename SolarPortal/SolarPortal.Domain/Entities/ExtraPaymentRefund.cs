@@ -30,6 +30,18 @@ public class ExtraPaymentRefund : BaseEntity
 
     public decimal Amount { get; set; }
 
+    /// <summary>
+    /// Which way the money moves, in the legacy ledger's own codes:
+    ///   "C" — CREDIT: paid back into the member's wallet (DrTo '0', CrTo member).
+    ///   "D" — DEBIT:  taken back out of it   (DrTo member, CrTo '0'), the same
+    ///         shape the legacy "Amount deducted…" rows use.
+    /// Approval posts whichever of the two this says; nothing moves before that.
+    /// </summary>
+    public string EntryType { get; set; } = "C";
+
+    /// <summary>True when this entry pays the member (the default).</summary>
+    public bool IsCredit => !string.Equals(EntryType, "D", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>IncVouchertype.Acid — which wallet the credit is posted to.</summary>
     public int VoucherTypeId { get; set; }
 
