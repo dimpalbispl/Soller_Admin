@@ -159,6 +159,19 @@ public class OperationsController : Controller
                 await AttachWorkersAsync(materials.Values.Select(m => (m.AssignedWorkerId, (Action<Worker>)(w => m.AssignedWorker = w))));
                 ViewBag.MaterialDetails = materials;
 
+                // Material list: the master items the Prepare form asks a quantity
+                // for, and what each dispatch already recorded (keyed by SolarRequestId).
+                ViewBag.MaterialItemMaster = (await _uow.MaterialItems.FindAsync(i => i.IsActive))
+                                             .OrderBy(i => i.SortOrder).ThenBy(i => i.Id)
+                                             .ToList();
+                var dispatchIds = materials.Values.Select(m => m.Id).ToHashSet();
+                var lines = dispatchIds.Any()
+                    ? (await _uow.MaterialDispatchItems.FindAsync(x => dispatchIds.Contains(x.MaterialDispatchId))).ToList()
+                    : new List<MaterialDispatchItem>();
+                ViewBag.MaterialDispatchItems = materials.ToDictionary(
+                    kv => kv.Key,
+                    kv => lines.Where(l => l.MaterialDispatchId == kv.Value.Id).OrderBy(l => l.Id).ToList());
+
                 // Material Dispatch is where the INC installer gets assigned, and that
                 // assignment is what makes a commission payout possible. If the plan the
                 // project sits on has no commission amount configured, no payout can ever
@@ -428,7 +441,8 @@ public class OperationsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SubmitPrepareDispatch(int requestId, string? materialDetails,
-        string? vehicleDetails, string? prepareRemark, int? workerId, IFormFile? dispatchDoc)
+        string? vehicleDetails, string? prepareRemark, int? workerId, IFormFile? dispatchDoc,
+        string? materialItemsJson)
     {
         try
         {
@@ -474,6 +488,10 @@ public class OperationsController : Controller
             else _uow.MaterialDispatches.Update(dispatch);
             await _uow.SaveChangesAsync();
 
+            // Material list quantities. Re-saving Prepare replaces the whole list,
+            // so a cleared quantity drops that line.
+            await SaveMaterialItemsAsync(dispatch.Id, materialItemsJson);
+
             await _activity.LogAsync(_userManager.GetUserId(User) ?? "system",
                 "MaterialDispatch.Prepare", "SolarRequest", requestId.ToString(),
                 $"Prepared for dispatch. Installer #{workerId}. {materialDetails}".Trim(),
@@ -492,6 +510,43 @@ public class OperationsController : Controller
             var detail = ex.InnerException?.Message ?? ex.Message;
             return Json(new { success = false, message = $"Prepare failed: {detail}" });
         }
+    }
+
+    private sealed record MaterialItemQty(int Id, string? Qty);
+
+    /// <summary>
+    /// Replaces the material lines of a dispatch with the quantities posted from
+    /// the Prepare form ([{ id, qty }]). Items left blank are not stored; unknown
+    /// or inactive item ids are ignored.
+    /// </summary>
+    private async Task SaveMaterialItemsAsync(int materialDispatchId, string? materialItemsJson)
+    {
+        var posted = new List<MaterialItemQty>();
+        if (!string.IsNullOrWhiteSpace(materialItemsJson))
+        {
+            posted = System.Text.Json.JsonSerializer.Deserialize<List<MaterialItemQty>>(materialItemsJson,
+                         new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                     ?? new List<MaterialItemQty>();
+        }
+
+        var master = (await _uow.MaterialItems.FindAsync(i => i.IsActive)).ToDictionary(i => i.Id);
+
+        var existing = await _uow.MaterialDispatchItems.FindAsync(x => x.MaterialDispatchId == materialDispatchId);
+        _uow.MaterialDispatchItems.RemoveRange(existing);
+
+        foreach (var p in posted)
+        {
+            var qty = p.Qty?.Trim();
+            if (string.IsNullOrEmpty(qty) || !master.TryGetValue(p.Id, out var item)) continue;
+            await _uow.MaterialDispatchItems.AddAsync(new MaterialDispatchItem
+            {
+                MaterialDispatchId = materialDispatchId,
+                MaterialItemId = item.Id,
+                ItemName = item.Name,
+                Quantity = qty.Length > 50 ? qty[..50] : qty
+            });
+        }
+        await _uow.SaveChangesAsync();
     }
 
     // --- Step 2: Final Dispatch ---
@@ -1090,6 +1145,63 @@ public class OperationsController : Controller
     /// <summary>Maximum photos in one mark-installed batch, per the spec.</summary>
     public const int MaxInstallationPhotos = 30;
 
+    /// <summary>An installation's checklist state: its (non-deleted) photos and entries,
+    /// whether it predates the checklist, and the per-item evaluation.</summary>
+    public sealed class ChecklistState
+    {
+        public List<InstallationPhoto> Photos { get; init; } = new();
+        public List<InstallationChecklistEntry> Entries { get; init; } = new();
+        public bool IsLegacy { get; init; }
+        public List<InstallationChecklist.LineStatus> Lines { get; init; } = new();
+        public int Done => Lines.Count(l => l.IsComplete);
+        public int Total => Lines.Count;
+    }
+
+    private async Task<ChecklistState> LoadChecklistAsync(int installationId)
+    {
+        // Soft-deleted (replaced) photos and entries are excluded by the query filters.
+        var photos = (await _uow.InstallationPhotos.FindAsync(p => p.InstallationId == installationId))
+                     .OrderBy(p => p.Id).ToList();
+        var entries = (await _uow.InstallationChecklistEntries.FindAsync(e => e.InstallationId == installationId))
+                      .OrderBy(e => e.Id).ToList();
+        var legacy = InstallationChecklist.IsLegacy(photos, entries);
+        var lines = legacy
+            ? new List<InstallationChecklist.LineStatus>()
+            : InstallationChecklist.Evaluate(await _uow.IncUploadFormats.GetAllAsync(), photos, entries);
+        return new ChecklistState { Photos = photos, Entries = entries, IsLegacy = legacy, Lines = lines };
+    }
+
+    // GET: /SolarPanelAdmin/Operations/InstallationDetails/5 — everything the
+    // installer submitted for one installation, item by item, with Approve / Reject.
+    public async Task<IActionResult> InstallationDetails(int id)
+    {
+        var installation = await _uow.Installations.GetByIdAsync(id);
+        if (installation == null) return NotFound();
+
+        var req = await _uow.SolarRequests.GetByIdAsync(installation.SolarRequestId);
+        var dispatch = (await _uow.MaterialDispatches.FindAsync(m => m.SolarRequestId == installation.SolarRequestId))
+                       .OrderByDescending(m => m.CreatedAt).FirstOrDefault();
+
+        var workerId = installation.AssignedWorkerId ?? dispatch?.AssignedWorkerId;
+        var worker = workerId.HasValue ? await _uow.Workers.GetByIdAsync(workerId.Value) : null;
+
+        // ReviewedBy holds a user id — show a readable name where possible.
+        string? reviewedByName = installation.ReviewedBy;
+        if (!string.IsNullOrWhiteSpace(installation.ReviewedBy))
+        {
+            var u = await _userManager.FindByIdAsync(installation.ReviewedBy);
+            if (u != null) reviewedByName = !string.IsNullOrWhiteSpace(u.FullName) ? u.FullName : u.UserName;
+        }
+
+        ViewBag.Request = req;
+        ViewBag.Dispatch = dispatch;
+        ViewBag.Worker = worker;
+        ViewBag.ReviewedByName = reviewedByName;
+        ViewBag.Checklist = await LoadChecklistAsync(id);
+        ViewBag.Title = "Installation Details";
+        return View(installation);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ApproveInstallationPhotos(int installationId, string? remark)
@@ -1100,12 +1212,28 @@ public class OperationsController : Controller
             if (installation == null)
                 return Json(new { success = false, message = "Installation record not found." });
 
-            var photos = (await _uow.InstallationPhotos.FindAsync(p => p.InstallationId == installationId)).ToList();
+            var checklist = await LoadChecklistAsync(installationId);
+            var photos = checklist.Photos;
             if (photos.Count == 0)
                 return Json(new { success = false, message = "There are no photos to approve on this installation yet." });
 
             if (installation.ApprovalStatus == ApprovalStatus.Approved)
                 return Json(new { success = false, message = "These photos are already approved." });
+
+            // Checklist gate: every active checklist item must be complete.
+            // Legacy installations (no checklist) keep the "at least one photo" rule.
+            if (!checklist.IsLegacy)
+            {
+                var problems = InstallationChecklist.Problems(checklist.Lines);
+                if (problems.Count > 0)
+                    return Json(new
+                    {
+                        success = false,
+                        problems,
+                        message = "This installation cannot be approved yet — the checklist is incomplete:\n• " +
+                                  string.Join("\n• ", problems)
+                    });
+            }
 
             installation.ApprovalStatus = ApprovalStatus.Approved;
             installation.RejectionReason = null;      // clear any earlier rejection

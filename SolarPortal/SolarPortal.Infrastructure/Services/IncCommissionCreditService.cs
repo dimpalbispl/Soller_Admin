@@ -2,6 +2,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SolarPortal.Application.Interfaces.Services;
+using SolarPortal.Application.Services;
 using SolarPortal.Domain.Enums;
 using SolarPortal.Infrastructure.Data;
 
@@ -37,6 +38,27 @@ public class IncCommissionCreditService : IIncCommissionCreditService
 
     private string? ConnStr => _config.GetConnectionString("DefaultConnection")
                             ?? _db.Database.GetConnectionString();
+
+    /// <summary>
+    /// Checklist problems on the request's latest installation; empty when the
+    /// checklist is complete or the installation is legacy (no checklist).
+    /// Soft-deleted photos / entries are excluded by the DbContext query filters.
+    /// </summary>
+    private async Task<List<string>> ChecklistProblemsAsync(int solarRequestId)
+    {
+        var inst = await _db.Installations
+            .Where(i => i.SolarRequestId == solarRequestId)
+            .OrderByDescending(i => i.Id)
+            .FirstOrDefaultAsync();
+        if (inst == null) return new List<string>();
+
+        var photos = await _db.InstallationPhotos.Where(p => p.InstallationId == inst.Id).ToListAsync();
+        var entries = await _db.InstallationChecklistEntries.Where(e => e.InstallationId == inst.Id).ToListAsync();
+        if (InstallationChecklist.IsLegacy(photos, entries)) return new List<string>();
+
+        var formats = await _db.IncUploadFormats.ToListAsync();
+        return InstallationChecklist.Problems(InstallationChecklist.Evaluate(formats, photos, entries));
+    }
 
     public async Task<IncCommissionCreditResult> CreditForRequestAsync(
         int solarRequestId, int workerId, string performedBy)
@@ -84,6 +106,17 @@ public class IncCommissionCreditService : IIncCommissionCreditService
                 result.Message = "Commission for this project had already been credited.";
                 return result;
             }
+        }
+
+        // Checklist gate: no INC commission until the installer has filed every
+        // item of the fixed installation checklist. Legacy installations (from
+        // before the checklist existed) have no checklist and are not gated.
+        var checklistProblems = await ChecklistProblemsAsync(solarRequestId);
+        if (checklistProblems.Count > 0)
+        {
+            result.Message = "No commission was credited: the installation checklist is incomplete " +
+                             $"({checklistProblems.Count} item(s) still missing).";
+            return result;
         }
 
         int? projectId;

@@ -90,6 +90,7 @@
         var isHistoryMode = string.Equals((string)ViewBag.Filter, "all", StringComparison.OrdinalIgnoreCase);
         var meterMap = ViewBag.MeterDetails as Dictionary<int, SolarPortal.Domain.Entities.MeterDispatch>;
         var materialMap = ViewBag.MaterialDetails as Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>;
+    var matLines = ViewBag.MaterialDispatchItems as Dictionary<int, List<SolarPortal.Domain.Entities.MaterialDispatchItem>>;
         var installMap = ViewBag.InstallationDetails as Dictionary<int, SolarPortal.Domain.Entities.Installation>;
         var dcrMap = ViewBag.DCRDetails as Dictionary<int, SolarPortal.Domain.Entities.DCRDocument>;
 
@@ -317,6 +318,13 @@
                                                     {
                                                         <div style="color:var(--text3)">@mat.PrepareRemark</div>
                                                     }
+                                                    if (matLines != null && matLines.TryGetValue(r.Id, out var rowLines) && rowLines.Any())
+                                                    {
+                                                        <div title="@string.Join(", ", rowLines.Select(l => $"{l.ItemName} × {l.Quantity}"))">
+                                                            <strong>Items:</strong> @rowLines.Count
+                                                            (@string.Join(", ", rowLines.Take(3).Select(l => $"{l.ItemName} × {l.Quantity}"))@(rowLines.Count > 3 ? ", …" : ""))
+                                                        </div>
+                                                    }
                                                     if (!string.IsNullOrWhiteSpace(mat.MaterialDetails))
                                                     {
 
@@ -510,6 +518,7 @@
                                                             <text>❌</text>
                                                         }
                                                     </button>
+                                                    <a class="btn btn-s btn-sm" asp-action="InstallationDetails" asp-route-id="@instForPhotos.Id">👁 View</a>
                                                 }
                                                 break;
                                             case "dcr":
@@ -649,6 +658,11 @@
    saved values instead of a blank form, and Final can show what is going out. *@
 @{
     var matForJson = ViewBag.MaterialDetails as Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>;
+    var matLinesForJson = ViewBag.MaterialDispatchItems as Dictionary<int, List<SolarPortal.Domain.Entities.MaterialDispatchItem>>
+                          ?? new Dictionary<int, List<SolarPortal.Domain.Entities.MaterialDispatchItem>>();
+    var matMasterJson = System.Text.Json.JsonSerializer.Serialize(
+        ((ViewBag.MaterialItemMaster as List<SolarPortal.Domain.Entities.MaterialItem>) ?? new List<SolarPortal.Domain.Entities.MaterialItem>())
+        .Select(i => new { id = i.Id, name = i.Name }));
     var matJson = System.Text.Json.JsonSerializer.Serialize(
         (matForJson ?? new Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>())
         .ToDictionary(
@@ -663,10 +677,13 @@
                 workerName = kv.Value.AssignedWorker?.Name ?? "",
                 isPrepared = kv.Value.IsPrepared,
                 isDispatched = kv.Value.IsDispatched,
-                preparedAt = kv.Value.PreparedAt.HasValue ? kv.Value.PreparedAt.Value.ToLocalTime().ToString("dd MMM yyyy") : ""
+                preparedAt = kv.Value.PreparedAt.HasValue ? kv.Value.PreparedAt.Value.ToLocalTime().ToString("dd MMM yyyy") : "",
+                items = (matLinesForJson.TryGetValue(kv.Key, out var ls) ? ls : new List<SolarPortal.Domain.Entities.MaterialDispatchItem>())
+                        .Select(l => new { id = l.MaterialItemId, name = l.ItemName, qty = l.Quantity })
             }));
 }
 <script id="materialData" type="application/json">@Html.Raw(matJson)</script>
+<script id="materialMaster" type="application/json">@Html.Raw(matMasterJson)</script>
 
 @* Point 11: the INC's mark-installed photos, keyed by InstallationId so the
    review modal can render the whole batch, plus the batch's approval state. *@
@@ -703,6 +720,34 @@
         const installData = JSON.parse(document.getElementById('installData').textContent || '{}');
         const planComm = JSON.parse(document.getElementById('planCommData')?.textContent || '{}');
         const materialData = JSON.parse(document.getElementById('materialData')?.textContent || '{}');
+        const materialMaster = JSON.parse(document.getElementById('materialMaster')?.textContent || '[]');
+
+        // Material list (Solar Module, Inverter, ...) with a quantity box per item,
+        // pre-filled from what this dispatch already recorded.
+        function materialItemsTableHtml(saved) {
+        if (!materialMaster.length) return '<div style="color:#6b7280;font-size:12px">No material items set up yet.</div>';
+        const qtyOf = {};
+        (saved || []).forEach(s => qtyOf[s.id] = s.qty);
+        return `<div style="max-height:260px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;margin:4px 0 8px">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead><tr style="background:#f9fafb;position:sticky;top:0">
+        <th style="padding:6px 8px;text-align:left;width:32px">#</th>
+        <th style="padding:6px 8px;text-align:left">Particular</th>
+        <th style="padding:6px 8px;text-align:left;width:110px">Quantity</th></tr></thead>
+        <tbody>${materialMaster.map((m, i) => `
+        <tr style="border-top:1px solid #f3f4f6">
+        <td style="padding:4px 8px;color:#6b7280">${i + 1}</td>
+        <td style="padding:4px 8px">${esc(m.name)}</td>
+        <td style="padding:4px 8px"><input type="text" class="mat-qty" data-id="${m.id}" value="${esc(qtyOf[m.id])}"
+             style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:6px;font-size:12.5px"></td>
+        </tr>`).join('')}</tbody></table></div>`;
+        }
+
+        // Read-only list of what a dispatch carries — "Solar Module × 6".
+        function materialItemsSummaryHtml(items) {
+        if (!items || !items.length) return '';
+        return items.map(it => `<div>${esc(it.name)} × ${esc(it.qty)}</div>`).join('');
+        }
         const installPhotos = JSON.parse(document.getElementById('installPhotoData')?.textContent || '{}');
         const installPhotoMeta = JSON.parse(document.getElementById('installPhotoMetaData')?.textContent || '{}');
         const maxInstallPhotos = @SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaxInstallationPhotos;
@@ -937,8 +982,10 @@
         html: `
         <div style="text-align:left;font-size:13px">
         <div id="f-mat-comm"></div>
-        <label>Material Details</label>
-        <textarea id="f-prep-detail" class="swal2-textarea" placeholder="Solar panels, inverter, wiring, mounts...">${esc(ex.materialDetails)}</textarea>
+        <label>Material List — enter quantity for items being sent</label>
+        ${materialItemsTableHtml(ex.items)}
+        <label>Other Material / Notes</label>
+        <textarea id="f-prep-detail" class="swal2-textarea" placeholder="Anything not in the list above...">${esc(ex.materialDetails)}</textarea>
         <label>Vehicle / Courier</label>
         <input id="f-prep-veh" type="text" class="swal2-input" placeholder="RJ-14-AB-1234 / DTDC AWB..." value="${esc(ex.vehicleDetails)}">
         <label>Installer (Worker) *</label>
@@ -951,6 +998,7 @@
         background: '#ffffff', color: '#1f2937',
         showCancelButton: true,
         confirmButtonText: 'Save Preparation',
+        width: 640,
         didOpen: () => {
         // Reuses the Material Dispatch commission note — the INC/no-commission
         // rule is checked at BOTH steps, so warn as early as step 1.
@@ -973,6 +1021,10 @@
         const fd = new FormData();
         fd.append('requestId', requestId);
         fd.append('materialDetails', document.getElementById('f-prep-detail').value);
+        const matItems = Array.from(document.querySelectorAll('.mat-qty'))
+        .map(el => ({ id: +el.dataset.id, qty: el.value.trim() }))
+        .filter(x => x.qty);
+        fd.append('materialItemsJson', JSON.stringify(matItems));
         fd.append('vehicleDetails', document.getElementById('f-prep-veh').value);
         fd.append('prepareRemark', document.getElementById('f-prep-remark').value);
         fd.append('workerId', w);
@@ -1001,7 +1053,7 @@
         <div style="text-align:left;font-size:13px">
         <div style="border:1px solid #bbf7d0;background:#f0fdf4;border-radius:8px;padding:10px;margin-bottom:10px">
         <div style="font-size:11px;color:#15803d;text-transform:uppercase;letter-spacing:.4px">Prepared${ex.preparedAt ? ' on ' + esc(ex.preparedAt) : ''}</div>
-        <div style="font-size:13px;color:#166534">${esc(ex.materialDetails) || '<em>No material details recorded</em>'}</div>
+        <div style="font-size:13px;color:#166534">${materialItemsSummaryHtml(ex.items)}${esc(ex.materialDetails)}${(ex.items && ex.items.length) || ex.materialDetails ? '' : '<em>No material details recorded</em>'}</div>
         <div style="font-size:12px;color:#166534">👷 ${esc(ex.workerName) || '<em>No installer assigned</em>'}</div>
         ${ex.vehicleDetails ? `<div style="font-size:12px;color:#166534">🚚 ${esc(ex.vehicleDetails)}</div>` : ''}
         <div style="font-size:11px;color:#6b7280;margin-top:4px">To change any of this, re-open Prepare for Dispatch.</div>

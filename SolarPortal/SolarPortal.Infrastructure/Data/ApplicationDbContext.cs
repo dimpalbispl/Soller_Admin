@@ -20,6 +20,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<SiteSurvey> SiteSurveys => Set<SiteSurvey>();
     public DbSet<MeterDispatch> MeterDispatches => Set<MeterDispatch>();
     public DbSet<MaterialDispatch> MaterialDispatches => Set<MaterialDispatch>();
+    public DbSet<MaterialItem> MaterialItems => Set<MaterialItem>();
+    public DbSet<MaterialDispatchItem> MaterialDispatchItems => Set<MaterialDispatchItem>();
     public DbSet<Installation> Installations => Set<Installation>();
     public DbSet<DCRDocument> DCRDocuments => Set<DCRDocument>();
     public DbSet<Worker> Workers => Set<Worker>();
@@ -43,6 +45,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AdminPermission> AdminPermissions => Set<AdminPermission>();
     public DbSet<IncKycDocument> IncKycDocuments => Set<IncKycDocument>();
     public DbSet<InstallationPhoto> InstallationPhotos => Set<InstallationPhoto>();
+    // Fixed 13-item installation checklist + the video / written details filed
+    // per item. Both created by the installer panel's ADD-IncUploadFormat.sql.
+    public DbSet<IncUploadFormat> IncUploadFormats => Set<IncUploadFormat>();
+    public DbSet<InstallationChecklistEntry> InstallationChecklistEntries => Set<InstallationChecklistEntry>();
 
     // "Update Remaining BV" - one row per SolarRequest, filled by the member in
     // the user panel, then corrected and approved (or rejected) here. Table is
@@ -329,6 +335,44 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
              .WithMany()
              .HasForeignKey(x => x.WorkerId)
              .OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        // Installation checklist - created by the installer panel's
+        // ADD-IncUploadFormat.sql; mapped here read-only, no migration.
+        builder.Entity<IncUploadFormat>(e =>
+        {
+            e.ToTable("IncUploadFormats", t => t.ExcludeFromMigrations());
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Work).HasMaxLength(300).IsRequired();
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        builder.Entity<InstallationChecklistEntry>(e =>
+        {
+            e.ToTable("InstallationChecklistEntries", t => t.ExcludeFromMigrations());
+            e.HasKey(x => x.Id);
+            e.Property(x => x.FilePath).HasMaxLength(500);
+            e.Property(x => x.RemarkText).HasMaxLength(1000);
+            // Re-uploads soft-delete the replaced rows; never show those.
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        // Material dispatch list - created by ADD-MaterialItems.sql.
+        builder.Entity<MaterialItem>(e =>
+        {
+            e.ToTable("MaterialItems");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(150).IsRequired();
+            e.HasQueryFilter(x => !x.IsDeleted);
+        });
+
+        builder.Entity<MaterialDispatchItem>(e =>
+        {
+            e.ToTable("MaterialDispatchItems");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ItemName).HasMaxLength(150).IsRequired();
+            e.Property(x => x.Quantity).HasMaxLength(50).IsRequired();
             e.HasQueryFilter(x => !x.IsDeleted);
         });
 

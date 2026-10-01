@@ -1,0 +1,361 @@
+@model SolarPortal.Domain.Entities.Installation
+@using SolarPortal.Domain.Entities
+@using SolarPortal.Domain.Enums
+@using SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers
+@{
+    ViewData["Title"] = "Installation Details";
+    var inst = Model;
+    var req = ViewBag.Request as SolarRequest;
+    var dispatch = ViewBag.Dispatch as MaterialDispatch;
+    var worker = ViewBag.Worker as Worker;
+    var reviewedByName = ViewBag.ReviewedByName as string;
+    var cl = (OperationsController.ChecklistState)ViewBag.Checklist;
+
+    var reqNo = req?.RequestNumber ?? $"#{inst.SolarRequestId}";
+    var memberName = req == null ? "—"
+        : (string.IsNullOrWhiteSpace(req.MemberFullName) ? req.ApplicantName : req.MemberFullName);
+
+    // Files are stored as relative URLs (/uploads/installation/...). Served through
+    // the File controller so they resolve whichever app's wwwroot holds them.
+    string Norm(string? p) => "/" + (p ?? "").Replace("\\", "/").TrimStart('/');
+    string Src(string? p) => "/SolarPanelAdmin/File/View?path=" + Uri.EscapeDataString(Norm(p));
+    string Size(long b) => b <= 0 ? "" : b >= 1024 * 1024 ? $"{b / 1024d / 1024d:0.0} MB" : $"{Math.Max(1, b / 1024)} KB";
+    string Dt(DateTime? d) => d.HasValue ? d.Value.ToLocalTime().ToString("dd MMM yyyy, HH:mm") : "—";
+    string D(DateTime? d) => d.HasValue ? d.Value.ToLocalTime().ToString("dd MMM yyyy") : "—";
+
+    string Rule(IncUploadFormat f)
+    {
+        var parts = new List<string>();
+        if (f.MaxPhotos > 0)
+            parts.Add(f.MinPhotos == f.MaxPhotos
+                ? $"{f.MaxPhotos} photo{(f.MaxPhotos == 1 ? "" : "s")}"
+                : $"{f.MinPhotos} to {f.MaxPhotos} photos");
+        if (f.VideoCount > 0) parts.Add(f.VideoCount == 1 ? "1 video required" : $"{f.VideoCount} videos required");
+        if (f.RemarkRequired) parts.Add("Written details required");
+        return string.Join(" · ", parts);
+    }
+
+    var isApproved = inst.ApprovalStatus == ApprovalStatus.Approved;
+    var isRejected = inst.ApprovalStatus == ApprovalStatus.Rejected;
+    var untagged = cl.Photos.Where(p => !p.FormatItemId.HasValue
+                                        || (!cl.IsLegacy && !cl.Lines.Any(l => l.Format.Id == p.FormatItemId))).ToList();
+    var pct = cl.Total == 0 ? 0 : (int)Math.Round(cl.Done * 100.0 / cl.Total);
+    var checklistComplete = !cl.IsLegacy && cl.Done == cl.Total;
+    var photoIdx = 0;   // running index across ALL photos on the page, for the lightbox
+}
+
+<style>
+    .idt-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:14px; }
+    @@media (max-width:1100px) { .idt-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @@media (max-width:640px)  { .idt-grid { grid-template-columns:1fr; } }
+    .idt-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 16px; min-width:0; }
+    .idt-card h4 { margin:0 0 10px; font-size:12px; letter-spacing:.5px; text-transform:uppercase; color:var(--text3); font-weight:700; }
+    .idt-row { display:flex; justify-content:space-between; gap:10px; font-size:13px; padding:3px 0; }
+    .idt-row span:first-child { color:var(--text2); }
+    .idt-row span:last-child { color:var(--text1); font-weight:600; text-align:right; overflow-wrap:anywhere; }
+    .idt-big { font-size:15px; font-weight:700; color:var(--text1); margin-bottom:4px; overflow-wrap:anywhere; }
+    .idt-sub { font-size:13px; color:var(--text2); }
+    .idt-badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+    .b-ok { background:#d1fae5; color:#065f46; } .b-bad { background:#fee2e2; color:#991b1b; } .b-wait { background:#fef3c7; color:#92400e; } .b-mute { background:var(--bg3); color:var(--text2); }
+    .idt-banner { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:14px; font-size:13.5px; }
+    .idt-progress { height:8px; background:var(--bg3); border-radius:999px; overflow:hidden; margin:6px 0 14px; }
+    .idt-progress > div { height:100%; border-radius:999px; }
+    .ck-item { border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:10px; background:var(--bg2); }
+    .ck-item.bad { border-color:#fca5a5; background:#fffafa; }
+    .ck-head { display:flex; align-items:flex-start; gap:10px; }
+    .ck-no { flex:0 0 28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700; background:var(--bg3); color:var(--text2); }
+    .ck-no.ok { background:var(--green); color:#fff; }
+    .ck-title { flex:1; min-width:0; }
+    .ck-work { font-weight:600; color:var(--text1); font-size:14px; overflow-wrap:anywhere; }
+    .ck-rule { font-size:12px; color:var(--text3); margin-top:2px; }
+    .ck-body { margin:10px 0 0 38px; }
+    @@media (max-width:640px) { .ck-body { margin-left:0; } }
+    .ck-missing { color:var(--red); font-size:13px; }
+    .ck-remark { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13.5px; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .th-grid { display:grid; grid-template-columns:repeat(auto-fill,110px); gap:8px; }
+    .th { position:relative; width:110px; height:110px; border-radius:8px; overflow:hidden; border:1px solid var(--border); cursor:zoom-in; padding:0; background:var(--bg3); }
+    .th img { width:100%; height:100%; object-fit:cover; display:block; }
+    .th span { position:absolute; left:4px; top:4px; background:rgba(0,0,0,.6); color:#fff; font-size:11px; font-weight:700; border-radius:6px; padding:1px 6px; }
+    .ck-video video { width:100%; max-width:520px; max-height:320px; border-radius:8px; background:#000; display:block; }
+    .ck-video .meta { font-size:12px; color:var(--text2); margin-top:6px; overflow-wrap:anywhere; }
+    .idt-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    /* Lightbox */
+    .lb { position:fixed; inset:0; background:rgba(10,12,14,.92); z-index:3000; display:none; align-items:center; justify-content:center; flex-direction:column; padding:56px 64px 24px; }
+    .lb.open { display:flex; }
+    .lb img { max-width:100%; max-height:calc(100vh - 150px); object-fit:contain; border-radius:6px; box-shadow:0 10px 40px rgba(0,0,0,.5); }
+    .lb-cap { color:#e5e7eb; margin-top:12px; text-align:center; font-size:14px; }
+    .lb-cap small { display:block; color:#9ca3af; font-size:12px; margin-top:2px; }
+    .lb-cap a { color:#6ee7b7; }
+    .lb-btn { position:absolute; background:rgba(255,255,255,.12); color:#fff; border:none; width:44px; height:44px; border-radius:50%; font-size:22px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .lb-btn:hover { background:rgba(255,255,255,.24); }
+    .lb-prev { left:12px; top:50%; transform:translateY(-50%); } .lb-next { right:12px; top:50%; transform:translateY(-50%); } .lb-close { right:12px; top:12px; }
+    @@media (max-width:640px) { .lb { padding:56px 8px 16px; } .lb-prev, .lb-next { top:auto; bottom:12px; transform:none; } }
+</style>
+
+<div class="page active">
+    <div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div>
+            <div class="ph-bc">🛡️ Admin / <a asp-action="InstallationApprovals">Installation Approval</a> / <span>@reqNo</span></div>
+            <div class="ph-title">Installation — @reqNo</div>
+            <div class="ph-sub">Everything the installer submitted for this installation, item by item. Approve or reject it from the Installation Approval list.</div>
+        </div>
+        <a class="btn btn-s btn-sm" asp-action="InstallationApprovals">← Back</a>
+    </div>
+
+    @if (isRejected)
+    {
+        <div class="idt-banner">
+            <strong>❌ Rejected.</strong>
+            @(string.IsNullOrWhiteSpace(inst.RejectionReason) ? "No reason was recorded." : inst.RejectionReason)
+            <div style="font-size:12px;margin-top:4px;color:#b91c1c">The installer has been asked to re-upload. Their new submission will appear here.</div>
+        </div>
+    }
+
+    <div class="idt-grid">
+        <div class="idt-card">
+            <h4>Customer</h4>
+            <div class="idt-big">@memberName</div>
+            <div class="idt-sub">📞 @(req?.MobileNumber ?? "—")</div>
+            <div class="idt-sub">📍 @(req == null ? "—" : $"{req.City}, {req.State}")</div>
+            @if (!string.IsNullOrWhiteSpace(req?.UserId))
+            {
+                <div class="idt-sub" style="margin-top:4px">Member ID: <span class="mid-code">@req.UserId</span></div>
+            }
+        </div>
+        <div class="idt-card">
+            <h4>Plan</h4>
+            <div class="idt-big">@(string.IsNullOrWhiteSpace(req?.SelectedPlan) ? "—" : req!.SelectedPlan)</div>
+            <div class="idt-sub">
+                @(req == null ? "—" : $"{req.KVCapacity:0.##} kV · {(req.ConnectionType == ConnectionType.Commercial ? "Commercial" : "Domestic")}")
+            </div>
+        </div>
+        <div class="idt-card">
+            <h4>Installation</h4>
+            <div class="idt-row"><span>Installed on</span><span>@D(inst.InstallationDate ?? inst.CompletedAt)</span></div>
+            <div class="idt-row"><span>Submitted</span><span>@Dt(inst.SubmittedAt ?? inst.CompletedAt)</span></div>
+            <div class="idt-row"><span>Material dispatched</span><span>@D(dispatch?.DispatchDate)</span></div>
+            <div class="idt-row"><span>Installer</span><span>@(worker == null ? "Not assigned" : $"{worker.Name} ({(worker.Type == WorkerType.INC ? "INC" : "JOB")})")</span></div>
+        </div>
+        <div class="idt-card">
+            <h4>Status</h4>
+            <div style="margin-bottom:8px">
+                @if (isApproved) { <span class="idt-badge b-ok">✅ Approved</span> }
+                else if (isRejected) { <span class="idt-badge b-bad">❌ Rejected</span> }
+                else { <span class="idt-badge b-wait">⏳ Awaiting approval</span> }
+            </div>
+            <div class="idt-row"><span>Commission</span>
+                <span>
+                    @if (inst.CommissionCredited) { <span class="idt-badge b-ok">Credited</span> }
+                    else if (isApproved) { <span class="idt-badge b-wait">Pending</span> }
+                    else { <span class="idt-badge b-mute">After approval</span> }
+                </span>
+            </div>
+            <div class="idt-row"><span>Reviewed</span><span>@Dt(inst.ReviewedAt)</span></div>
+            @if (!string.IsNullOrWhiteSpace(reviewedByName))
+            {
+                <div class="idt-row"><span>Reviewed by</span><span>@reviewedByName</span></div>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(inst.Notes) || !string.IsNullOrWhiteSpace(inst.Remark))
+    {
+        <div class="idt-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+            @if (!string.IsNullOrWhiteSpace(inst.Notes))
+            {
+                <div class="idt-card"><h4>Notes</h4><div class="ck-remark">@inst.Notes</div></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(inst.Remark))
+            {
+                <div class="idt-card"><h4>Remark</h4><div class="ck-remark">@inst.Remark</div></div>
+            }
+        </div>
+    }
+
+    @if (!cl.IsLegacy)
+    {
+        <div class="card" style="margin-bottom:14px">
+            <div class="ct" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+                <span><span class="ct-dot"></span>Installation checklist</span>
+                <span class="idt-badge @(checklistComplete ? "b-ok" : "b-bad")">@cl.Done / @cl.Total complete</span>
+            </div>
+            <div style="padding:0 16px 16px">
+                <div class="idt-progress"><div style="width:@(pct)%;background:@(checklistComplete ? "var(--green)" : "var(--orange)")"></div></div>
+
+                @foreach (var line in cl.Lines)
+                {
+                    var f = line.Format;
+                    var itemPhotos = cl.Photos.Where(p => p.FormatItemId == f.Id).ToList();
+                    var videos = cl.Entries.Where(e => e.FormatItemId == f.Id && e.EntryType == ChecklistEntryType.Video).ToList();
+                    <div class="ck-item @(line.IsComplete ? "" : "bad")">
+                        <div class="ck-head">
+                            <div class="ck-no @(line.IsComplete ? "ok" : "")">@f.SrNo</div>
+                            <div class="ck-title">
+                                <div class="ck-work">@f.Work</div>
+                                <div class="ck-rule">@Rule(f)</div>
+                            </div>
+                            @if (line.IsComplete) { <span class="idt-badge b-ok">✓ Complete</span> }
+                            else { <span class="idt-badge b-bad">Incomplete</span> }
+                        </div>
+                        <div class="ck-body">
+                            @if (f.MaxPhotos > 0 || itemPhotos.Any())
+                            {
+                                if (itemPhotos.Any())
+                                {
+                                    <div class="th-grid" style="margin-bottom:8px">
+                                        @for (var i = 0; i < itemPhotos.Count; i++)
+                                        {
+                                            var p = itemPhotos[i];
+                                            <button type="button" class="th" data-lb="@(photoIdx++)" title="@p.FileName">
+                                                <img src="@Src(p.FilePath)" alt="@f.Work — photo @(i + 1)" loading="lazy" />
+                                                <span>@(i + 1)</span>
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="ck-missing" style="margin-bottom:6px">No photo uploaded.</div>
+                                }
+                            }
+                            @if (f.VideoCount > 0)
+                            {
+                                if (videos.Any())
+                                {
+                                    foreach (var v in videos)
+                                    {
+                                        <div class="ck-video" style="margin-bottom:8px">
+                                            <video controls preload="metadata" src="@Src(v.FilePath)"></video>
+                                            <div class="meta">
+                                                🎬 @(v.FileName ?? "Video") @(v.FileSizeBytes > 0 ? $"· {Size(v.FileSizeBytes)}" : "")
+                                                · <a href="@Src(v.FilePath)" target="_blank" rel="noopener">Open in new tab</a>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="ck-missing" style="margin-bottom:6px">No video uploaded.</div>
+                                }
+                            }
+                            @if (f.RemarkRequired)
+                            {
+                                if (!string.IsNullOrWhiteSpace(line.Remark))
+                                {
+                                    <div class="ck-remark">@line.Remark</div>
+                                }
+                                else
+                                {
+                                    <div class="ck-missing">No details entered.</div>
+                                }
+                            }
+                            @if (!line.IsComplete)
+                            {
+                                <div class="ck-missing" style="font-size:12px;margin-top:6px">⚠ @line.Problem</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (untagged.Any())
+    {
+        <div class="card" style="margin-bottom:14px">
+            <div class="ct"><span class="ct-dot"></span>@(cl.IsLegacy ? "Installation photos" : "Other photos") (@untagged.Count)</div>
+            <div style="padding:0 16px 16px">
+                @if (cl.IsLegacy)
+                {
+                    <div class="idt-sub" style="margin-bottom:10px">Submitted before the installation checklist existed, so there is no checklist for this installation.</div>
+                }
+                <div class="th-grid">
+                    @for (var i = 0; i < untagged.Count; i++)
+                    {
+                        var p = untagged[i];
+                        <button type="button" class="th" data-lb="@(photoIdx++)" title="@p.FileName">
+                            <img src="@Src(p.FilePath)" alt="Installation photo @(i + 1)" loading="lazy" />
+                            <span>@(i + 1)</span>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else if (cl.IsLegacy)
+    {
+        <div class="card" style="margin-bottom:14px">
+            <div class="ct"><span class="ct-dot"></span>Installation photos</div>
+            <div style="padding:0 16px 16px" class="ck-missing">No photo uploaded.</div>
+        </div>
+    }
+
+</div>
+
+@* Lightbox — steps through every photo on the page, in page order. *@
+<div class="lb" id="lb" aria-hidden="true">
+    <button type="button" class="lb-btn lb-close" id="lbClose" title="Close (Esc)">✕</button>
+    <button type="button" class="lb-btn lb-prev" id="lbPrev" title="Previous (←)">‹</button>
+    <img id="lbImg" alt="" />
+    <div class="lb-cap"><span id="lbTitle"></span><small id="lbCount"></small><a id="lbOrig" href="#" target="_blank" rel="noopener">Open original</a></div>
+    <button type="button" class="lb-btn lb-next" id="lbNext" title="Next (→)">›</button>
+</div>
+
+@{
+    // Lightbox data, in exactly the order the thumbnails were rendered above.
+    var lbItems = new List<object>();
+    if (!cl.IsLegacy)
+    {
+        foreach (var line in cl.Lines)
+        {
+            var ps = cl.Photos.Where(p => p.FormatItemId == line.Format.Id).ToList();
+            for (var i = 0; i < ps.Count; i++)
+                lbItems.Add(new { src = Src(ps[i].FilePath), title = $"{line.Format.SrNo}. {line.Format.Work}", n = i + 1, of = ps.Count });
+        }
+    }
+    for (var i = 0; i < untagged.Count; i++)
+        lbItems.Add(new { src = Src(untagged[i].FilePath), title = cl.IsLegacy ? "Installation photos" : "Other photos", n = i + 1, of = untagged.Count });
+}
+<script id="lbData" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(lbItems))</script>
+
+@section Scripts {
+<script>
+(function () {
+    const items = JSON.parse(document.getElementById('lbData').textContent || '[]');
+    const lb = document.getElementById('lb'), img = document.getElementById('lbImg');
+    let cur = 0;
+
+    function show(i) {
+        if (!items.length) return;
+        cur = (i + items.length) % items.length;
+        const it = items[cur];
+        img.src = it.src;
+        img.alt = it.title;
+        document.getElementById('lbTitle').textContent = it.title;
+        document.getElementById('lbCount').textContent = 'Photo ' + it.n + ' of ' + it.of + '  ·  ' + (cur + 1) + ' / ' + items.length + ' on this page';
+        document.getElementById('lbOrig').href = it.src;
+        lb.classList.add('open');
+        lb.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+    function close() {
+        lb.classList.remove('open');
+        lb.setAttribute('aria-hidden', 'true');
+        img.removeAttribute('src');
+        document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('[data-lb]').forEach(b => b.addEventListener('click', () => show(+b.dataset.lb)));
+    document.getElementById('lbPrev').addEventListener('click', e => { e.stopPropagation(); show(cur - 1); });
+    document.getElementById('lbNext').addEventListener('click', e => { e.stopPropagation(); show(cur + 1); });
+    document.getElementById('lbClose').addEventListener('click', close);
+    lb.addEventListener('click', e => { if (e.target === lb) close(); });   // backdrop
+    document.addEventListener('keydown', e => {
+        if (!lb.classList.contains('open')) return;
+        if (e.key === 'Escape') close();
+        else if (e.key === 'ArrowLeft') show(cur - 1);
+        else if (e.key === 'ArrowRight') show(cur + 1);
+    });
+})();
+</script>
+}

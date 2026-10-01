@@ -19,6 +19,8 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<SiteSurvey>? _siteSurveys;
     private IGenericRepository<MeterDispatch>? _meterDispatches;
     private IGenericRepository<MaterialDispatch>? _materialDispatches;
+    private IGenericRepository<MaterialItem>? _materialItems;
+    private IGenericRepository<MaterialDispatchItem>? _materialDispatchItems;
     private IGenericRepository<Installation>? _installations;
     private IGenericRepository<WorkerAssignment>? _workerAssignments;
     private IGenericRepository<DCRDocument>? _dcrDocuments;
@@ -32,6 +34,8 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<Withdrawal>? _withdrawals;
     private IGenericRepository<ActivityLog>? _activityLogs;
     private IGenericRepository<InstallationPhoto>? _installationPhotos;
+    private IGenericRepository<IncUploadFormat>? _incUploadFormats;
+    private IGenericRepository<InstallationChecklistEntry>? _installationChecklistEntries;
     private IGenericRepository<IncKycDocument>? _incKycDocuments;
 
     public UnitOfWork(ApplicationDbContext context) => _context = context;
@@ -50,6 +54,10 @@ public class UnitOfWork : IUnitOfWork
         _meterDispatches ??= new GenericRepository<MeterDispatch>(_context);
     public IGenericRepository<MaterialDispatch> MaterialDispatches =>
         _materialDispatches ??= new GenericRepository<MaterialDispatch>(_context);
+    public IGenericRepository<MaterialItem> MaterialItems =>
+        _materialItems ??= new GenericRepository<MaterialItem>(_context);
+    public IGenericRepository<MaterialDispatchItem> MaterialDispatchItems =>
+        _materialDispatchItems ??= new GenericRepository<MaterialDispatchItem>(_context);
     public IGenericRepository<Installation> Installations =>
         _installations ??= new GenericRepository<Installation>(_context);
     public IGenericRepository<WorkerAssignment> WorkerAssignments =>
@@ -76,6 +84,10 @@ public class UnitOfWork : IUnitOfWork
         _activityLogs ??= new GenericRepository<ActivityLog>(_context);
     public IGenericRepository<InstallationPhoto> InstallationPhotos =>
         _installationPhotos ??= new GenericRepository<InstallationPhoto>(_context);
+    public IGenericRepository<IncUploadFormat> IncUploadFormats =>
+        _incUploadFormats ??= new GenericRepository<IncUploadFormat>(_context);
+    public IGenericRepository<InstallationChecklistEntry> InstallationChecklistEntries =>
+        _installationChecklistEntries ??= new GenericRepository<InstallationChecklistEntry>(_context);
     public IGenericRepository<IncKycDocument> IncKycDocuments =>
         _incKycDocuments ??= new GenericRepository<IncKycDocument>(_context);
 

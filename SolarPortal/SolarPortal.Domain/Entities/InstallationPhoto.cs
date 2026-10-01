@@ -33,5 +33,12 @@ public class InstallationPhoto : BaseEntity
     /// <summary>INC worker who uploaded it.</summary>
     public int? UploadedByWorkerId { get; set; }
 
+    /// <summary>
+    /// IncUploadFormats.Id (checklist item) this photo was uploaded for. Null on
+    /// photos submitted before the checklist existed ("legacy" photos).
+    /// Column added by the installer panel's ADD-IncUploadFormat.sql.
+    /// </summary>
+    public int? FormatItemId { get; set; }
+
     public virtual Installation? Installation { get; set; }
 }

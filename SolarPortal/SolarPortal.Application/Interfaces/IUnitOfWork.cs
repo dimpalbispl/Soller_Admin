@@ -11,6 +11,8 @@ public interface IUnitOfWork : IDisposable
     IGenericRepository<Domain.Entities.SiteSurvey> SiteSurveys { get; }
     IGenericRepository<Domain.Entities.MeterDispatch> MeterDispatches { get; }
     IGenericRepository<Domain.Entities.MaterialDispatch> MaterialDispatches { get; }
+    IGenericRepository<Domain.Entities.MaterialItem> MaterialItems { get; }
+    IGenericRepository<Domain.Entities.MaterialDispatchItem> MaterialDispatchItems { get; }
     IGenericRepository<Domain.Entities.Installation> Installations { get; }
     IGenericRepository<Domain.Entities.WorkerAssignment> WorkerAssignments { get; }
     IGenericRepository<Domain.Entities.DCRDocument> DCRDocuments { get; }
@@ -24,6 +26,8 @@ public interface IUnitOfWork : IDisposable
     IGenericRepository<Domain.Entities.Withdrawal> Withdrawals { get; }
     IGenericRepository<Domain.Entities.ActivityLog> ActivityLogs { get; }
     IGenericRepository<Domain.Entities.InstallationPhoto> InstallationPhotos { get; }
+    IGenericRepository<Domain.Entities.IncUploadFormat> IncUploadFormats { get; }
+    IGenericRepository<Domain.Entities.InstallationChecklistEntry> InstallationChecklistEntries { get; }
     IGenericRepository<Domain.Entities.IncKycDocument> IncKycDocuments { get; }
     Task<int> SaveChangesAsync();
     Task BeginTransactionAsync();

@@ -100,7 +100,8 @@ public class FileController : Controller
                 var contentType = GetContentType(full);
                 // inline so it renders in the modal <img>/<iframe> rather than downloading
                 Response.Headers["Content-Disposition"] = "inline";
-                return PhysicalFile(full, contentType);
+                // Range requests let <video> seek and stream instead of downloading whole.
+                return PhysicalFile(full, contentType, enableRangeProcessing: true);
             }
         }
 
@@ -227,6 +228,12 @@ public class FileController : Controller
             ".webp"           => "image/webp",
             ".bmp"            => "image/bmp",
             ".pdf"            => "application/pdf",
+            // Installation checklist videos
+            ".mp4" or ".m4v"  => "video/mp4",
+            ".mov"            => "video/quicktime",
+            ".3gp"            => "video/3gpp",
+            ".webm"           => "video/webm",
+            ".mkv"            => "video/x-matroska",
             _                 => "application/octet-stream"
         };
     }

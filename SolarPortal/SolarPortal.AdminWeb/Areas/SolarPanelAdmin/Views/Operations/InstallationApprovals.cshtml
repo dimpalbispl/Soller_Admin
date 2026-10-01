@@ -8,8 +8,7 @@
     var requests = (Dictionary<int, SolarRequest>)(ViewBag.Requests ?? new Dictionary<int, SolarRequest>());
     var workers = (Dictionary<int, Worker>)(ViewBag.Workers ?? new Dictionary<int, Worker>());
     var dispatchWorker = (Dictionary<int, int>)(ViewBag.DispatchWorker ?? new Dictionary<int, int>());
-    var counts = (Dictionary<string, int>)(ViewBag.Counts ?? new Dictionary<string, int>());
-    int Count(string k) => counts.TryGetValue(k, out var v) ? v : 0;
+    var counts = (Dictionary<string, int>)(ViewBag.Counts ?? new Dictionary<string, int>());    int Count(string k) => counts.TryGetValue(k, out var v) ? v : 0;
 }
 
 <div class="page active">
@@ -63,7 +62,6 @@
                             <th>Member Name</th>
                             <th>City / State</th>
                             <th>Installer</th>
-                            <th>Photos</th>
                             <th>Submitted</th>
                             <th>Reviewed</th>
                             <th>Status</th>
@@ -115,19 +113,6 @@
                                     <div class="cell-sub">@(wk.Type == WorkerType.INC ? "INC — earns commission" : "JOB — salaried")</div>
                                 }
                             </td>
-                            <td>
-                                @if (pics.Count == 0)
-                                {
-                                    <span class="text-muted" style="font-size:12px">none</span>
-                                }
-                                else
-                                {
-                                    <button type="button" class="btn btn-s btn-sm btn-view-photos"
-                                            data-id="@inst.Id" data-req="@(req?.RequestNumber ?? ("#" + inst.SolarRequestId))">
-                                        📷 @pics.Count
-                                    </button>
-                                }
-                            </td>
                             <td style="white-space:nowrap">@submitted.ToString("dd MMM yyyy")<div class="cell-sub">@submitted.ToString("HH:mm")</div></td>
                             <td style="white-space:nowrap">
                                 @if (inst.ReviewedAt.HasValue)
@@ -166,6 +151,7 @@
                                 }
                             </td>
                             <td style="white-space:nowrap">
+                                <a class="btn btn-s btn-sm" asp-action="InstallationDetails" asp-route-id="@inst.Id">👁 View</a>
                                 @* Approved-and-credited is final: sending it back after the
                                    money has gone out would leave the INC paid for returned work. *@
                                 @if (inst.ApprovalStatus == ApprovalStatus.Approved)
@@ -193,44 +179,12 @@
 
 <form id="csrfForm" style="display:none">@Html.AntiForgeryToken()</form>
 
-@* Photo sets, keyed by InstallationId — a table cell cannot hold 30 thumbnails,
-   so the batch opens in a viewer instead. *@
-@{
-    var photoJson = System.Text.Json.JsonSerializer.Serialize(
-        photos.ToDictionary(
-            kv => kv.Key.ToString(),
-            kv => kv.Value.Select(p => new { path = p.FilePath, name = p.FileName })));
-}
-<script id="instPhotoData" type="application/json">@Html.Raw(photoJson)</script>
-
 @section Scripts {
 <script>
-    const instPhotos = JSON.parse(document.getElementById('instPhotoData')?.textContent || '{}');
     const tok = document.querySelector('#csrfForm input[name="__RequestVerificationToken"]').value;
     const esc = s => (s == null ? '' : String(s))
         .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
         .replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    document.querySelectorAll('.btn-view-photos').forEach(function (b) {
-        b.addEventListener('click', function () {
-            const list = instPhotos[this.dataset.id] || [];
-            Swal.fire({
-                title: '📷 ' + this.dataset.req + ' — ' + list.length + ' photo(s)',
-                width: 720,
-                background: '#ffffff', color: '#1f2937',
-                confirmButtonText: 'Close',
-                html: list.length
-                    ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:60vh;overflow-y:auto">
-                         ${list.map(p => `
-                           <a href="${fileModalSrc(p.path)}" target="_blank" title="${esc(p.name)}">
-                             <img src="${fileModalSrc(p.path)}" alt="${esc(p.name)}"
-                                  style="width:100%;height:110px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb">
-                           </a>`).join('')}
-                       </div>`
-                    : '<div>No photos on this installation.</div>'
-            });
-        });
-    });
 
     function post(url, fd, btn, reset) {
         fd.append('__RequestVerificationToken', tok);
@@ -238,8 +192,18 @@
         fetch(url, { method: 'POST', body: fd })
             .then(r => r.json())
             .then(d => {
-                if (d.success) { Swal.fire('Done', d.message, 'success').then(() => location.reload()); }
-                else { Swal.fire('Error', d.message || 'Failed', 'error'); btn.disabled = false; btn.innerHTML = reset; }
+                if (d.success) { Swal.fire('Done', d.message, 'success').then(() => location.reload()); return; }
+                btn.disabled = false; btn.innerHTML = reset;
+                if (d.problems && d.problems.length) {
+                    // Checklist gate — list exactly which items are still missing.
+                    Swal.fire({
+                        icon: 'error', title: 'Checklist incomplete',
+                        html: '<ul style="text-align:left;font-size:13px;margin:0;padding-left:18px">' +
+                              d.problems.map(p => '<li>' + esc(p) + '</li>').join('') + '</ul>'
+                    });
+                } else {
+                    Swal.fire('Error', d.message || 'Failed', 'error');
+                }
             })
             .catch(() => { Swal.fire('Error', 'Could not reach the server.', 'error'); btn.disabled = false; btn.innerHTML = reset; });
     }
