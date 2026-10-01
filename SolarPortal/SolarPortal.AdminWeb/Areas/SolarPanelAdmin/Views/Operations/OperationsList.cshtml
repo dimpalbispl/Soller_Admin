@@ -91,6 +91,26 @@
         var meterMap = ViewBag.MeterDetails as Dictionary<int, SolarPortal.Domain.Entities.MeterDispatch>;
         var materialMap = ViewBag.MaterialDetails as Dictionary<int, SolarPortal.Domain.Entities.MaterialDispatch>;
     var matLines = ViewBag.MaterialDispatchItems as Dictionary<int, List<SolarPortal.Domain.Entities.MaterialDispatchItem>>;
+    var matTotal = (ViewBag.MaterialItemMaster as List<SolarPortal.Domain.Entities.MaterialItem>)?.Count ?? 0;
+
+    // Leading number of a quantity ("8", "20 m" → 20), or null — mirrors the controller.
+    decimal? QtyNum(string? s)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(s ?? "", @"^\s*(\d+(?:\.\d+)?)");
+        return m.Success ? decimal.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) : null;
+    }
+    // What is still owed per line once the project has been dispatched
+    // (prepared − sent; items prepared later count in full until sent).
+    List<(string Name, decimal Owed)> PendingLines(int requestId)
+    {
+        if (matLines == null || !matLines.TryGetValue(requestId, out var ls)) return new();
+        if (materialMap == null || !materialMap.TryGetValue(requestId, out var md) || !md.IsDispatched) return new();
+        return ls.Select(l => (l.ItemName, Owed: (QtyNum(l.Quantity) ?? 0) - (l.DispatchedQuantity ?? 0)))
+                 .Where(x => x.Owed > 0).ToList();
+    }
+    // Items of the master list not yet on this project's dispatch.
+    int RemainingItems(int requestId) =>
+        Math.Max(0, matTotal - (matLines != null && matLines.TryGetValue(requestId, out var ls2) ? ls2.Count : 0));
         var installMap = ViewBag.InstallationDetails as Dictionary<int, SolarPortal.Domain.Entities.Installation>;
         var dcrMap = ViewBag.DCRDetails as Dictionary<int, SolarPortal.Domain.Entities.DCRDocument>;
 
@@ -310,50 +330,20 @@
                                                             <span class="text-muted" style="font-size:11px">Not prepared</span>
                                                         }
                                                     </div>
-                                                    if (mat.PreparedAt.HasValue)
+                                                    @* Full details (items, quantities, history) live on the
+                                                       dispatch View page — the cell only says where it stands. *@
+                                                    var rowItemCount = matLines != null && matLines.TryGetValue(r.Id, out var rowLines) ? rowLines.Count : 0;
+                                                    var owedCount = PendingLines(r.Id).Count;
+                                                    if (rowItemCount > 0)
                                                     {
-                                                        <div><strong>Prepared:</strong> @mat.PreparedAt.Value.ToLocalTime().ToString("dd MMM yyyy")</div>
+                                                        <div style="margin-top:4px;color:var(--text2)">@rowItemCount@(matTotal > 0 ? $" of {matTotal}" : "") items</div>
                                                     }
-                                                    if (!string.IsNullOrWhiteSpace(mat.PrepareRemark))
+                                                    if (owedCount > 0)
                                                     {
-                                                        <div style="color:var(--text3)">@mat.PrepareRemark</div>
+                                                        <div style="color:var(--red);font-weight:600">⚠ @owedCount item(s) pending</div>
                                                     }
-                                                    if (matLines != null && matLines.TryGetValue(r.Id, out var rowLines) && rowLines.Any())
-                                                    {
-                                                        <div title="@string.Join(", ", rowLines.Select(l => $"{l.ItemName} × {l.Quantity}"))">
-                                                            <strong>Items:</strong> @rowLines.Count
-                                                            (@string.Join(", ", rowLines.Take(3).Select(l => $"{l.ItemName} × {l.Quantity}"))@(rowLines.Count > 3 ? ", …" : ""))
-                                                        </div>
-                                                    }
-                                                    if (!string.IsNullOrWhiteSpace(mat.MaterialDetails))
-                                                    {
-
-                                                        <div>@mat.MaterialDetails</div>
-                                                    }
-                                                    if (mat.DispatchDate.HasValue)
-                                                    {
-
-                                                        <div><strong>Date:</strong> @mat.DispatchDate.Value.ToLocalTime().ToString("dd MMM yyyy")</div>
-                                                    }
-                                                    if (!string.IsNullOrWhiteSpace(mat.VehicleDetails))
-                                                    {
-
-                                                        <div><strong>Vehicle:</strong> @mat.VehicleDetails</div>
-                                                    }
-                                                    if (mat.AssignedWorker != null)
-                                                    {
-
-                                                        <div><strong>Worker:</strong> @mat.AssignedWorker.Name</div>
-                                                    }
-                                                    if (!string.IsNullOrWhiteSpace(mat.Remark))
-                                                    {
-
-                                                        <div style="color:var(--text3)">@mat.Remark</div>
-                                                    }
-                                                    if (!string.IsNullOrWhiteSpace(mat.DispatchDocumentPath))
-                                                    {
-                                                        <div><a href="javascript:void(0)" onclick="openFileModal('@mat.DispatchDocumentPath')" style="color:var(--sun)">📄 Document</a></div>
-                                                    }
+                                                    <a class="btn btn-s btn-sm" style="margin-top:6px"
+                                                       asp-action="MaterialDispatchDetails" asp-route-id="@r.Id" asp-route-from="@op">👁 View</a>
                                                 }
                                                 else
                                                 {
@@ -461,6 +451,20 @@
                                         materialMap?.TryGetValue(r.Id, out rowDispatch);
                                         var isPrepared = rowDispatch?.IsPrepared == true;
                                         var isDispatched = rowDispatch?.IsDispatched == true;
+                                    }
+                                    @* Items sent short at Final Dispatch can follow later, whatever
+                                       stage the project has moved on to. *@
+                                    @if (op == "final" && isDispatched && PendingLines(r.Id).Any())
+                                    {
+                                        <button class="btn btn-primary btn-sm" style="margin-bottom:4px"
+                                                onclick="openPendingDispatchForm(@r.Id, '@r.RequestNumber')">🚚 Dispatch Pending</button>
+                                    }
+                                    @* After the first dispatch, items not prepared then (e.g. the other
+                                       16 of 32) can be prepared now and sent from Final Dispatch. *@
+                                    @if (op == "prepare" && isDispatched && RemainingItems(r.Id) > 0)
+                                    {
+                                        <button class="btn btn-primary btn-sm" style="margin-bottom:4px"
+                                                onclick="openPrepareMoreForm(@r.Id, '@r.RequestNumber')">➕ Prepare Remaining (@RemainingItems(r.Id))</button>
                                     }
                                     @if (isActiveRow)
                                     {
@@ -679,7 +683,7 @@
                 isDispatched = kv.Value.IsDispatched,
                 preparedAt = kv.Value.PreparedAt.HasValue ? kv.Value.PreparedAt.Value.ToLocalTime().ToString("dd MMM yyyy") : "",
                 items = (matLinesForJson.TryGetValue(kv.Key, out var ls) ? ls : new List<SolarPortal.Domain.Entities.MaterialDispatchItem>())
-                        .Select(l => new { id = l.MaterialItemId, name = l.ItemName, qty = l.Quantity })
+                        .Select(l => new { id = l.MaterialItemId, name = l.ItemName, qty = l.Quantity, sent = l.DispatchedQuantity })
             }));
 }
 <script id="materialData" type="application/json">@Html.Raw(matJson)</script>
@@ -724,30 +728,120 @@
 
         // Material list (Solar Module, Inverter, ...) with a quantity box per item,
         // pre-filled from what this dispatch already recorded.
-        function materialItemsTableHtml(saved) {
+        // excludeIds: items to leave out (already on the dispatch — "Prepare Remaining").
+        function materialItemsTableHtml(saved, excludeIds) {
+        const skip = new Set(excludeIds || []);
+        const list = materialMaster.filter(m => !skip.has(m.id));
         if (!materialMaster.length) return '<div style="color:#6b7280;font-size:12px">No material items set up yet.</div>';
+        if (!list.length) return '<div style="color:#6b7280;font-size:12px">Every item on the list is already prepared.</div>';
         const qtyOf = {};
         (saved || []).forEach(s => qtyOf[s.id] = s.qty);
         return `<div style="max-height:260px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;margin:4px 0 8px">
         <table style="width:100%;border-collapse:collapse;font-size:12.5px">
-        <thead><tr style="background:#f9fafb;position:sticky;top:0">
+        <thead><tr style="background:#f9fafb;position:sticky;top:0;z-index:1">
+        <th style="padding:6px 8px;text-align:center;width:34px"><input type="checkbox" id="mat-all" title="Select all" style="width:16px;height:16px;cursor:pointer"></th>
         <th style="padding:6px 8px;text-align:left;width:32px">#</th>
         <th style="padding:6px 8px;text-align:left">Particular</th>
         <th style="padding:6px 8px;text-align:left;width:110px">Quantity</th></tr></thead>
-        <tbody>${materialMaster.map((m, i) => `
+        <tbody>${list.map((m, i) => {
+        const on = Object.prototype.hasOwnProperty.call(qtyOf, m.id);
+        return `
         <tr style="border-top:1px solid #f3f4f6">
+        <td style="padding:4px 8px;text-align:center"><input type="checkbox" class="mat-chk" data-id="${m.id}" ${on ? 'checked' : ''}
+             style="width:16px;height:16px;cursor:pointer"></td>
         <td style="padding:4px 8px;color:#6b7280">${i + 1}</td>
-        <td style="padding:4px 8px">${esc(m.name)}</td>
-        <td style="padding:4px 8px"><input type="text" class="mat-qty" data-id="${m.id}" value="${esc(qtyOf[m.id])}"
-             style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:6px;font-size:12.5px"></td>
-        </tr>`).join('')}</tbody></table></div>`;
+        <td style="padding:4px 8px"><label for="mat-chk-${m.id}" class="mat-name" data-id="${m.id}" style="cursor:pointer;margin:0">${esc(m.name)}</label></td>
+        <td style="padding:4px 8px"><input type="number" min="0" step="any" class="mat-qty" data-id="${m.id}" value="${qtyNum(qtyOf[m.id]) ?? ''}" ${on ? '' : 'disabled'}
+             placeholder="Qty" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:6px;font-size:12.5px"></td>
+        </tr>`; }).join('')}</tbody></table></div>`;
         }
 
-        // Read-only list of what a dispatch carries — "Solar Module × 6".
-        function materialItemsSummaryHtml(items) {
-        if (!items || !items.length) return '';
-        return items.map(it => `<div>${esc(it.name)} × ${esc(it.qty)}</div>`).join('');
+        // Leading number of a quantity ("8", "20 m" → 20), or null.
+        const qtyNum = s => { const m = /^\s*(\d+(?:\.\d+)?)/.exec(s == null ? '' : String(s)); return m ? +m[1] : null; };
+        const fmtQ = n => (Math.round(n * 100) / 100).toString();
+        const pendingOf = s => { const p = qtyNum(s.qty); return p == null ? 0 : Math.max(0, p - (+s.sent || 0)); };
+
+        // Quantity table shared by Final Dispatch and Dispatch Pending.
+        //   mode 'final'   — ONLY the items ticked at Prepare; send 0 … prepared
+        //                    (prepared 10, 8 in hand → send 8, 2 stay pending).
+        //   mode 'pending' — only items still owed; send 0 … pending.
+        function sendItemsTableHtml(saved, mode) {
+        const rows = (saved || []).filter(s => mode === 'final' || pendingOf(s) > 0);
+        if (!rows.length)
+        return `<div style="color:#6b7280;font-size:12px;margin:4px 0 8px">${mode === 'final'
+        ? 'No material list was recorded at Prepare for Dispatch.' : 'Nothing is pending.'}</div>`;
+        const head = mode === 'final'
+        ? '<th style="padding:6px 8px;text-align:left;width:80px">Prepared</th><th style="padding:6px 8px;text-align:left;width:100px">Send Now</th>'
+        : '<th style="padding:6px 8px;text-align:left;width:70px">Prepared</th><th style="padding:6px 8px;text-align:left;width:60px">Sent</th><th style="padding:6px 8px;text-align:left;width:70px">Pending</th><th style="padding:6px 8px;text-align:left;width:90px">Send Now</th>';
+        return `<div style="max-height:260px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;margin:4px 0 8px">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead><tr style="background:#f9fafb;position:sticky;top:0;z-index:1">
+        <th style="padding:6px 8px;text-align:left;width:32px">#</th>
+        <th style="padding:6px 8px;text-align:left">Particular</th>${head}</tr></thead>
+        <tbody>${rows.map((s, i) => {
+        const prep = qtyNum(s.qty), pend = pendingOf(s);
+        const max = mode === 'final' ? prep : pend;
+        const val = mode === 'final' ? (prep ?? '') : fmtQ(pend);
+        const cells = mode === 'final'
+        ? `<td style="padding:4px 8px;color:#6b7280">${esc(s.qty) || '—'}</td>`
+        : `<td style="padding:4px 8px;color:#6b7280">${esc(s.qty)}</td>
+           <td style="padding:4px 8px;color:#6b7280">${fmtQ(+s.sent || 0)}</td>
+           <td style="padding:4px 8px;color:#b91c1c;font-weight:600">${fmtQ(pend)}</td>`;
+        return `<tr style="border-top:1px solid #f3f4f6">
+        <td style="padding:4px 8px;color:#6b7280">${i + 1}</td>
+        <td style="padding:4px 8px">${esc(s.name)}</td>${cells}
+        <td style="padding:4px 8px"><input type="number" min="0" step="any" ${max != null ? `max="${max}"` : ''} class="send-qty" data-id="${s.id}"
+             data-name="${esc(s.name)}" value="${val}" placeholder="0"
+             style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:6px;font-size:12.5px"></td></tr>`;
+        }).join('')}</tbody></table></div>`;
         }
+
+        // Read the Send Now boxes; returns { items } or { error }.
+        function collectSendItems() {
+        const items = [];
+        for (const el of document.querySelectorAll('.send-qty')) {
+        const v = el.value.trim();
+        if (v !== '' && (isNaN(+v) || +v < 0)) return { error: el.dataset.name + ': enter a valid quantity.' };
+        if (el.max !== '' && v !== '' && +v > +el.max) return { error: el.dataset.name + ': cannot send more than ' + el.max + '.' };
+        items.push({ id: +el.dataset.id, qty: v });
+        }
+        return { items };
+        }
+
+        // Ticked items are the ones being sent; quantity is optional per item.
+        function collectMaterialItems() {
+        return Array.from(document.querySelectorAll('.mat-chk:checked')).map(c => {
+        const q = document.querySelector(`.mat-qty[data-id="${c.dataset.id}"]`);
+        return { id: +c.dataset.id, qty: q ? q.value.trim() : '' };
+        });
+        }
+
+        // Checkbox behaviour for the material list: ticking an item enables its
+        // quantity box, unticking clears it, "select all" toggles every row, and
+        // clicking the item name toggles its row. Call from the modal's didOpen.
+        function wireMaterialChecks() {
+        const rowQty = id => document.querySelector(`.mat-qty[data-id="${id}"]`);
+        const chks = () => Array.from(document.querySelectorAll('.mat-chk'));
+        const all = document.getElementById('mat-all');
+        const syncAll = () => { if (all) { const c = chks(); all.checked = c.length > 0 && c.every(x => x.checked); } };
+        const setRow = (chk, on, focus) => {
+        chk.checked = on;
+        const q = rowQty(chk.dataset.id);
+        if (!q) return;
+        q.disabled = !on;
+        if (!on) q.value = '';
+        else if (focus) q.focus();
+        };
+        chks().forEach(chk => chk.addEventListener('change', () => { setRow(chk, chk.checked, true); syncAll(); }));
+        document.querySelectorAll('.mat-name').forEach(l => l.addEventListener('click', e => {
+        e.preventDefault();
+        const chk = document.querySelector(`.mat-chk[data-id="${l.dataset.id}"]`);
+        if (chk) { setRow(chk, !chk.checked, true); syncAll(); }
+        }));
+        if (all) all.addEventListener('change', () => { chks().forEach(c => setRow(c, all.checked, false)); });
+        syncAll();
+        }
+
         const installPhotos = JSON.parse(document.getElementById('installPhotoData')?.textContent || '{}');
         const installPhotoMeta = JSON.parse(document.getElementById('installPhotoMetaData')?.textContent || '{}');
         const maxInstallPhotos = @SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers.OperationsController.MaxInstallationPhotos;
@@ -984,8 +1078,6 @@
         <div id="f-mat-comm"></div>
         <label>Material List — enter quantity for items being sent</label>
         ${materialItemsTableHtml(ex.items)}
-        <label>Other Material / Notes</label>
-        <textarea id="f-prep-detail" class="swal2-textarea" placeholder="Anything not in the list above...">${esc(ex.materialDetails)}</textarea>
         <label>Vehicle / Courier</label>
         <input id="f-prep-veh" type="text" class="swal2-input" placeholder="RJ-14-AB-1234 / DTDC AWB..." value="${esc(ex.vehicleDetails)}">
         <label>Installer (Worker) *</label>
@@ -1005,6 +1097,7 @@
         const sel = document.getElementById('f-mat-worker');
         if (sel) sel.addEventListener('change', () => matCommNote(requestId));
         matCommNote(requestId);
+        wireMaterialChecks();
         },
         preConfirm: async () => {
         const w = document.getElementById('f-mat-worker').value;
@@ -1020,11 +1113,10 @@
 
         const fd = new FormData();
         fd.append('requestId', requestId);
-        fd.append('materialDetails', document.getElementById('f-prep-detail').value);
-        const matItems = Array.from(document.querySelectorAll('.mat-qty'))
-        .map(el => ({ id: +el.dataset.id, qty: el.value.trim() }))
-        .filter(x => x.qty);
-        fd.append('materialItemsJson', JSON.stringify(matItems));
+        // No notes box any more — send back whatever an older preparation saved,
+        // so re-saving does not wipe it.
+        fd.append('materialDetails', ex.materialDetails || '');
+        fd.append('materialItemsJson', JSON.stringify(collectMaterialItems()));
         fd.append('vehicleDetails', document.getElementById('f-prep-veh').value);
         fd.append('prepareRemark', document.getElementById('f-prep-remark').value);
         fd.append('workerId', w);
@@ -1045,6 +1137,95 @@
         // Sends what step 1 prepared and advances the project to Installation.
         // The material and installer are shown read-only — change them by
         // re-opening Prepare, so the two steps can never disagree.
+        // After the first dispatch: prepare items that were NOT prepared then. They
+        // join the same dispatch and are sent from Final Dispatch → Dispatch Pending.
+        function openPrepareMoreForm(requestId, requestNumber) {
+        const ex = materialData[requestId] || {};
+        const already = (ex.items || []).map(s => s.id);
+        Swal.fire({
+        title: '➕ Prepare Remaining Items — ' + requestNumber,
+        width: 640,
+        html: `
+        <div style="text-align:left;font-size:13px">
+        <div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:10px;margin-bottom:10px;color:#1e40af">
+        <div style="font-size:12px">${already.length} of ${materialMaster.length} items already prepared. Tick the items being prepared now.</div>
+        <div style="font-size:12px;margin-top:2px">👷 Installer: <strong>${esc(ex.workerName) || '—'}</strong> (same as the first dispatch — cannot be changed). The project stage does not change.</div>
+        </div>
+        <label>Remaining items</label>
+        ${materialItemsTableHtml([], already)}
+        <label>Preparation Remark</label>
+        <textarea id="f-pm-remark" class="swal2-textarea"></textarea>
+        </div>`,
+        background: '#ffffff', color: '#1f2937',
+        showCancelButton: true,
+        confirmButtonText: 'Save Preparation',
+        didOpen: () => wireMaterialChecks(),
+        preConfirm: async () => {
+        const items = collectMaterialItems();
+        if (!items.length) { Swal.showValidationMessage('Tick at least one item.'); return false; }
+        const bad = items.find(x => !(+x.qty > 0));
+        if (bad) {
+        const name = (materialMaster.find(m => m.id === bad.id) || {}).name || 'An item';
+        Swal.showValidationMessage(name + ': enter a quantity greater than 0.'); return false;
+        }
+        const fd = new FormData();
+        fd.append('requestId', requestId);
+        fd.append('materialItemsJson', JSON.stringify(items));
+        fd.append('prepareRemark', document.getElementById('f-pm-remark').value);
+        return await postForm('/SolarPanelAdmin/Operations/SubmitPrepareMore', fd);
+        }
+        }).then(r => {
+        if (r.isConfirmed && r.value && r.value.success) {
+        Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+        } else if (r.isConfirmed) {
+        Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+        }
+        });
+        }
+
+        // Items sent short at Final Dispatch. Same installer as the first dispatch
+        // (shown, not selectable) and no stage change — installation carries on.
+        function openPendingDispatchForm(requestId, requestNumber) {
+        const ex = materialData[requestId] || {};
+        Swal.fire({
+        title: '📦 Dispatch Pending — ' + requestNumber,
+        width: 680,
+        html: `
+        <div style="text-align:left;font-size:13px">
+        <div style="border:1px solid #fde68a;background:#fffbeb;border-radius:8px;padding:10px;margin-bottom:10px;color:#92400e">
+        <div style="font-size:12px">👷 Installer: <strong>${esc(ex.workerName) || '—'}</strong> <span style="color:#a16207">(same as the first dispatch — cannot be changed)</span></div>
+        <div style="font-size:11.5px;margin-top:2px">The project stage does not change.</div>
+        </div>
+        <label>Pending items — enter what is being sent now</label>
+        ${sendItemsTableHtml(ex.items, 'pending')}
+        <label>Dispatch Date *</label>
+        <input id="f-pend-date" type="date" class="swal2-input" value="${today}">
+        <label>Remark</label>
+        <textarea id="f-pend-remark" class="swal2-textarea" placeholder="Docket no. / driver / notes"></textarea>
+        </div>`,
+        background: '#ffffff', color: '#1f2937',
+        showCancelButton: true,
+        confirmButtonText: 'Dispatch Pending Items',
+        preConfirm: async () => {
+        const c = collectSendItems();
+        if (c.error) { Swal.showValidationMessage(c.error); return false; }
+        if (!c.items.some(x => +x.qty > 0)) { Swal.showValidationMessage('Enter a quantity for at least one item.'); return false; }
+        const fd = new FormData();
+        fd.append('requestId', requestId);
+        fd.append('dispatchDate', document.getElementById('f-pend-date').value);
+        fd.append('remark', document.getElementById('f-pend-remark').value);
+        fd.append('materialItemsJson', JSON.stringify(c.items));
+        return await postForm('/SolarPanelAdmin/Operations/SubmitPendingDispatch', fd);
+        }
+        }).then(r => {
+        if (r.isConfirmed && r.value && r.value.success) {
+        Swal.fire('Done', r.value.message, 'success').then(() => location.reload());
+        } else if (r.isConfirmed) {
+        Swal.fire('Error', (r.value && r.value.message) || 'Failed', 'error');
+        }
+        });
+        }
+
         function openFinalDispatchForm(requestId, requestNumber) {
         const ex = materialData[requestId] || {};
         Swal.fire({
@@ -1053,11 +1234,14 @@
         <div style="text-align:left;font-size:13px">
         <div style="border:1px solid #bbf7d0;background:#f0fdf4;border-radius:8px;padding:10px;margin-bottom:10px">
         <div style="font-size:11px;color:#15803d;text-transform:uppercase;letter-spacing:.4px">Prepared${ex.preparedAt ? ' on ' + esc(ex.preparedAt) : ''}</div>
-        <div style="font-size:13px;color:#166534">${materialItemsSummaryHtml(ex.items)}${esc(ex.materialDetails)}${(ex.items && ex.items.length) || ex.materialDetails ? '' : '<em>No material details recorded</em>'}</div>
+        ${ex.materialDetails ? `<div style="font-size:13px;color:#166534">${esc(ex.materialDetails)}</div>` : ''}
         <div style="font-size:12px;color:#166534">👷 ${esc(ex.workerName) || '<em>No installer assigned</em>'}</div>
         ${ex.vehicleDetails ? `<div style="font-size:12px;color:#166534">🚚 ${esc(ex.vehicleDetails)}</div>` : ''}
-        <div style="font-size:11px;color:#6b7280;margin-top:4px">To change any of this, re-open Prepare for Dispatch.</div>
+        <div style="font-size:11px;color:#6b7280;margin-top:4px">To change the installer or vehicle, re-open Prepare for Dispatch.</div>
         </div>
+        <label>Material List — ${(ex.items || []).length} of ${materialMaster.length} items prepared · enter what is actually being sent</label>
+        ${sendItemsTableHtml(ex.items, 'final')}
+        <div style="font-size:11.5px;color:#6b7280;margin:-4px 0 8px">Anything sent short stays pending and can be dispatched later with the same installer.</div>
         <label>Dispatch Date *</label>
         <input id="f-fin-date" type="date" class="swal2-input" value="${today}">
         <label>Dispatch Remark</label>
@@ -1068,9 +1252,16 @@
         background: '#ffffff', color: '#1f2937',
         showCancelButton: true,
         confirmButtonText: 'Dispatch & Move to Installation',
+        width: 640,
         preConfirm: async () => {
         const fd = new FormData();
         fd.append('requestId', requestId);
+        // Only send the list when Prepare recorded one — otherwise leave it untouched.
+        if ((ex.items || []).length) {
+        const c = collectSendItems();
+        if (c.error) { Swal.showValidationMessage(c.error); return false; }
+        fd.append('materialItemsJson', JSON.stringify(c.items));
+        }
         fd.append('dispatchDate', document.getElementById('f-fin-date').value);
         fd.append('remark', document.getElementById('f-fin-remark').value);
         const file = pickedFile('f-fin-doc');

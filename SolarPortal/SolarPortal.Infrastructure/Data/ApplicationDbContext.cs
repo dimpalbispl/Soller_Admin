@@ -373,6 +373,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             e.HasKey(x => x.Id);
             e.Property(x => x.ItemName).HasMaxLength(150).IsRequired();
             e.Property(x => x.Quantity).HasMaxLength(50).IsRequired();
+            e.Property(x => x.DispatchedQuantity).HasPrecision(18, 2);
             e.HasQueryFilter(x => !x.IsDeleted);
         });
 

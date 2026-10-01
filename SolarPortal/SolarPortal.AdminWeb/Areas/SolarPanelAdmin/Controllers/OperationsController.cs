@@ -492,9 +492,20 @@ public class OperationsController : Controller
             // so a cleared quantity drops that line.
             await SaveMaterialItemsAsync(dispatch.Id, materialItemsJson);
 
+            // Log Report: which items (of the full list) were prepared, and how many.
+            var prepLines = (await _uow.MaterialDispatchItems.FindAsync(x => x.MaterialDispatchId == dispatch.Id))
+                            .OrderBy(x => x.Id).ToList();
+            var totalItems = (await _uow.MaterialItems.FindAsync(i => i.IsActive)).Count();
+            var installer = await _uow.Workers.GetByIdAsync(workerId.Value);
             await _activity.LogAsync(_userManager.GetUserId(User) ?? "system",
                 "MaterialDispatch.Prepare", "SolarRequest", requestId.ToString(),
-                $"Prepared for dispatch. Installer #{workerId}. {materialDetails}".Trim(),
+                $"Prepared for dispatch: {prepLines.Count} of {totalItems} items — " +
+                (prepLines.Any()
+                    ? string.Join(", ", prepLines.Select(l => string.IsNullOrWhiteSpace(l.Quantity) ? l.ItemName : $"{l.ItemName} × {l.Quantity}"))
+                    : "no items ticked") +
+                $". Installer: {installer?.Name ?? "#" + workerId}." +
+                (string.IsNullOrWhiteSpace(vehicleDetails) ? "" : $" Vehicle: {vehicleDetails}.") +
+                (string.IsNullOrWhiteSpace(materialDetails) ? "" : $" {materialDetails}"),
                 HttpContext.Connection.RemoteIpAddress?.ToString());
 
             // Deliberately no stage change — the project stays at Material Dispatch
@@ -515,9 +526,9 @@ public class OperationsController : Controller
     private sealed record MaterialItemQty(int Id, string? Qty);
 
     /// <summary>
-    /// Replaces the material lines of a dispatch with the quantities posted from
-    /// the Prepare form ([{ id, qty }]). Items left blank are not stored; unknown
-    /// or inactive item ids are ignored.
+    /// Replaces the material lines of a dispatch with the items ticked on the
+    /// Prepare form ([{ id, qty }]). Every posted item is stored — quantity may be
+    /// blank; unknown or inactive item ids are ignored.
     /// </summary>
     private async Task SaveMaterialItemsAsync(int materialDispatchId, string? materialItemsJson)
     {
@@ -536,8 +547,8 @@ public class OperationsController : Controller
 
         foreach (var p in posted)
         {
-            var qty = p.Qty?.Trim();
-            if (string.IsNullOrEmpty(qty) || !master.TryGetValue(p.Id, out var item)) continue;
+            var qty = p.Qty?.Trim() ?? string.Empty;
+            if (!master.TryGetValue(p.Id, out var item)) continue;
             await _uow.MaterialDispatchItems.AddAsync(new MaterialDispatchItem
             {
                 MaterialDispatchId = materialDispatchId,
@@ -579,7 +590,7 @@ public class OperationsController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SubmitFinalDispatch(int requestId, DateTime? dispatchDate,
-        string? remark, IFormFile? dispatchDoc)
+        string? remark, IFormFile? dispatchDoc, string? materialItemsJson)
     {
         try
         {
@@ -602,6 +613,16 @@ public class OperationsController : Controller
             var commissionBlock = await BlockIncWithoutCommissionAsync(requestId, dispatch.AssignedWorkerId.Value);
             if (commissionBlock != null) return Json(new { success = false, message = commissionBlock });
 
+            // What actually goes out, item by item (e.g. prepared 10, sent 8). Checked
+            // BEFORE anything is saved so a bad quantity never half-dispatches.
+            List<(MaterialDispatchItem Line, decimal Qty)>? sendPlan = null;
+            if (materialItemsJson != null)
+            {
+                var (planError, plan) = await PlanDispatchAsync(dispatch.Id, materialItemsJson, pendingOnly: false);
+                if (planError != null) return Json(new { success = false, message = planError });
+                sendPlan = plan;
+            }
+
             if (dispatchDoc != null)
             {
                 var (ok, path, err) = await _fileUploadService.UploadAsync(dispatchDoc, "dispatch/material");
@@ -616,6 +637,18 @@ public class OperationsController : Controller
             _uow.MaterialDispatches.Update(dispatch);
             await _uow.SaveChangesAsync();
 
+            // Record what was sent. The prepared quantity is kept; any shortfall
+            // stays "pending" and can be sent later with Dispatch Pending.
+            if (sendPlan != null)
+            {
+                foreach (var (line, qty) in sendPlan)
+                {
+                    line.DispatchedQuantity = qty;
+                    _uow.MaterialDispatchItems.Update(line);
+                }
+                await _uow.SaveChangesAsync();
+            }
+
             var stageResult = await _requestService.UpdateStageAsync(new UpdateSolarRequestStatusDto
             {
                 Id = requestId,
@@ -626,17 +659,296 @@ public class OperationsController : Controller
             if (!stageResult.IsSuccess)
                 return Json(new { success = false, message = $"Stage update failed: {stageResult.Message ?? string.Join("; ", stageResult.Errors)}" });
 
+            // Log Report: exactly what went out, and what is still owed.
+            var sentText = sendPlan == null || sendPlan.Count == 0
+                ? "no item list"
+                : string.Join(", ", sendPlan.Select(x =>
+                    $"{x.Line.ItemName} × {FmtQty(x.Qty)}" +
+                    (ParseQty(x.Line.Quantity) is decimal pq && pq != x.Qty ? $" (of {FmtQty(pq)})" : "")));
+            var pendingText = sendPlan == null ? "" : string.Join(", ", sendPlan
+                .Where(x => ParseQty(x.Line.Quantity) is decimal pq && pq > x.Qty)
+                .Select(x => $"{x.Line.ItemName} × {FmtQty(ParseQty(x.Line.Quantity)!.Value - x.Qty)}"));
             await _activity.LogAsync(_userManager.GetUserId(User) ?? "system",
                 "MaterialDispatch.Final", "SolarRequest", requestId.ToString(),
-                $"Material finally dispatched on {dispatch.DispatchDate:dd/MM/yyyy}. Project moved to Installation.",
+                $"Material dispatched on {dispatch.DispatchDate:dd/MM/yyyy}: {sentText}." +
+                (pendingText.Length > 0 ? $" Pending: {pendingText}." : "") +
+                " Project moved to Installation." +
+                (string.IsNullOrWhiteSpace(remark) ? "" : $" Remark: {remark.Trim()}"),
                 HttpContext.Connection.RemoteIpAddress?.ToString());
 
-            return Json(new { success = true, message = "Material dispatched. Project moved to Installation." });
+            return Json(new
+            {
+                success = true,
+                message = "Material dispatched. Project moved to Installation." +
+                          (pendingText.Length > 0 ? $" Pending: {pendingText} — send it later with Dispatch Pending." : "")
+            });
         }
         catch (Exception ex)
         {
             var detail = ex.InnerException?.Message ?? ex.Message;
             return Json(new { success = false, message = $"Final dispatch failed: {detail}" });
+        }
+    }
+
+    /// <summary>One material line on the dispatch View page.</summary>
+    public sealed record DispatchLineView(string Name, string PreparedText, decimal? Prepared, decimal? Sent, decimal Pending);
+
+    // GET: /SolarPanelAdmin/Operations/MaterialDispatchDetails/5 (id = SolarRequestId)
+    // Read-only view of one project's material dispatch: what was prepared, what
+    // went out, what is still pending, and the dated history from the activity log.
+    public async Task<IActionResult> MaterialDispatchDetails(int id, string? from)
+    {
+        // Back / breadcrumb return to whichever list opened this page.
+        ViewBag.FromAction = string.Equals(from, "prepare", StringComparison.OrdinalIgnoreCase)
+            ? nameof(PrepareDispatch) : nameof(FinalDispatch);
+        var req = await _uow.SolarRequests.GetByIdAsync(id);
+        if (req == null) return NotFound();
+
+        var dispatch = (await _uow.MaterialDispatches.FindAsync(m => m.SolarRequestId == id))
+                       .OrderByDescending(m => m.CreatedAt).FirstOrDefault();
+
+        var lines = new List<DispatchLineView>();
+        if (dispatch != null)
+        {
+            lines = (await _uow.MaterialDispatchItems.FindAsync(x => x.MaterialDispatchId == dispatch.Id))
+                .OrderBy(x => x.Id)
+                .Select(l =>
+                {
+                    var prepared = ParseQty(l.Quantity);
+                    // Once dispatched, anything not (fully) sent is owed — including
+                    // items prepared later with "Prepare Remaining Items".
+                    var pending = dispatch.IsDispatched && prepared.HasValue
+                        ? Math.Max(0, prepared.Value - (l.DispatchedQuantity ?? 0)) : 0;
+                    return new DispatchLineView(l.ItemName, l.Quantity, prepared, l.DispatchedQuantity, pending);
+                })
+                .ToList();
+        }
+
+        Worker? worker = dispatch?.AssignedWorkerId is int wid ? await _uow.Workers.GetByIdAsync(wid) : null;
+
+        // Dispatch history (prepare / final / pending), oldest first, with admin names.
+        var history = (await _activity.GetForEntityAsync("SolarRequest", id.ToString()))
+                      .Where(a => a.Action.StartsWith("MaterialDispatch", StringComparison.OrdinalIgnoreCase))
+                      .OrderBy(a => a.Timestamp).ToList();
+        var names = new Dictionary<string, string>();
+        foreach (var uid in history.Select(h => h.UserId).Where(u => !string.IsNullOrWhiteSpace(u)).Distinct())
+        {
+            var u = await _userManager.FindByIdAsync(uid);
+            names[uid] = u == null ? uid : (!string.IsNullOrWhiteSpace(u.FullName) ? u.FullName! : u.UserName ?? uid);
+        }
+
+        ViewBag.Request = req;
+        ViewBag.Dispatch = dispatch;
+        ViewBag.Worker = worker;
+        ViewBag.Lines = lines;
+        ViewBag.TotalItems = (await _uow.MaterialItems.FindAsync(i => i.IsActive)).Count();
+        ViewBag.History = history;
+        ViewBag.AdminNames = names;
+        ViewBag.Title = "Material Dispatch Details";
+        return View();
+    }
+
+    /// <summary>Leading number of a quantity ("8", "8.5", "20 m" → 20); null when there is none.</summary>
+    private static decimal? ParseQty(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        var m = System.Text.RegularExpressions.Regex.Match(s, @"^\s*(\d+(?:\.\d+)?)");
+        return m.Success && decimal.TryParse(m.Groups[1].Value, System.Globalization.NumberStyles.Number,
+                                             System.Globalization.CultureInfo.InvariantCulture, out var d)
+            ? d : null;
+    }
+
+    private static string FmtQty(decimal d) => d.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Validates posted send quantities ([{ id, qty }], id = MaterialItemId) against
+    /// a dispatch's prepared list and returns what to send per line.
+    ///   Final (pendingOnly = false): every prepared line gets a sent quantity,
+    ///     0 … prepared; a line not posted is treated as sent in full.
+    ///   Pending (pendingOnly = true): 0 … what is still owed (prepared − sent);
+    ///     only lines with a positive quantity are returned.
+    /// </summary>
+    private async Task<(string? Error, List<(MaterialDispatchItem Line, decimal Qty)> Plan)> PlanDispatchAsync(
+        int materialDispatchId, string? json, bool pendingOnly)
+    {
+        var plan = new List<(MaterialDispatchItem, decimal)>();
+        var posted = string.IsNullOrWhiteSpace(json)
+            ? new List<MaterialItemQty>()
+            : System.Text.Json.JsonSerializer.Deserialize<List<MaterialItemQty>>(json,
+                  new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+
+        var lines = (await _uow.MaterialDispatchItems.FindAsync(x => x.MaterialDispatchId == materialDispatchId)).ToList();
+
+        foreach (var line in lines)
+        {
+            var p = posted.FirstOrDefault(x => x.Id == line.MaterialItemId);
+            var prepared = ParseQty(line.Quantity);
+
+            if (p == null)
+            {
+                if (!pendingOnly) plan.Add((line, prepared ?? 0));
+                continue;
+            }
+
+            decimal qty = 0;
+            if (!string.IsNullOrWhiteSpace(p.Qty) &&
+                !(decimal.TryParse(p.Qty.Trim(), System.Globalization.NumberStyles.Number,
+                                   System.Globalization.CultureInfo.InvariantCulture, out qty) && qty >= 0))
+                return ($"{line.ItemName}: \"{p.Qty}\" is not a valid quantity.", plan);
+
+            if (!pendingOnly)
+            {
+                if (prepared.HasValue && qty > prepared.Value)
+                    return ($"{line.ItemName}: cannot send {FmtQty(qty)} — only {FmtQty(prepared.Value)} was prepared.", plan);
+                plan.Add((line, qty));
+            }
+            else
+            {
+                if (qty == 0) continue;
+                var owed = (prepared ?? 0) - (line.DispatchedQuantity ?? 0);
+                if (qty > owed)
+                    return ($"{line.ItemName}: only {FmtQty(Math.Max(0, owed))} is pending, cannot send {FmtQty(qty)}.", plan);
+                plan.Add((line, (line.DispatchedQuantity ?? 0) + qty));
+            }
+        }
+        return (null, plan);
+    }
+
+    // POST: after the first dispatch, prepare items from the list that were NOT
+    // prepared the first time (e.g. 16 of 32 went, now the other 16). They are
+    // added to the same dispatch as "prepared, not sent", so Final Dispatch offers
+    // them under Dispatch Pending. Same installer, no stage change.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SubmitPrepareMore(int requestId, string? materialItemsJson, string? prepareRemark)
+    {
+        try
+        {
+            var dispatch = (await _uow.MaterialDispatches.FindAsync(m => m.SolarRequestId == requestId))
+                           .OrderByDescending(m => m.CreatedAt)
+                           .FirstOrDefault();
+            if (dispatch == null || !dispatch.IsDispatched)
+                return Json(new { success = false, message = "Use Prepare for Dispatch — this project has not been dispatched yet." });
+
+            var posted = string.IsNullOrWhiteSpace(materialItemsJson)
+                ? new List<MaterialItemQty>()
+                : System.Text.Json.JsonSerializer.Deserialize<List<MaterialItemQty>>(materialItemsJson,
+                      new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+
+            var master = (await _uow.MaterialItems.FindAsync(i => i.IsActive)).ToDictionary(i => i.Id);
+            var existingIds = (await _uow.MaterialDispatchItems.FindAsync(x => x.MaterialDispatchId == dispatch.Id))
+                              .Select(x => x.MaterialItemId).ToHashSet();
+
+            var added = new List<MaterialDispatchItem>();
+            foreach (var p in posted)
+            {
+                // Only items not already on this dispatch — existing lines are
+                // handled by Dispatch Pending, never re-prepared here.
+                if (existingIds.Contains(p.Id) || !master.TryGetValue(p.Id, out var item)) continue;
+                // Quantity is required here: it is what Dispatch Pending will owe.
+                var qty = p.Qty?.Trim() ?? string.Empty;
+                if (!(decimal.TryParse(qty, System.Globalization.NumberStyles.Number,
+                                       System.Globalization.CultureInfo.InvariantCulture, out var q) && q > 0))
+                    return Json(new { success = false, message = $"{item.Name}: enter a quantity greater than 0." });
+
+                var line = new MaterialDispatchItem
+                {
+                    MaterialDispatchId = dispatch.Id,
+                    MaterialItemId = item.Id,
+                    ItemName = item.Name,
+                    Quantity = qty,
+                    DispatchedQuantity = null      // prepared, not sent yet
+                };
+                await _uow.MaterialDispatchItems.AddAsync(line);
+                added.Add(line);
+                existingIds.Add(item.Id);
+            }
+
+            if (added.Count == 0)
+                return Json(new { success = false, message = "Tick at least one item to prepare." });
+
+            if (!string.IsNullOrWhiteSpace(prepareRemark))
+            {
+                var note = $"[Prepared more {DateTime.Today:dd/MM/yyyy}] {prepareRemark.Trim()}";
+                dispatch.PrepareRemark = string.IsNullOrWhiteSpace(dispatch.PrepareRemark) ? note : $"{dispatch.PrepareRemark}\n{note}";
+                _uow.MaterialDispatches.Update(dispatch);
+            }
+            await _uow.SaveChangesAsync();
+
+            var list = string.Join(", ", added.Select(l => string.IsNullOrWhiteSpace(l.Quantity) ? l.ItemName : $"{l.ItemName} × {l.Quantity}"));
+            await _activity.LogAsync(_userManager.GetUserId(User) ?? "system",
+                "MaterialDispatch.PrepareMore", "SolarRequest", requestId.ToString(),
+                $"Prepared {added.Count} more item(s): {list}. Now {existingIds.Count} of {master.Count} items prepared." +
+                (string.IsNullOrWhiteSpace(prepareRemark) ? "" : $" Remark: {prepareRemark.Trim()}"),
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            return Json(new
+            {
+                success = true,
+                message = $"{added.Count} more item(s) prepared. Send them from Final Dispatch → Dispatch Pending."
+            });
+        }
+        catch (Exception ex)
+        {
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            return Json(new { success = false, message = $"Prepare failed: {detail}" });
+        }
+    }
+
+    // POST: send items that were short at Final Dispatch. Same installer as the
+    // first dispatch (it cannot be changed here) and NO stage change — the project
+    // carries on with installation while the balance follows.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SubmitPendingDispatch(int requestId, DateTime? dispatchDate,
+        string? remark, string? materialItemsJson)
+    {
+        try
+        {
+            var dispatch = (await _uow.MaterialDispatches.FindAsync(m => m.SolarRequestId == requestId))
+                           .OrderByDescending(m => m.CreatedAt)
+                           .FirstOrDefault();
+            if (dispatch == null || !dispatch.IsDispatched)
+                return Json(new { success = false, message = "Do the Final Dispatch first — pending items can only follow it." });
+
+            var (planError, plan) = await PlanDispatchAsync(dispatch.Id, materialItemsJson, pendingOnly: true);
+            if (planError != null) return Json(new { success = false, message = planError });
+            if (plan.Count == 0)
+                return Json(new { success = false, message = "Enter a quantity for at least one pending item." });
+
+            var sentNow = plan.Select(x => $"{x.Line.ItemName} × {FmtQty(x.Qty - (x.Line.DispatchedQuantity ?? 0))}").ToList();
+            foreach (var (line, newTotal) in plan)
+            {
+                line.DispatchedQuantity = newTotal;
+                _uow.MaterialDispatchItems.Update(line);
+            }
+
+            var when = dispatchDate ?? DateTime.Today;
+            var note = $"[Pending dispatch {when:dd/MM/yyyy}] {string.Join(", ", sentNow)}" +
+                       (string.IsNullOrWhiteSpace(remark) ? "" : $" — {remark.Trim()}");
+            dispatch.Remark = string.IsNullOrWhiteSpace(dispatch.Remark) ? note : $"{dispatch.Remark}\n{note}";
+            _uow.MaterialDispatches.Update(dispatch);
+            await _uow.SaveChangesAsync();
+
+            var stillOwed = (await _uow.MaterialDispatchItems.FindAsync(x => x.MaterialDispatchId == dispatch.Id))
+                .Select(l => (l.ItemName, Owed: (ParseQty(l.Quantity) ?? 0) - (l.DispatchedQuantity ?? 0)))
+                .Where(x => x.Owed > 0)
+                .Select(x => $"{x.ItemName} × {FmtQty(x.Owed)}")
+                .ToList();
+            var owedText = stillOwed.Any() ? $" Still pending: {string.Join(", ", stillOwed)}." : " Nothing pending now.";
+
+            await _activity.LogAsync(_userManager.GetUserId(User) ?? "system",
+                "MaterialDispatch.Pending", "SolarRequest", requestId.ToString(),
+                $"Pending material dispatched on {when:dd/MM/yyyy}: {string.Join(", ", sentNow)}.{owedText}" +
+                (string.IsNullOrWhiteSpace(remark) ? "" : $" Remark: {remark.Trim()}"),
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            return Json(new { success = true, message = $"Pending material dispatched: {string.Join(", ", sentNow)}.{owedText}" });
+        }
+        catch (Exception ex)
+        {
+            var detail = ex.InnerException?.Message ?? ex.Message;
+            return Json(new { success = false, message = $"Pending dispatch failed: {detail}" });
         }
     }
 

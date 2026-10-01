@@ -12,5 +12,13 @@ public class MaterialDispatchItem : BaseEntity
     public int MaterialDispatchId { get; set; }
     public int MaterialItemId { get; set; }
     public string ItemName { get; set; } = string.Empty;
-    public string Quantity { get; set; } = string.Empty; // free text: "6", "20 m", "2 rolls"
+    /// <summary>Quantity PREPARED at Prepare for Dispatch.</summary>
+    public string Quantity { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Total actually SENT so far — set at Final Dispatch, increased by each
+    /// "Dispatch Pending". Null until the first dispatch. Column added by
+    /// ADD-MaterialDispatchedQty.sql.
+    /// </summary>
+    public decimal? DispatchedQuantity { get; set; }
 }

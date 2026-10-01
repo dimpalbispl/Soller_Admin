@@ -1,0 +1,222 @@
+@using SolarPortal.Domain.Entities
+@using SolarPortal.Domain.Enums
+@using SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Controllers
+@{
+    ViewData["Title"] = "Material Dispatch Details";
+    var req = (SolarRequest)ViewBag.Request;
+    var dispatch = ViewBag.Dispatch as MaterialDispatch;
+    var worker = ViewBag.Worker as Worker;
+    var lines = (List<OperationsController.DispatchLineView>)ViewBag.Lines;
+    var totalItems = (int)ViewBag.TotalItems;
+    var history = (List<ActivityLog>)ViewBag.History;
+    var adminNames = (Dictionary<string, string>)ViewBag.AdminNames;
+    var fromAction = (string)ViewBag.FromAction;
+    var fromLabel = fromAction == "PrepareDispatch" ? "Prepare for Dispatch" : "Final Dispatch";
+
+    var memberName = string.IsNullOrWhiteSpace(req.MemberFullName) ? req.ApplicantName : req.MemberFullName;
+    string Q(decimal? d) => d.HasValue ? d.Value.ToString("0.##") : "—";
+    string Dt(DateTime? d) => d.HasValue ? d.Value.ToLocalTime().ToString("dd MMM yyyy, HH:mm") : "—";
+    string D(DateTime? d) => d.HasValue ? d.Value.ToLocalTime().ToString("dd MMM yyyy") : "—";
+
+    var isDispatched = dispatch?.IsDispatched == true;
+    var isPrepared = dispatch?.IsPrepared == true;
+    var pendingLines = lines.Where(l => l.Pending > 0).ToList();
+    var fullySent = isDispatched && !pendingLines.Any();
+    var sentLines = lines.Count(l => l.Sent.HasValue && l.Sent > 0);
+
+    // "MaterialDispatch.Pending" → "Pending dispatch" etc. for the history.
+    (string Label, string Css, string Icon) Step(string action) => action switch
+    {
+        "MaterialDispatch.Prepare" => ("Prepared", "b-blue", "📋"),
+        "MaterialDispatch.PrepareMore" => ("More items prepared", "b-blue", "➕"),
+        "MaterialDispatch.Final"   => ("Dispatched", "b-ok", "🚚"),
+        "MaterialDispatch.Pending" => ("Pending items sent", "b-wait", "📦"),
+        _                           => (action.Replace("MaterialDispatch.", ""), "b-mute", "•")
+    };
+}
+
+<style>
+    .md-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:14px; }
+    @@media (max-width:1100px) { .md-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @@media (max-width:640px)  { .md-grid { grid-template-columns:1fr; } }
+    .md-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 16px; min-width:0; }
+    .md-card h4 { margin:0 0 10px; font-size:12px; letter-spacing:.5px; text-transform:uppercase; color:var(--text3); font-weight:700; }
+    .md-row { display:flex; justify-content:space-between; gap:10px; font-size:13px; padding:3px 0; }
+    .md-row span:first-child { color:var(--text2); }
+    .md-row span:last-child { color:var(--text1); font-weight:600; text-align:right; overflow-wrap:anywhere; }
+    .md-big { font-size:15px; font-weight:700; color:var(--text1); margin-bottom:4px; overflow-wrap:anywhere; }
+    .md-sub { font-size:13px; color:var(--text2); }
+    .md-badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
+    .b-ok { background:#d1fae5; color:#065f46; } .b-bad { background:#fee2e2; color:#991b1b; } .b-wait { background:#fef3c7; color:#92400e; }
+    .b-blue { background:#dbeafe; color:#1e40af; } .b-mute { background:var(--bg3); color:var(--text2); }
+    .md-stats { display:flex; gap:10px; flex-wrap:wrap; padding:0 16px 12px; }
+    .md-stat { flex:1 1 140px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; }
+    .md-stat b { display:block; font-size:20px; color:var(--text1); }
+    .md-stat small { color:var(--text2); font-size:12px; }
+    .md-tbl { width:100%; border-collapse:collapse; font-size:13px; }
+    .md-tbl th { text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--text3); padding:8px 10px; background:var(--bg3); border-bottom:1px solid var(--border); }
+    .md-tbl td { padding:8px 10px; border-bottom:1px solid var(--border); color:var(--text1); }
+    .md-tbl tr.pend td { background:#fffafa; }
+    .md-tbl .num { text-align:right; font-variant-numeric:tabular-nums; }
+    .md-note { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13.5px; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .tl { list-style:none; margin:0; padding:0 16px 16px; }
+    .tl li { position:relative; padding:0 0 16px 26px; }
+    .tl li::before { content:""; position:absolute; left:7px; top:6px; bottom:-6px; width:2px; background:var(--border); }
+    .tl li:last-child::before { display:none; }
+    .tl li::after { content:""; position:absolute; left:2px; top:4px; width:12px; height:12px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 3px var(--accent-light); }
+    .tl .when { font-size:12px; color:var(--text3); margin-top:2px; }
+    .tl .what { font-size:13px; color:var(--text1); margin-top:4px; overflow-wrap:anywhere; }
+    .md-scroll { overflow-x:auto; }
+</style>
+
+<div class="page active">
+    <div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div>
+            <div class="ph-bc">🛡️ Admin / <a asp-action="@fromAction">@fromLabel</a> / <span>@req.RequestNumber</span></div>
+            <div class="ph-title">Material Dispatch — @req.RequestNumber</div>
+            <div class="ph-sub">What was prepared, what went out, what is still pending, and when.</div>
+        </div>
+        <a class="btn btn-s btn-sm" asp-action="@fromAction">← Back</a>
+    </div>
+
+    @if (dispatch == null)
+    {
+        <div class="card"><div style="padding:30px;text-align:center;color:var(--text3)">This project has not been prepared for dispatch yet.</div></div>
+    }
+    else
+    {
+        <div class="md-grid">
+            <div class="md-card">
+                <h4>Customer</h4>
+                <div class="md-big">@memberName</div>
+                <div class="md-sub">📞 @(req.MobileNumber ?? "—")</div>
+                <div class="md-sub">📍 @req.City, @req.State</div>
+                @if (!string.IsNullOrWhiteSpace(req.UserId))
+                {
+                    <div class="md-sub" style="margin-top:4px">Member ID: <span class="mid-code">@req.UserId</span></div>
+                }
+            </div>
+            <div class="md-card">
+                <h4>Plan</h4>
+                <div class="md-big">@(string.IsNullOrWhiteSpace(req.SelectedPlan) ? "—" : req.SelectedPlan)</div>
+                <div class="md-sub">@($"{req.KVCapacity:0.##} kV · {(req.ConnectionType == ConnectionType.Commercial ? "Commercial" : "Domestic")}")</div>
+            </div>
+            <div class="md-card">
+                <h4>Dispatch</h4>
+                <div class="md-row"><span>Prepared on</span><span>@Dt(dispatch.PreparedAt)</span></div>
+                <div class="md-row"><span>Dispatched on</span><span>@D(isDispatched ? dispatch.DispatchDate : null)</span></div>
+                <div class="md-row"><span>Vehicle / courier</span><span>@(string.IsNullOrWhiteSpace(dispatch.VehicleDetails) ? "—" : dispatch.VehicleDetails)</span></div>
+                <div class="md-row"><span>Installer</span><span>@(worker == null ? "Not assigned" : $"{worker.Name} ({(worker.Type == WorkerType.INC ? "INC" : "JOB")})")</span></div>
+            </div>
+            <div class="md-card">
+                <h4>Status</h4>
+                <div style="margin-bottom:8px">
+                    @if (fullySent) { <span class="md-badge b-ok">✅ Fully dispatched</span> }
+                    else if (isDispatched) { <span class="md-badge b-wait">🚚 Dispatched — items pending</span> }
+                    else if (isPrepared) { <span class="md-badge b-blue">📋 Prepared — awaiting dispatch</span> }
+                    else { <span class="md-badge b-mute">Not prepared</span> }
+                </div>
+                <div class="md-row"><span>Project stage</span><span>@req.CurrentStage</span></div>
+                @if (!string.IsNullOrWhiteSpace(dispatch.DispatchDocumentPath))
+                {
+                    <div class="md-row"><span>Document</span>
+                        <span><a href="javascript:void(0)" onclick="openFileModal('@dispatch.DispatchDocumentPath')" style="color:var(--accent)">📄 View</a></span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+            <div class="ct"><span class="ct-dot"></span>Material list</div>
+            <div class="md-stats">
+                <div class="md-stat"><b>@lines.Count<span style="font-size:13px;color:var(--text3)"> / @totalItems</span></b><small>Items prepared</small></div>
+                <div class="md-stat"><b>@sentLines</b><small>Items dispatched</small></div>
+                <div class="md-stat" style="@(pendingLines.Any() ? "background:#fef2f2;border-color:#fecaca" : "")">
+                    <b style="@(pendingLines.Any() ? "color:#b91c1c" : "")">@pendingLines.Count</b><small>Items pending</small>
+                </div>
+            </div>
+            <div style="padding:0 16px 16px">
+                @if (!lines.Any())
+                {
+                    <div class="md-sub">No material list was recorded for this dispatch.</div>
+                }
+                else
+                {
+                    <div class="md-scroll">
+                        <table class="md-tbl">
+                            <thead>
+                                <tr><th style="width:40px">#</th><th>Particular</th><th class="num">Prepared</th><th class="num">Sent</th><th class="num">Pending</th><th>Status</th></tr>
+                            </thead>
+                            <tbody>
+                                @for (var i = 0; i < lines.Count; i++)
+                                {
+                                    var l = lines[i];
+                                    <tr class="@(l.Pending > 0 ? "pend" : "")">
+                                        <td style="color:var(--text3)">@(i + 1)</td>
+                                        <td>@l.Name</td>
+                                        <td class="num">@(string.IsNullOrWhiteSpace(l.PreparedText) ? "—" : l.PreparedText)</td>
+                                        <td class="num">@Q(l.Sent)</td>
+                                        <td class="num" style="@(l.Pending > 0 ? "color:#b91c1c;font-weight:700" : "")">@(l.Pending > 0 ? Q(l.Pending) : "—")</td>
+                                        <td>
+                                            @if (l.Pending > 0) { <span class="md-badge b-bad">Pending</span> }
+                                            else if (!l.Sent.HasValue) { <span class="md-badge b-blue">Prepared</span> }
+                                            else { <span class="md-badge b-ok">✓ Sent</span> }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(dispatch.PrepareRemark) || !string.IsNullOrWhiteSpace(dispatch.Remark) || !string.IsNullOrWhiteSpace(dispatch.MaterialDetails))
+        {
+            <div class="md-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+                @if (!string.IsNullOrWhiteSpace(dispatch.PrepareRemark))
+                {
+                    <div class="md-card"><h4>Preparation remark</h4><div class="md-note">@dispatch.PrepareRemark</div></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(dispatch.Remark))
+                {
+                    <div class="md-card"><h4>Dispatch remark</h4><div class="md-note">@dispatch.Remark</div></div>
+                }
+                @if (!string.IsNullOrWhiteSpace(dispatch.MaterialDetails))
+                {
+                    <div class="md-card"><h4>Notes</h4><div class="md-note">@dispatch.MaterialDetails</div></div>
+                }
+            </div>
+        }
+
+        <div class="card" style="margin-bottom:14px">
+            <div class="ct"><span class="ct-dot"></span>Dispatch history</div>
+            @if (!history.Any())
+            {
+                <div style="padding:0 16px 16px" class="md-sub">No dispatch activity has been logged yet.</div>
+            }
+            else
+            {
+                <ul class="tl">
+                    @foreach (var h in history)
+                    {
+                        var s = Step(h.Action);
+                        <li>
+                            <span class="md-badge @s.Css">@s.Icon @s.Label</span>
+                            <div class="when">
+                                @h.Timestamp.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                                @if (!string.IsNullOrWhiteSpace(h.UserId))
+                                {
+                                    <text> · by @(adminNames.TryGetValue(h.UserId, out var n) ? n : h.UserId)</text>
+                                }
+                            </div>
+                            <div class="what">@h.Details</div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+</div>
+
+@await Html.PartialAsync("_FileModal")
