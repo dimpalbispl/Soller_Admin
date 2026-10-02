@@ -34,15 +34,17 @@
     <!-- TOP BAR -->
     <div class="topbar">
         <div class="brand">
+            @* Phone only: the sidebar is hidden below 768px, so this opens it as a drawer. *@
+            <button type="button" class="menu-toggle" aria-label="Open menu" aria-controls="app-sidebar" aria-expanded="false" onclick="toggleSidebar()">☰</button>
             <div class="brand-logo">☀️</div>
             <span class="brand-name">SOLAR PORTAL</span>
             <span class="brand-role">@roleLabel.ToUpper()</span>
         </div>
         <div class="top-right">
-            <span style="font-size:13px;color:var(--text2)">@user?.FullName</span>
+            <span class="top-user">@user?.FullName</span>
             <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" style="display:inline">
                 @Html.AntiForgeryToken()
-                <button type="submit" class="top-btn">⬅ Logout</button>
+                <button type="submit" class="top-btn" aria-label="Logout">⬅<span class="top-btn-text"> Logout</span></button>
             </form>
         </div>
     </div>
@@ -50,8 +52,10 @@
     <!-- LAYOUT -->
     <div class="app-layout">
 
+        <div class="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
+
         <!-- SIDEBAR -->
-        <div class="sidebar">
+        <div class="sidebar" id="app-sidebar">
             <partial name="~/Views/Shared/_AdminSidebar.cshtml" />
         </div>
 
@@ -76,8 +80,32 @@
             <div class="mni" onclick="location.href='@Url.Action("Index","Workers",new{area="SolarPanelAdmin"})'">
                 <span class="mi2">👷</span><span class="ml2">Workers</span>
             </div>
+            <div class="mni" onclick="toggleSidebar()">
+                <span class="mi2">☰</span><span class="ml2">Menu</span>
+            </div>
         </div>
     </div>
+
+    <script>
+        // Mobile drawer for the sidebar. Above 768px the sidebar is always shown
+        // and the .open class has no effect.
+        function toggleSidebar(force) {
+            var sb = document.getElementById('app-sidebar');
+            var open = typeof force === 'boolean' ? force : !sb.classList.contains('open');
+            sb.classList.toggle('open', open);
+            document.body.classList.toggle('sidebar-open', open);
+            var btn = document.querySelector('.menu-toggle');
+            if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') toggleSidebar(false);
+        });
+        // Picking a menu item navigates away; close the drawer so Back does not
+        // return to a page with it still covering the screen.
+        document.getElementById('app-sidebar').addEventListener('click', function (e) {
+            if (e.target.closest('a')) toggleSidebar(false);
+        });
+    </script>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>

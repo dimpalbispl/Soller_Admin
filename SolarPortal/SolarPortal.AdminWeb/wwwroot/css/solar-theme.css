@@ -865,7 +865,7 @@ tbody tr:hover { background: var(--bg3); }
 }
 .mob-nav-inner {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
 }
 .mni {
     padding: 11px 4px;
@@ -878,12 +878,96 @@ tbody tr:hover { background: var(--bg3); }
 .mni:hover, .mni.active { color: var(--accent-dark); background: var(--accent-light); }
 .mi2 { font-size: 19px; display: block; margin-bottom: 2px; }
 
+.top-user { font-size: 13px; color: var(--text2); }
+.menu-toggle, .sidebar-backdrop { display: none; }
+
 @media (max-width: 768px) {
-    .sidebar { display: none; }
-    .sidebar.open { display: block; position: fixed; z-index: 200; }
-    .main-content { padding: 16px; padding-bottom: 72px; }
-    .mob-nav { display: block; }
+    /* Topbar: hamburger + logo + role on the left, icon-only Logout on the right. */
+    .topbar { padding: 0 12px; }
+    .brand { gap: 8px; min-width: 0; }
+    .brand-logo { width: 34px; height: 34px; font-size: 18px; }
+    .brand-name { font-size: 17px; white-space: nowrap; }
+    .brand-role { margin-left: 0; }
+    .top-user, .top-btn-text { display: none; }
+    .top-btn { padding: 8px 12px; }
+    .menu-toggle {
+        display: flex; align-items: center; justify-content: center;
+        width: 38px; height: 38px; flex-shrink: 0;
+        background: var(--bg2); color: var(--text1);
+        border: 1px solid var(--border2); border-radius: 9px;
+        font-size: 20px; line-height: 1; cursor: pointer;
+    }
+
+    /* Sidebar becomes an off-canvas drawer under the topbar. */
+    .sidebar {
+        display: block;
+        position: fixed;
+        top: 60px; left: 0; bottom: 0;
+        width: 272px; max-width: 85vw;
+        height: auto;
+        z-index: 200;
+        transform: translateX(-100%);
+        transition: transform .22s ease;
+        box-shadow: 0 10px 30px rgba(16, 40, 30, .25);
+    }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-backdrop {
+        position: fixed; inset: 60px 0 0 0;
+        background: rgba(15, 23, 42, .45);
+        z-index: 150;
+    }
+    body.sidebar-open .sidebar-backdrop { display: block; }
+    body.sidebar-open { overflow: hidden; }
+
+    .app-layout { display: block; }
+    .main-content { padding: 16px; padding-bottom: 80px; }
+    .main-content img, .main-content video, .main-content iframe { max-width: 100%; }
+    .card { padding: 16px; }
+    .ph { margin-bottom: 16px; padding-bottom: 14px; }
+
+    /* Tables: at width:100% a phone squeezed every column into ~330px and text
+       broke one word per line. Give list tables a sensible minimum and let the
+       .tbl-wrap scroll sideways instead. */
+    .tbl-wrap { -webkit-overflow-scrolling: touch; }
+    .tbl-wrap > table { min-width: 720px; }
+    .tbl-wrap th { white-space: nowrap; padding: 10px 12px; }
+    .tbl-wrap td { padding: 10px 12px; font-size: 13px; }
+
+    /* Bootstrap modals: use the full phone width. */
+    .modal-dialog { margin: 8px; }
+
+    /* SweetAlert popups. The desktop rule caps them at 480px with !important and
+       several pages pass width: 620-680, so on a 360px phone the dialog ran off
+       both edges. Fit them to the screen and let tall forms scroll. */
+    .swal2-container { padding: 10px !important; }
+    .swal2-popup {
+        width: 100% !important;
+        max-width: calc(100vw - 20px) !important;
+        padding: 20px 16px 18px !important;
+        max-height: calc(100vh - 20px);
+        overflow-y: auto !important;
+    }
+    .swal2-actions { flex-wrap: wrap; justify-content: stretch !important; }
+    .swal2-actions .swal2-confirm,
+    .swal2-actions .swal2-cancel,
+    .swal2-actions .swal2-deny { flex: 1 1 0; margin: 0 !important; }
+    .swal2-html-container .row > [class*="col-"] { flex: 0 0 100%; max-width: 100%; }
+
+    /* Document preview (_FileModal): its body had min-width 320px inside 24px of
+       padding - wider than the phone. */
+    #filePreviewModal { padding: 8px !important; }
+    #filePreviewModal > div { max-width: 100% !important; width: 100%; }
+    #fileModalBody { min-width: 0 !important; }
+
+    /* Operations modal (_OperationModal): full width and scrollable. */
+    #operationModals .modal { overflow-y: auto; }
+    #operationModals .modal-content { width: calc(100% - 16px); margin: 8px auto; }
+    .mob-nav { display: block; padding-bottom: env(safe-area-inset-bottom); }
     .ph-title { font-size: 23px; }
+}
+
+@media (max-width: 340px) {
+    .brand-name { display: none; }
 }
 
 /* ===== UTILITIES ===== */

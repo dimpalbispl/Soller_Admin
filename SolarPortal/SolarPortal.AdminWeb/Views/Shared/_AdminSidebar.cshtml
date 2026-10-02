@@ -32,6 +32,11 @@
 
 <div class="sb-section">
     <div class="sb-label">Admin Menu</div>
+    @* Back to Main: signs the admin into the old VB admin panel. Not a governed
+       menu, so every admin sees it. *@
+    <a class="sb-item" asp-area="SolarPanelAdmin" asp-controller="BackToMain" asp-action="Index">
+        <span class="sbi">↩️</span>Back to Main
+    </a>
     @if (Can("Dashboard"))
     {
         <a class="sb-item @IsActive("Dashboard")" asp-area="SolarPanelAdmin" asp-controller="Dashboard" asp-action="Index">

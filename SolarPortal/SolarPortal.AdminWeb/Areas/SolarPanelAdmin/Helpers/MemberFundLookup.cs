@@ -6,7 +6,7 @@ using SolarPortal.Infrastructure.Data;
 namespace SolarPortal.AdminWeb.Areas.SolarPanelAdmin.Helpers;
 
 /// <summary>
-/// Resolves a Member ID to the member and their live project(s) for the Add Fund
+/// Resolves a Member ID to the member and all their project(s) for the Add Fund
 /// form — the JSON both Payment Verification and the (now unlinked) Add Fund page
 /// call before an amount can be entered.
 ///
@@ -41,16 +41,14 @@ public static class MemberFundLookup
         if (member == null && requests.Count == 0)
             return new { found = false, message = $"No member found with ID '{id}'. Check the spelling." };
 
-        var live = requests.Where(r => r.CurrentStage != Domain.Enums.ProjectStatus.Completed).ToList();
+        // Every project is offered, completed ones included: a fund can be added at
+        // any time, whatever stage the project is at.
+        var live = requests;
 
         if (live.Count == 0)
         {
-            // Three different dead ends, three different actions for the admin.
             var who = member != null ? $" ({member.FullName})" : "";
-            var msg = requests.Count == 0
-                ? $"Member {id}{who} exists but has no solar request yet — a fund needs a request to attach to."
-                : $"Member {id}{who} has no live project — every request is already completed.";
-            return new { found = false, message = msg };
+            return new { found = false, message = $"Member {id}{who} exists but has no solar request yet — a fund needs a request to attach to." };
         }
 
         var rows = new List<object>();

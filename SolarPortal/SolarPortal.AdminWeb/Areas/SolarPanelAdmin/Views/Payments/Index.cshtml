@@ -79,7 +79,7 @@
                                money is for instead of silently taking the newest. *@
                             <div class="col-12" id="adminPayPicker" style="display:none">
                                 <div class="card" style="background:#fffbeb;border-left:4px solid #f59e0b;padding:12px;margin:0;font-size:13px">
-                                    <div style="margin-bottom:6px">This member has more than one live project — choose which one the money is for:</div>
+                                    <div style="margin-bottom:6px">This member has more than one project — choose which one the money is for:</div>
                                     <div id="adminPayPickerRows"></div>
                                 </div>
                             </div>
@@ -273,7 +273,21 @@
            bemaani ho jaati hai, to use hata dete hain. */
         @@media (max-width: 1100px) {
             .pv-head { display: none; }
-            .pv-main { grid-template-columns: 34px 1fr; row-gap: 8px; }
+            /* Toggle sits in its own narrow column; every other cell is placed in
+               the two content columns. With a plain "34px 1fr" the 7 cells wrapped
+               and every second one landed in the 34px column, one word per line. */
+            .pv-main { grid-template-columns: 34px 1fr 1fr; gap: 10px 12px; }
+            .pv-main > div:nth-child(1) { grid-column: 1; grid-row: 1 / span 2; }
+            .pv-main > div:nth-child(2),
+            .pv-main > div:nth-child(3),
+            .pv-main > div:nth-child(5),
+            .pv-main > div:nth-child(7) { grid-column: 2 / -1; }
+            .pv-main > div:nth-child(4) { grid-column: 2; order: 3; }   /* amount */
+            .pv-main > div:nth-child(6) { grid-column: 3; order: 4; }   /* status */
+            .pv-main > div:nth-child(5) { order: 5; }                   /* progress */
+            .pv-main > div:nth-child(7) { order: 6; }                   /* actions */
+            .pv-main > div { text-align: left !important; min-width: 0; }
+            .pv-main > div:nth-child(7) .btn { margin: 0 6px 0 0 !important; padding: 8px 16px !important; font-size: 12px !important; }
             .pv-detail { padding-left: 16px; }
         }
     </style>

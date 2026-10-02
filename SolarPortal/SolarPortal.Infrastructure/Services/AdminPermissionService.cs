@@ -106,12 +106,24 @@ SELECT UserName, Email, GroupId, ActiveStatus
    AND LTRIM(RTRIM(ISNULL(ActiveStatus,''))) = 'Y'
  ORDER BY UserName";
 
-        try { return await ReadAdminsAsync(withRowStatus); }
+        List<AdminUserRow> rows;
+        try { rows = await ReadAdminsAsync(withRowStatus); }
         catch
         {
-            try { return await ReadAdminsAsync(activeOnly); }
+            try { rows = await ReadAdminsAsync(activeOnly); }
             catch { return new List<AdminUserRow>(); }
         }
+
+        // m_usermaster can hold the same UserName on more than one row, which
+        // listed the user twice. Permissions are keyed by UserName, so keep one
+        // row per name - preferring the active one, then the lowest GroupId.
+        return rows
+            .GroupBy(r => r.UserName, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.OrderByDescending(r => r.IsActive)
+                          .ThenBy(r => r.GroupId ?? int.MaxValue)
+                          .First())
+            .OrderBy(r => r.UserName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private async Task<List<AdminUserRow>> ReadAdminsAsync(string sql)
