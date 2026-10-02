@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -204,32 +205,12 @@ public class AccountController : Controller
     if (!ModelState.IsValid) return View(model);
 
     // ── Password ──
-    var bridged = await _liveDbBridge.TryBridgeAdminAsync(userName, model.Password);
-    ApplicationUser? user = bridged;
-    var kind = "bridge";
+    var (user, kind, notAdmin) = await CheckAdminPasswordAsync(userName, model.Password);
 
-    if (user == null)
+    if (notAdmin)
     {
-        var identityUser = await _userManager.FindByEmailAsync(userName)
-                        ?? await _userManager.FindByNameAsync(userName);
-
-        if (identityUser is { IsActive: true })
-        {
-            // Validates WITHOUT issuing the auth cookie - the cookie waits until
-            // the OTP has also been accepted.
-            var result = await _signInManager.CheckPasswordSignInAsync(identityUser, model.Password, lockoutOnFailure: false);
-            if (result.Succeeded)
-            {
-                var roles = await _userManager.GetRolesAsync(identityUser);
-                if (!(roles.Contains("Admin") || roles.Contains("SuperAdmin")))
-                {
-                    ModelState.AddModelError(string.Empty, "This account is not authorised for the Admin site.");
-                    return View(model);
-                }
-                user = identityUser;
-                kind = "identity";
-            }
-        }
+        ModelState.AddModelError(string.Empty, "This account is not authorised for the Admin site.");
+        return View(model);
     }
 
     if (user == null)
@@ -299,6 +280,70 @@ public class AccountController : Controller
 
     return RedirectToAction(nameof(Verify));
     }
+
+    // ─── Direct login: /Account/DirectLogin?info=<Base64("UserID;Password")> ──
+    // Signs an admin straight in — no login screen, no OTP. The password is still
+    // checked exactly as on the normal sign-in. Base64 is encoding, not
+    // encryption: anyone holding the URL can sign in.
+    [HttpGet]
+    public async Task<IActionResult> DirectLogin(string? refs, string? info)
+    {
+        try
+        {
+            var detail = Encoding.UTF8.GetString(Convert.FromBase64String(info ?? string.Empty));
+            var sep = detail.IndexOf(';');   // split on the first ';' only — passwords may contain ';'
+            if (sep > 0)
+            {
+                var userName = detail[..sep].Trim();
+                var password = detail[(sep + 1)..];
+
+                // Drop any session already in this browser.
+                await _signInManager.SignOutAsync();
+                ClearPendingOtp();
+
+                var (user, kind, _) = await CheckAdminPasswordAsync(userName, password);
+                if (user != null)
+                {
+                    _logger.LogInformation("Admin {UserName} signed in via direct login ({Kind}).", userName, kind);
+                    return await CompleteSignInAsync(user, remember: false, returnUrl: null);
+                }
+
+                _logger.LogWarning("Failed admin direct login for {UserName}.", userName);
+            }
+        }
+        catch (FormatException)
+        {
+            // info was not valid Base64 — fall through to the login page.
+        }
+
+        TempData["Warning"] = "Direct login failed. Check ID and password.";
+        return RedirectToAction(nameof(Login));
+    }
+
+    /// <summary>
+    /// Checks an admin's password against the live DB first, then Identity.
+    /// Does NOT issue the auth cookie. NotAdmin is true when the Identity
+    /// password matched but the account lacks the Admin/SuperAdmin role.
+    /// </summary>
+    private async Task<(ApplicationUser? User, string Kind, bool NotAdmin)> CheckAdminPasswordAsync(string userName, string password)
+    {
+        var bridged = await _liveDbBridge.TryBridgeAdminAsync(userName, password);
+        if (bridged != null) return (bridged, "bridge", false);
+
+        var identityUser = await _userManager.FindByEmailAsync(userName)
+                        ?? await _userManager.FindByNameAsync(userName);
+        if (identityUser is not { IsActive: true }) return (null, "identity", false);
+
+        var result = await _signInManager.CheckPasswordSignInAsync(identityUser, password, lockoutOnFailure: false);
+        if (!result.Succeeded) return (null, "identity", false);
+
+        var roles = await _userManager.GetRolesAsync(identityUser);
+        if (!(roles.Contains("Admin") || roles.Contains("SuperAdmin")))
+            return (null, "identity", true);
+
+        return (identityUser, "identity", false);
+    }
+
     private async Task<IActionResult> CompleteSignInAsync(ApplicationUser user, bool remember, string? returnUrl)
     {
         await _signInManager.SignInAsync(user, isPersistent: remember);
