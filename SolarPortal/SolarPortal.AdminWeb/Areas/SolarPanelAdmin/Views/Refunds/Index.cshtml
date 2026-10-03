@@ -152,7 +152,7 @@
                                 data-mid="@r.MemberIdNo"
                                 data-date="@when.ToString("yyyy-MM-dd")">
                                 <td style="white-space:nowrap">@when.ToString("dd MMM yyyy, HH:mm")</td>
-                                <td class="td-b">@r.RequestNumber</td>
+                                <td class="td-b">@(string.IsNullOrWhiteSpace(r.RequestNumber) ? "— (no project)" : r.RequestNumber)</td>
                                 <td>
                                     @r.MemberName
                                     <div class="cell-sub">@r.MemberIdNo</div>
@@ -277,7 +277,23 @@
             '<div style="border:1px solid #bbf7d0;background:#f0fdf4;border-radius:10px;padding:12px">' +
               '<div style="font-size:11px;color:#15803d;text-transform:uppercase;letter-spacing:.4px">Member</div>' +
               '<div style="font-weight:700;font-size:16px;color:#166534">' + esc(d.name) + '</div>' +
-              '<div style="font-size:12px;color:#166534">' + esc(d.memberId) + (d.mobile ? ' · ' + esc(d.mobile) : '') + '</div>' +
+              '<div style="font-size:12px;color:#166534">' + esc(d.memberId) + (d.mobile ? ' · ' + esc(d.mobile) : '') + '</div>';
+
+        // No solar request: the transfer goes straight to the member's wallet.
+        if (!rows.length) {
+            html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #bbf7d0;font-size:12px;color:#166534">' +
+                    'No solar project for this member — the entry goes straight to their wallet.</div></div>';
+            cardBox.innerHTML = html;
+            cardBox.style.display = 'block';
+            submitBtn.disabled = false;
+            hint.textContent = 'Transfer to ' + d.memberId + ' (no project)';
+            hint.style.color = 'var(--text2)';
+            amtHint.textContent = 'Any amount.';
+            amtHint.style.color = 'var(--text3)';
+            return;
+        }
+
+        html +=
               '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #bbf7d0">' +
                 '<div style="font-size:12px;color:#166534;margin-bottom:6px">Choose the project the extra money was paid on:</div>';
 
@@ -317,7 +333,11 @@
 
     document.getElementById('refundForm').addEventListener('submit', function (e) {
         e.preventDefault();
-        if (!reqIdBox.value) { Swal.fire('Pick a project', 'Find a Member ID and choose the project first.', 'warning'); return; }
+        if (!midBox.value) { Swal.fire('Find a member', 'Enter a Member ID and press Find first.', 'warning'); return; }
+        // A member with projects must say which one; a member with none needs no project.
+        if (!reqIdBox.value && cardBox.querySelector('input[name="pickReq"]')) {
+            Swal.fire('Pick a project', 'Choose the project this entry is for.', 'warning'); return;
+        }
 
         const btn = submitBtn;
         btn.disabled = true; btn.textContent = 'Saving…';

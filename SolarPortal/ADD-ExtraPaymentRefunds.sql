@@ -86,3 +86,28 @@ BEGIN
     PRINT 'EntryType added.';
 END
 GO
+
+/* Added later: a fund transfer can go to ANY member ID, including one with no
+   solar request yet, so SolarRequestId becomes optional. SQL Server will not
+   change a column's nullability while an index or foreign key depends on it, so
+   both are dropped and put back around the ALTER. Safe to re-run. */
+IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+           WHERE TABLE_NAME = 'ExtraPaymentRefunds' AND COLUMN_NAME = 'SolarRequestId'
+             AND IS_NULLABLE = 'NO')
+BEGIN
+    IF EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_ExtraPaymentRefunds_SolarRequests')
+        ALTER TABLE dbo.ExtraPaymentRefunds DROP CONSTRAINT FK_ExtraPaymentRefunds_SolarRequests;
+    IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ExtraPaymentRefunds_SolarRequestId'
+                                           AND object_id = OBJECT_ID('dbo.ExtraPaymentRefunds'))
+        DROP INDEX IX_ExtraPaymentRefunds_SolarRequestId ON dbo.ExtraPaymentRefunds;
+
+    ALTER TABLE dbo.ExtraPaymentRefunds ALTER COLUMN SolarRequestId INT NULL;
+
+    CREATE INDEX IX_ExtraPaymentRefunds_SolarRequestId ON dbo.ExtraPaymentRefunds(SolarRequestId);
+    ALTER TABLE dbo.ExtraPaymentRefunds
+        ADD CONSTRAINT FK_ExtraPaymentRefunds_SolarRequests
+            FOREIGN KEY (SolarRequestId) REFERENCES dbo.SolarRequests(Id) ON DELETE CASCADE;
+
+    PRINT 'SolarRequestId is now optional.';
+END
+GO

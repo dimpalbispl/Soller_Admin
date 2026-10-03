@@ -17,8 +17,11 @@ namespace SolarPortal.Domain.Entities;
 /// </summary>
 public class ExtraPaymentRefund : BaseEntity
 {
-    /// <summary>The project the extra money was paid against.</summary>
-    public int SolarRequestId { get; set; }
+    /// <summary>
+    /// The project the money relates to, or null when the member has no solar
+    /// request at all - a fund transfer can go to any member ID.
+    /// </summary>
+    public int? SolarRequestId { get; set; }
 
     /// <summary>Denormalised so the list reads without a join.</summary>
     public string RequestNumber { get; set; } = string.Empty;

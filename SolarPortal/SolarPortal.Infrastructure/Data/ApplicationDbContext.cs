@@ -457,9 +457,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             e.Property(x => x.RequestedBy).HasMaxLength(100);
             e.Property(x => x.DecidedBy).HasMaxLength(100);
             e.Property(x => x.VoucherRefNo).HasMaxLength(150);
+            // Optional: a fund transfer can go to a member with no solar request.
             e.HasOne(x => x.SolarRequest)
              .WithMany()
              .HasForeignKey(x => x.SolarRequestId)
+             .IsRequired(false)
              .OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => x.SolarRequestId);
             e.HasIndex(x => x.MemberIdNo);

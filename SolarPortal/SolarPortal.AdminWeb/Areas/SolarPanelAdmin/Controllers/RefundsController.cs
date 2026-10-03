@@ -100,8 +100,24 @@ public class RefundsController : Controller
                        .OrderByDescending(r => r.CreatedAt)
                        .ToList();
 
+        // A fund transfer can go to ANY member ID. A member with no solar request
+        // is still a valid target - the money goes straight to their wallet.
         if (requests.Count == 0)
-            return Json(new { found = false, message = $"No solar request found for {id}." });
+        {
+            var member = await _db.Members.AsNoTracking()
+                                  .FirstOrDefaultAsync(m => m.IdNo != null && m.IdNo.Trim() == id);
+            if (member == null)
+                return Json(new { found = false, message = $"No member found with ID '{id}'. Check the spelling." });
+
+            return Json(new
+            {
+                found = true,
+                memberId = member.IdNo!.Trim(),
+                name = member.FullName,
+                mobile = member.Mobl?.ToString("0"),
+                requests = Array.Empty<object>()
+            });
+        }
 
         var list = new List<object>();
         foreach (var r in requests)
@@ -128,7 +144,7 @@ public class RefundsController : Controller
     // POST: /SolarPanelAdmin/Refunds/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(int solarRequestId, string memberIdNo, decimal amount,
+    public async Task<IActionResult> Create(int? solarRequestId, string memberIdNo, decimal amount,
                                             int voucherTypeId, string? entryType, string? remark)
     {
         if (amount <= 0)
@@ -138,33 +154,49 @@ public class RefundsController : Controller
         var type = string.Equals(entryType, "D", StringComparison.OrdinalIgnoreCase) ? "D" : "C";
         if (string.IsNullOrWhiteSpace(memberIdNo))
             return Json(new { success = false, message = "Member ID is required." });
+        var mid = memberIdNo.Trim();
 
-        var req = await _uow.SolarRequests.GetByIdAsync(solarRequestId);
-        if (req == null)
-            return Json(new { success = false, message = "Solar request not found." });
+        // The project is optional: a member with no solar request can still be
+        // credited or debited. When one is picked it must exist.
+        SolarRequest? req = null;
+        string? memberName;
+        if (solarRequestId is int rid && rid > 0)
+        {
+            req = await _uow.SolarRequests.GetByIdAsync(rid);
+            if (req == null)
+                return Json(new { success = false, message = "Solar request not found." });
+            memberName = string.IsNullOrWhiteSpace(req.MemberFullName) ? req.ApplicantName : req.MemberFullName;
+        }
+        else
+        {
+            var member = await _db.Members.AsNoTracking()
+                                  .FirstOrDefaultAsync(m => m.IdNo != null && m.IdNo.Trim() == mid);
+            if (member == null)
+                return Json(new { success = false, message = $"No member found with ID '{mid}'." });
+            memberName = member.FullName;
+        }
 
         var vtypes = await _solarWallet.GetWalletsAsync();
         var vtype = vtypes.FirstOrDefault(v => v.Acid == voucherTypeId);
         if (vtype == null)
             return Json(new { success = false, message = "Choose a voucher type (wallet)." });
 
-        // One open entry per project PER DIRECTION: two pending credits on the same
-        // project are almost always the same refund entered twice, and both would be
-        // approvable. A credit and a debit can legitimately be open together.
-        var alreadyOpen = await _db.ExtraPaymentRefunds
-            .AnyAsync(x => x.SolarRequestId == solarRequestId
-                        && x.EntryType == type
-                        && x.Status == ApprovalStatus.Pending);
+        // One open entry per project (or per member, when there is no project) PER
+        // DIRECTION: two pending credits are almost always the same entry raised
+        // twice, and both would be approvable. A credit and a debit can be open together.
+        var alreadyOpen = req != null
+            ? await _db.ExtraPaymentRefunds.AnyAsync(x => x.SolarRequestId == req.Id
+                        && x.EntryType == type && x.Status == ApprovalStatus.Pending)
+            : await _db.ExtraPaymentRefunds.AnyAsync(x => x.SolarRequestId == null && x.MemberIdNo == mid
+                        && x.EntryType == type && x.Status == ApprovalStatus.Pending);
         if (alreadyOpen)
-            return Json(new { success = false, message = $"A {(type == "D" ? "debit" : "credit")} fund transfer for this project is already waiting for a decision." });
-
-        var memberName = string.IsNullOrWhiteSpace(req.MemberFullName) ? req.ApplicantName : req.MemberFullName;
+            return Json(new { success = false, message = $"A {(type == "D" ? "debit" : "credit")} fund transfer for this {(req != null ? "project" : "member")} is already waiting for a decision." });
 
         var row = new ExtraPaymentRefund
         {
-            SolarRequestId  = solarRequestId,
-            RequestNumber   = req.RequestNumber,
-            MemberIdNo      = memberIdNo.Trim(),
+            SolarRequestId  = req?.Id,
+            RequestNumber   = req?.RequestNumber ?? string.Empty,
+            MemberIdNo      = mid,
             MemberName      = memberName,
             Amount          = amount,
             EntryType       = type,
@@ -181,11 +213,13 @@ public class RefundsController : Controller
         await _db.SaveChangesAsync();
 
         var word = type == "D" ? "debit" : "credit";
+        var target = req != null ? req.RequestNumber : mid;
         await _activity.LogAsync(AdminId, "Refund.Create", "Refund", row.Id.ToString(),
-            $"Raised fund transfer ({word}) ₹{amount:N0} for {memberIdNo} on {req.RequestNumber} " +
-            $"({vtype.WalletName}). Awaiting approval.", ClientIp);
+            $"Raised fund transfer ({word}) ₹{amount:N0} for {mid}" +
+            (req != null ? $" on {req.RequestNumber}" : " (no project)") +
+            $" ({vtype.WalletName}). Awaiting approval.", ClientIp);
 
-        return Json(new { success = true, message = $"{char.ToUpper(word[0])}{word[1..]} of ₹{amount:N0} raised for {req.RequestNumber}. It is waiting for approval." });
+        return Json(new { success = true, message = $"{char.ToUpper(word[0])}{word[1..]} of ₹{amount:N0} raised for {target}. It is waiting for approval." });
     }
 
     // POST: /SolarPanelAdmin/Refunds/Approve
@@ -200,10 +234,13 @@ public class RefundsController : Controller
         if (row.Status == ApprovalStatus.Rejected)
             return Json(new { success = false, message = "This entry was rejected. Raise a fresh one instead." });
 
-        var refNo = $"FT/{row.RequestNumber}/{row.Id}";
+        // No project → the member ID stands in for the request number.
+        var hasProject = !string.IsNullOrWhiteSpace(row.RequestNumber);
+        var refNo = $"FT/{(hasProject ? row.RequestNumber : row.MemberIdNo)}/{row.Id}";
         var narration = (row.IsCredit
-                            ? $"Fund transfer credited for {row.RequestNumber} · Member ID {row.MemberIdNo}"
-                            : $"Fund transfer debited against {row.RequestNumber} · Member ID {row.MemberIdNo}")
+                            ? (hasProject ? $"Fund transfer credited for {row.RequestNumber} · " : "Fund transfer credited · ")
+                            : (hasProject ? $"Fund transfer debited against {row.RequestNumber} · " : "Fund transfer debited · "))
+                      + $"Member ID {row.MemberIdNo}"
                       + (string.IsNullOrWhiteSpace(row.Remark) ? "" : $". {row.Remark}");
 
         // The ledger row first: if this throws, the refund stays Pending and can be
@@ -225,7 +262,8 @@ public class RefundsController : Controller
         var done = row.IsCredit ? "Credited to" : "Debited from";
         await _activity.LogAsync(AdminId, "Refund.Approve", "Refund", row.Id.ToString(),
             $"Approved fund transfer ({(row.IsCredit ? "credit" : "debit")}) ₹{row.Amount:N0} for {row.MemberIdNo} " +
-            $"on {row.RequestNumber}. {done} {row.VoucherTypeName} (ref {refNo}).", ClientIp);
+            (hasProject ? $"on {row.RequestNumber}. " : "(no project). ") +
+            $"{done} {row.VoucherTypeName} (ref {refNo}).", ClientIp);
 
         return Json(new
         {
