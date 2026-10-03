@@ -726,8 +726,8 @@
         const materialData = JSON.parse(document.getElementById('materialData')?.textContent || '{}');
         const materialMaster = JSON.parse(document.getElementById('materialMaster')?.textContent || '[]');
 
-        // Material list (Solar Module, Inverter, ...) with a quantity box per item,
-        // pre-filled from what this dispatch already recorded.
+        // Material list (Solar Module, Inverter, ...) with a quantity box per item.
+        // No checkboxes at Prepare — every listed item goes; quantity defaults to 1.
         // excludeIds: items to leave out (already on the dispatch — "Prepare Remaining").
         function materialItemsTableHtml(saved, excludeIds) {
         const skip = new Set(excludeIds || []);
@@ -739,21 +739,16 @@
         return `<div style="max-height:260px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;margin:4px 0 8px">
         <table style="width:100%;border-collapse:collapse;font-size:12.5px">
         <thead><tr style="background:#f9fafb;position:sticky;top:0;z-index:1">
-        <th style="padding:6px 8px;text-align:center;width:34px"><input type="checkbox" id="mat-all" title="Select all" style="width:16px;height:16px;cursor:pointer"></th>
         <th style="padding:6px 8px;text-align:left;width:32px">#</th>
         <th style="padding:6px 8px;text-align:left">Particular</th>
         <th style="padding:6px 8px;text-align:left;width:110px">Quantity</th></tr></thead>
-        <tbody>${list.map((m, i) => {
-        const on = Object.prototype.hasOwnProperty.call(qtyOf, m.id);
-        return `
+        <tbody>${list.map((m, i) => `
         <tr style="border-top:1px solid #f3f4f6">
-        <td style="padding:4px 8px;text-align:center"><input type="checkbox" class="mat-chk" data-id="${m.id}" ${on ? 'checked' : ''}
-             style="width:16px;height:16px;cursor:pointer"></td>
         <td style="padding:4px 8px;color:#6b7280">${i + 1}</td>
-        <td style="padding:4px 8px"><label for="mat-chk-${m.id}" class="mat-name" data-id="${m.id}" style="cursor:pointer;margin:0">${esc(m.name)}</label></td>
-        <td style="padding:4px 8px"><input type="number" min="0" step="any" class="mat-qty" data-id="${m.id}" value="${qtyNum(qtyOf[m.id]) ?? ''}" ${on ? '' : 'disabled'}
+        <td style="padding:4px 8px">${esc(m.name)}</td>
+        <td style="padding:4px 8px"><input type="number" min="0" step="any" class="mat-qty" data-id="${m.id}" value="${qtyNum(qtyOf[m.id]) ?? 1}"
              placeholder="Qty" style="width:100%;padding:4px 6px;border:1px solid #d1d5db;border-radius:6px;font-size:12.5px"></td>
-        </tr>`; }).join('')}</tbody></table></div>`;
+        </tr>`).join('')}</tbody></table></div>`;
         }
 
         // Leading number of a quantity ("8", "20 m" → 20), or null.
@@ -823,38 +818,10 @@
         return { items, ticked };
         }
 
-        // Ticked items are the ones being sent; quantity is optional per item.
+        // Every listed item goes, with the quantity typed against it.
         function collectMaterialItems() {
-        return Array.from(document.querySelectorAll('.mat-chk:checked')).map(c => {
-        const q = document.querySelector(`.mat-qty[data-id="${c.dataset.id}"]`);
-        return { id: +c.dataset.id, qty: q ? q.value.trim() : '' };
-        });
-        }
-
-        // Checkbox behaviour for the material list: ticking an item enables its
-        // quantity box, unticking clears it, "select all" toggles every row, and
-        // clicking the item name toggles its row. Call from the modal's didOpen.
-        function wireMaterialChecks() {
-        const rowQty = id => document.querySelector(`.mat-qty[data-id="${id}"]`);
-        const chks = () => Array.from(document.querySelectorAll('.mat-chk'));
-        const all = document.getElementById('mat-all');
-        const syncAll = () => { if (all) { const c = chks(); all.checked = c.length > 0 && c.every(x => x.checked); } };
-        const setRow = (chk, on, focus) => {
-        chk.checked = on;
-        const q = rowQty(chk.dataset.id);
-        if (!q) return;
-        q.disabled = !on;
-        if (!on) q.value = '';
-        else if (focus) q.focus();
-        };
-        chks().forEach(chk => chk.addEventListener('change', () => { setRow(chk, chk.checked, true); syncAll(); }));
-        document.querySelectorAll('.mat-name').forEach(l => l.addEventListener('click', e => {
-        e.preventDefault();
-        const chk = document.querySelector(`.mat-chk[data-id="${l.dataset.id}"]`);
-        if (chk) { setRow(chk, !chk.checked, true); syncAll(); }
-        }));
-        if (all) all.addEventListener('change', () => { chks().forEach(c => setRow(c, all.checked, false)); });
-        syncAll();
+        return Array.from(document.querySelectorAll('.mat-qty')).map(q =>
+        ({ id: +q.dataset.id, qty: q.value.trim() }));
         }
 
         const installPhotos = JSON.parse(document.getElementById('installPhotoData')?.textContent || '{}');
@@ -1163,7 +1130,7 @@
         html: `
         <div style="text-align:left;font-size:13px">
         <div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:10px;margin-bottom:10px;color:#1e40af">
-        <div style="font-size:12px">${already.length} of ${materialMaster.length} items already prepared. Tick the items being prepared now.</div>
+        <div style="font-size:12px">${already.length} of ${materialMaster.length} items already prepared. All remaining items below are prepared now.</div>
         <div style="font-size:12px;margin-top:2px">👷 Installer: <strong>${esc(ex.workerName) || '—'}</strong> (same as the first dispatch — cannot be changed). The project stage does not change.</div>
         </div>
         <label>Remaining items</label>
@@ -1174,10 +1141,9 @@
         background: '#ffffff', color: '#1f2937',
         showCancelButton: true,
         confirmButtonText: 'Save Preparation',
-        didOpen: () => wireMaterialChecks(),
         preConfirm: async () => {
         const items = collectMaterialItems();
-        if (!items.length) { Swal.showValidationMessage('Tick at least one item.'); return false; }
+        if (!items.length) { Swal.showValidationMessage('Nothing left to prepare.'); return false; }
         const bad = items.find(x => !(+x.qty > 0));
         if (bad) {
         const name = (materialMaster.find(m => m.id === bad.id) || {}).name || 'An item';
